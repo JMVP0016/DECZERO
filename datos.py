@@ -25,7 +25,8 @@ from astroquery.ipac.irsa import Irsa
 logging.getLogger("astropy").setLevel(logging.ERROR)
 conf.remote_timeout = 120
 
-MAX_WORKERS = 3
+MAX_WORKERS = 3       # descargas simultáneas contra IRSA (se satura con facilidad)
+MAX_WORKERS_AWS = 8   # AWS no tiene ese límite
 # IRSA responde 503 cuando está saturado; hay que esperar bastante entre intentos.
 ESPERAS_REINTENTO = [3, 8, 15, 25]  # segundos; 5 intentos en total
 MAX_REINTENTOS = len(ESPERAS_REINTENTO) + 1
@@ -201,15 +202,28 @@ def bajar(url: str, ra: float, dec: float, fov: float = 12.0) -> dict:
     Primero lo intenta por AWS (rápido y sin la saturación de IRSA); si falla,
     usa el servicio de recortes de IRSA con reintentos.
     """
-    for intento in (1, 2):
-        try:
-            return _bajar_aws(url, ra, dec, fov)
-        except ValueError:
-            raise  # la coordenada no está en la imagen: reintentar no ayuda
-        except Exception as e:
-            print(f"[Aviso] AWS falló (intento {intento}): {e}")
-            time.sleep(2)
+    try:
+        return _bajar_aws_con_reintento(url, ra, dec, fov)
+    except ValueError:
+        raise  # la coordenada no está en la imagen: IRSA tampoco la tendría
+    except Exception:
+        return _bajar_irsa(url, ra, dec, fov)
 
+
+def _bajar_aws_con_reintento(url: str, ra: float, dec: float, fov: float) -> dict:
+    """Dos intentos por AWS. Un ValueError (coordenada fuera) no se reintenta."""
+    try:
+        return _bajar_aws(url, ra, dec, fov)
+    except ValueError:
+        raise
+    except Exception as e:
+        print(f"[Aviso] AWS falló, segundo intento: {e}")
+        time.sleep(2)
+        return _bajar_aws(url, ra, dec, fov)
+
+
+def _bajar_irsa(url: str, ra: float, dec: float, fov: float = 12.0) -> dict:
+    """Ruta de respaldo: servicio de recortes de IRSA, con reintentos largos."""
     size_deg = float(fov) / 60.0  # Convertir minutos de arco a grados
     if "?center=" in url:
         url_cutout = url
@@ -293,7 +307,7 @@ def _repartir_entre_epocas(exposiciones: list, max_n: int) -> list:
 
 def obtener(ra: float, dec: float, fov: float = 12.0, banda: str = "D2", max_n: int = 40) -> list:
     """
-    Une buscar() y bajar(), reparte max_n entre épocas, usa máximo 4 descargas en paralelo
+    Une buscar() y la descarga, reparte max_n entre épocas, baja primero por AWS y luego por IRSA
     y guarda en disco para responder en < 2 segundos si se vuelve a pedir la misma coordenada.
     """
     os.makedirs(DIR_CACHE_LOCAL, exist_ok=True)
@@ -307,28 +321,42 @@ def obtener(ra: float, dec: float, fov: float = 12.0, banda: str = "D2", max_n: 
     exposiciones = buscar(ra, dec, banda=banda)
     seleccion = _repartir_entre_epocas(exposiciones, max_n=max_n)
 
-    resultados = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        futuros = {
-            executor.submit(bajar, exp["url"], ra, dec, fov): exp
-            for exp in seleccion
-        }
-        for futuro in concurrent.futures.as_completed(futuros):
-            exp_meta = futuros[futuro]
-            try:
-                rec = futuro.result()
+    def _descargar(funcion, exposiciones_a_bajar, trabajadores):
+        """Baja en paralelo; devuelve (recortes, exposiciones que fallaron)."""
+        hechos, fallidos = [], []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=trabajadores) as executor:
+            futuros = {
+                executor.submit(funcion, exp["url"], ra, dec, fov): exp
+                for exp in exposiciones_a_bajar
+            }
+            for futuro in concurrent.futures.as_completed(futuros):
+                exp_meta = futuros[futuro]
+                try:
+                    rec = futuro.result()
+                except ValueError:
+                    continue  # la coordenada cae fuera de esa exposición
+                except Exception as err:
+                    print(f"[Aviso] Fallo en {funcion.__name__}: {err}")
+                    fallidos.append(exp_meta)
+                    continue
                 rec["fecha"] = exp_meta["fecha"]
                 rec["detector"] = exp_meta["detector"]
                 rec["epoca"] = exp_meta["epoca"]
-                resultados.append(rec)
-            except Exception as err:
-                print(f"[Aviso] Se omitió un recorte por fallo de red: {err}")
+                hechos.append(rec)
+        return hechos, fallidos
+
+    # 1) Todo por AWS, con más descargas a la vez.
+    resultados, pendientes = _descargar(_bajar_aws_con_reintento, seleccion, MAX_WORKERS_AWS)
+    # 2) Lo que AWS no pudo dar se pide a IRSA, despacio.
+    if pendientes:
+        de_irsa, pendientes = _descargar(_bajar_irsa, pendientes, MAX_WORKERS)
+        resultados.extend(de_irsa)
 
     resultados.sort(key=lambda x: x["fecha"])
 
     # Solo se guarda si llegaron todos: una descarga incompleta guardada
     # se devolvería incompleta para siempre.
-    if resultados and len(resultados) == len(seleccion):
+    if resultados and not pendientes:
         with open(ruta_pkl, "wb") as f:
             pickle.dump(resultados, f, protocol=pickle.HIGHEST_PROTOCOL)
 
