@@ -8,8 +8,9 @@ import streamlit as st
 import hallazgos
 import tema
 
-st.set_page_config(page_title="Findings · Hawapacha", layout="wide")
+st.set_page_config(page_title="Findings · Hawapacha", page_icon=tema.ICON, layout="wide")
 tema.aplicar_tema()
+tema.navegacion()
 
 st.title("Findings board")
 st.write(

@@ -38,7 +38,7 @@ TARGETS = [
     {"name": "R Draconis", "folder": "r_draconis", "ra": 248.1675, "dec": 66.7550, "band": "D2"},
 ]
 
-st.set_page_config(page_title="Hawapacha · SPHEREx sky viewer", layout="wide")
+st.set_page_config(page_title="Hawapacha · SPHEREx sky viewer", page_icon=tema.ICON, layout="wide")
 tema.aplicar_tema()
 
 
@@ -167,7 +167,8 @@ def stored_target(ra, dec, band):
 
 def load_target(target):
     """One of the five targets: stored images if we have them, live download otherwise."""
-    cutouts = cache_local.leer_objetivo(target["folder"], target["band"])
+    with tema.cargando(f"Pointing SPHEREx at {target['name']}", "Opening the stored images"):
+        cutouts = cache_local.leer_objetivo(target["folder"], target["band"])
     if not cutouts:
         load(target["ra"], target["dec"], target["band"])
         return
@@ -182,7 +183,7 @@ def load(ra, dec, band):
     """Run the search and the downloads, and keep the outcome in the session."""
     st.session_state["result"] = None
     try:
-        with st.spinner("Asking the NASA archive (IRSA) which images cover this position..."):
+        with tema.cargando("Asking NASA which SPHEREx images cover this position", "Searching the archive"):
             exposures = datos.buscar(ra, dec, banda=band)
     except Exception as error:
         st.session_state["error"] = (
@@ -196,9 +197,9 @@ def load(ra, dec, band):
             "Try another detector or another position."
         )
         return
-    with st.spinner(
-        f"Found {len(exposures)} images. Downloading up to {MAX_IMAGES}; "
-        "this can take a few minutes when the archive is busy..."
+    with tema.cargando(
+        f"Found {len(exposures)} images. Bringing up to {MAX_IMAGES} of them",
+        "This can take about a minute",
     ):
         cutouts = datos.obtener(ra, dec, fov=FOV_ARCMIN, banda=band, max_n=MAX_IMAGES)
     if not cutouts:
@@ -214,6 +215,7 @@ def load(ra, dec, band):
     }
 
 
+tema.navegacion()
 tema.portada()
 tema.seccion(1, "Explore any position")
 

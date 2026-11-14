@@ -5,3 +5,7 @@ primaryColor = "#48E0CB"
 backgroundColor = "#0C1421"
 secondaryBackgroundColor = "#131D2E"
 textColor = "#F5F6F8"
+
+[client]
+# The app draws its own menu (tema.navegacion), with only the pages meant for visitors.
+showSidebarNavigation = false
