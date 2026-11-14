@@ -26,12 +26,12 @@ html, body, .stApp, .stMarkdown, p, label, input, textarea, li { font-family: 'I
 h1, h2, h3, .dz-title { font-family: 'Montserrat', sans-serif; letter-spacing: -0.01em; }
 
 /* less empty space at the top, comfortable width */
-.block-container { padding-top: 2.2rem; max-width: 1150px; }
+.block-container { padding-top: 3.8rem; max-width: 1150px; }  /* room for Streamlit's own top bar */
 
 /* hero: a dark panel with a planet horizon, stars and the name. CSS only. */
 .dz-hero {
   position: relative; overflow: hidden; border-radius: 22px;
-  padding: clamp(1.4rem, 4vw, 3rem) clamp(1.1rem, 4vw, 3rem) 1.2rem;
+  padding: clamp(1.2rem, 2.6vw, 2rem) clamp(1.1rem, 3.4vw, 2.6rem) 1rem;
   margin-bottom: 1.4rem;
   background:
     radial-gradient(120% 90% at 50% -10%, #16335c 0%, #0d1d38 38%, #070c16 78%);
@@ -66,7 +66,7 @@ h1, h2, h3, .dz-title { font-family: 'Montserrat', sans-serif; letter-spacing: -
 }
 /* the planet: a huge circle whose top edge is the lit horizon */
 .dz-planet {
-  position: absolute; left: 50%; top: calc(100% - clamp(5.2rem, 13vw, 8.5rem)); width: 210%; aspect-ratio: 1 / 1;
+  position: absolute; left: 50%; top: calc(100% - clamp(4.4rem, 8vw, 6rem)); width: 210%; aspect-ratio: 1 / 1;
   transform: translateX(-50%); border-radius: 50%; pointer-events: none;
   background: radial-gradient(circle at 50% 0%, #10294d 0%, #091528 22%, #060b14 55%);
   box-shadow:
@@ -78,12 +78,12 @@ h1, h2, h3, .dz-title { font-family: 'Montserrat', sans-serif; letter-spacing: -
 }
 .dz-hero-inner { position: relative; z-index: 2; animation: dz-rise 0.9s ease-out both; }
 .dz-kicker { color: #48E0CB; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; }
-.dz-brand { display: flex; align-items: center; gap: 1.1rem; margin: 0.6rem 0 0.7rem 0; }
-.dz-brand svg { width: clamp(60px, 9vw, 104px); height: auto; flex-shrink: 0; }
-.dz-title { font-size: clamp(2.3rem, 7.5vw, 5.2rem); font-weight: 800; line-height: 0.95; margin: 0; color: #F5F6F8; letter-spacing: 0.01em; }
+.dz-brand { display: flex; align-items: center; gap: 1rem; margin: 0.35rem 0 0.45rem 0; }
+.dz-brand svg { width: clamp(56px, 7vw, 84px); height: auto; flex-shrink: 0; }
+.dz-title { font-size: clamp(2.2rem, 6vw, 4.1rem); font-weight: 800; line-height: 0.95; margin: 0; color: #F5F6F8; letter-spacing: 0.01em; }
 .dz-tagline { font-size: clamp(1.05rem, 2.2vw, 1.5rem); color: #F5F6F8; margin: 0 0 0.3rem 0; font-family: 'Montserrat', sans-serif; font-weight: 600; }
 .dz-sub { font-size: 1rem; color: #AEB8CC; margin: 0; max-width: 46rem; }
-.dz-facts { position: relative; z-index: 2; display: flex; flex-wrap: wrap; justify-content: center; gap: 0.7rem 2.6rem; margin-top: clamp(2.2rem, 9vw, 6rem); }
+.dz-facts { position: relative; z-index: 2; display: flex; flex-wrap: wrap; justify-content: center; gap: 0.7rem 2.6rem; margin-top: clamp(1.5rem, 4.5vw, 3.1rem); }
 .dz-fact { text-align: center; }
 .dz-fact b { display: block; font-family: 'Montserrat', sans-serif; font-size: clamp(1rem, 2vw, 1.35rem); color: #F5F6F8; }
 .dz-fact span { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: #8FD9CE; }
@@ -117,7 +117,8 @@ h1, h2, h3, .dz-title { font-family: 'Montserrat', sans-serif; letter-spacing: -
 
 /* top menu */
 .dz-nav-gap { height: 0.2rem; }
-[data-testid="stPageLink"] a { border-radius: 999px; border: 1px solid rgba(232,236,244,0.16); padding: 0.25rem 0.9rem; }
+[data-testid="stPageLink"] a { border-radius: 999px; border: 1px solid rgba(232,236,244,0.16); padding: 0.3rem 1rem; width: fit-content; max-width: none; white-space: nowrap; }
+[data-testid="stPageLink"] a * { white-space: nowrap; overflow: visible; text-overflow: clip; }
 [data-testid="stPageLink"] a:hover { border-color: #48E0CB; }
 [data-testid="stPageLink"] p { font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 0.85rem; letter-spacing: 0.08em; text-transform: uppercase; }
 
@@ -226,7 +227,7 @@ def cargando(mensaje, detalle=""):
 def navegacion():
     """Top menu with only the pages meant for visitors. Internal pages stay reachable by URL."""
     try:
-        izquierda, derecha, _ = st.columns([1, 1.3, 5])
+        izquierda, derecha, _ = st.columns([1.1, 2, 5])
         izquierda.page_link("app.py", label="Viewer")
         derecha.page_link("pages/3_Findings.py", label="Findings board")
     except Exception:
