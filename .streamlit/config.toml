@@ -1,0 +1,7 @@
+# Hawapacha (team DecZero) - visual theme: equatorial-sky navy with one turquoise accent
+[theme]
+base = "dark"
+primaryColor = "#48E0CB"
+backgroundColor = "#0C1421"
+secondaryBackgroundColor = "#131D2E"
+textColor = "#F5F6F8"

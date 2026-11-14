@@ -57,7 +57,7 @@ by a team member before being committed.
 
 | Tool | Used for | Files |
 | :--- | :--- | :--- |
-| Claude (Anthropic) | Drafting the repository skeleton, the viewer page, the dependency-check page and the diagnostics page | `app.py`, `pages/1_Diagnostics.py`, `pages/2_System_check.py`, `README.md`, `requirements.txt` |
+| Claude (Anthropic) | Drafting the repository skeleton, the viewer page, the stored-image reader, the visual theme and help texts, the dependency-check page and the diagnostics page | `app.py`, `cache_local.py`, `tema.py`, `.streamlit/config.toml`, `pages/1_Diagnostics.py`, `pages/2_System_check.py`, `README.md`, `requirements.txt` |
 | Claude (Anthropic) | Code review, bug fixes (retries, query cache, flag mask, alignment failures) and synthetic tests | `datos.py`, `proceso.py`, `test_proceso.py`, `sembrar_busquedas.py` |
 
 Each SI-assisted source file also says so in its header comment.

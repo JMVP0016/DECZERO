@@ -13,8 +13,10 @@ from astropy.coordinates import SkyCoord
 from astropy.time import Time
 from PIL import Image, ImageDraw
 
+import cache_local
 import datos
 import proceso
+import tema
 
 MAX_IMAGES = 24      # live-mode cap agreed after measurement M0
 FOV_ARCMIN = 10.0    # side of each cutout
@@ -28,14 +30,15 @@ MODE_STACKED = "Stacked by epoch"
 # The five challenge targets. Positions are approximate, moved to about 2026
 # with catalogue proper motions; they will be replaced by objetivos.yaml (David).
 TARGETS = [
-    {"name": "Barnard's Star", "ra": 269.4463, "dec": 4.7679, "band": "D2"},
-    {"name": "WISE 0855", "ra": 133.7590, "dec": -7.2421, "band": "D6"},
-    {"name": "Epsilon Indi B", "ra": 331.0960, "dec": -56.8013, "band": "D2"},
-    {"name": "RW Aurigae", "ra": 76.9564, "dec": 30.4014, "band": "D2"},
-    {"name": "R Draconis", "ra": 248.1675, "dec": 66.7550, "band": "D2"},
+    {"name": "Barnard's Star", "folder": "barnard", "ra": 269.4463, "dec": 4.7679, "band": "D2"},
+    {"name": "WISE 0855", "folder": "wise_0855", "ra": 133.7590, "dec": -7.2421, "band": "D6"},
+    {"name": "Epsilon Indi B", "folder": "epsilon_indi_b", "ra": 331.0960, "dec": -56.8013, "band": "D2"},
+    {"name": "RW Aurigae", "folder": "rw_aurigae", "ra": 76.9564, "dec": 30.4014, "band": "D2"},
+    {"name": "R Draconis", "folder": "r_draconis", "ra": 248.1675, "dec": 66.7550, "band": "D2"},
 ]
 
-st.set_page_config(page_title="DecZero · SPHEREx viewer", layout="wide")
+st.set_page_config(page_title="Hawapacha · SPHEREx sky viewer", layout="wide")
+tema.aplicar_tema()
 
 
 def parse_coordinate(text):
@@ -151,6 +154,29 @@ def animation(frames):
     return buffer.getvalue()
 
 
+def stored_target(ra, dec, band):
+    """The challenge target at this position (within 3 arcmin) and band, if any."""
+    here = SkyCoord(ra * u.deg, dec * u.deg)
+    for target in TARGETS:
+        there = SkyCoord(target["ra"] * u.deg, target["dec"] * u.deg)
+        if target["band"] == band and here.separation(there).arcmin <= 3.0:
+            return target
+    return None
+
+
+def load_target(target):
+    """One of the five targets: stored images if we have them, live download otherwise."""
+    cutouts = cache_local.leer_objetivo(target["folder"], target["band"])
+    if not cutouts:
+        load(target["ra"], target["dec"], target["band"])
+        return
+    st.session_state["error"] = None
+    st.session_state["result"] = {
+        "ra": target["ra"], "dec": target["dec"], "band": target["band"],
+        "available": len(cutouts), "cutouts": cutouts, "stored": target["name"],
+    }
+
+
 def load(ra, dec, band):
     """Run the search and the downloads, and keep the outcome in the session."""
     st.session_state["result"] = None
@@ -187,11 +213,7 @@ def load(ra, dec, band):
     }
 
 
-st.title("SPHEREx sky viewer")
-st.caption(
-    "Type any sky position and see the real images NASA's SPHEREx telescope "
-    "took of it, in time order. Team DecZero · NASA Space Apps Challenge 2026."
-)
+tema.portada()
 
 params = st.query_params
 start_text = f"{params['ra']} {params['dec']}" if "ra" in params and "dec" in params else ""
@@ -224,7 +246,7 @@ if clicked:
     st.query_params.update({
         "ra": f"{clicked['ra']:.5f}", "dec": f"{clicked['dec']:.5f}", "band": clicked["band"],
     })
-    load(clicked["ra"], clicked["dec"], clicked["band"])
+    load_target(clicked)
 elif submitted or first_visit_with_link:
     try:
         ra, dec = parse_coordinate(text)
@@ -237,7 +259,11 @@ elif submitted or first_visit_with_link:
         )
     else:
         st.query_params.update({"ra": f"{ra:.5f}", "dec": f"{dec:.5f}", "band": band})
-        load(ra, dec, band)
+        target = stored_target(ra, dec, band)
+        if target:
+            load_target(target)   # a direct link to a target loads instantly
+        else:
+            load(ra, dec, band)
 
 if st.session_state.get("error"):
     st.error(st.session_state["error"])
@@ -245,10 +271,16 @@ if st.session_state.get("error"):
 result = st.session_state.get("result")
 if result:
     cutouts = result["cutouts"]
-    st.success(
-        f"Showing {len(cutouts)} of {result['available']} images at "
-        f"RA {result['ra']:.5f}°, Dec {result['dec']:.5f}°, detector {result['band']}."
-    )
+    if result.get("stored"):
+        st.success(
+            f"{result['stored']}: {len(cutouts)} images stored by the team, "
+            f"detector {result['band']}, around RA {result['ra']:.5f}°, Dec {result['dec']:.5f}°."
+        )
+    else:
+        st.success(
+            f"Showing {len(cutouts)} of {result['available']} images at "
+            f"RA {result['ra']:.5f}°, Dec {result['dec']:.5f}°, detector {result['band']}."
+        )
 
     mode = st.radio("View", [MODE_SINGLE, MODE_STACKED], horizontal=True)
     if mode == MODE_STACKED:
@@ -298,3 +330,7 @@ if result:
         f"{mjd_to_text(cutouts[0]['fecha'])} to {mjd_to_text(cutouts[-1]['fecha'])}. "
         "Data: NASA/IPAC IRSA, SPHEREx."
     )
+
+st.write("")
+tema.ayuda()
+tema.pie()
