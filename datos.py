@@ -8,6 +8,7 @@
 import concurrent.futures
 import glob
 import hashlib
+import io
 import json
 import http.client
 import logging
@@ -15,11 +16,13 @@ import os
 import pickle
 import time
 import urllib.error
+import urllib.request
 
 import astropy.units as u
 import numpy as np
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
+from astropy.io.votable import parse_single_table
 from astropy.utils.data import conf
 from astropy.wcs import WCS
 from astroquery.ipac.irsa import Irsa
@@ -113,6 +116,26 @@ def _buscar_en_semillas(ra: float, dec: float, banda: str = None):
 
 
 COLECCIONES_SIA = ["spherex_dr1", "spherex_qr3"]
+URL_SIA = "https://irsa.ipac.caltech.edu/SIA"
+TIMEOUT_SIA = 30            # segundos por petición: nunca se queda colgada
+ESPERAS_SIA = [3, 6, 10, 15]  # IRSA va y viene: 5 intentos en menos de 3 minutos
+
+
+def _consulta_sia(coord, coleccion):
+    """Una petición SIA con tiempo límite y reintentos. Devuelve una tabla de astropy."""
+    url = (f"{URL_SIA}?POS=CIRCLE+{coord.ra.deg:.6f}+{coord.dec.deg:.6f}+0.0003"
+           f"&COLLECTION={coleccion}")
+    ultimo_error = None
+    for espera in ESPERAS_SIA + [None]:
+        try:
+            with urllib.request.urlopen(url, timeout=TIMEOUT_SIA) as respuesta:
+                contenido = respuesta.read()
+            return parse_single_table(io.BytesIO(contenido)).to_table(use_names_over_ids=True)
+        except Exception as error:
+            ultimo_error = error
+            if espera is not None:
+                time.sleep(espera)
+    raise RuntimeError(f"IRSA (SIA) no respondió tras {len(ESPERAS_SIA) + 1} intentos: {ultimo_error}")
 
 
 def _buscar_sia(ra: float, dec: float, banda: str = None) -> list:
@@ -124,7 +147,7 @@ def _buscar_sia(ra: float, dec: float, banda: str = None) -> list:
     nombre_banda = _normalizar_banda(banda) if banda else None
     vistos = {}
     for coleccion in COLECCIONES_SIA:
-        tabla = Irsa.query_sia(pos=(coord, 1 * u.arcsec), collection=coleccion)
+        tabla = _consulta_sia(coord, coleccion)
         for row in tabla:
             url = str(row["access_url"])
             bandpass = str(row["energy_bandpassname"])
@@ -162,55 +185,15 @@ def buscar(ra: float, dec: float, banda: str = None, usar_semillas: bool = True)
             with open(ruta_busqueda, "rb") as f:
                 return pickle.load(f)
 
-    # Primero SIA (segundos). Si falla o no devuelve nada, la consulta TAP (minutos).
-    try:
-        exposiciones = _buscar_sia(ra, dec, banda)
-    except Exception as error:
-        print(f"[Aviso] SIA falló, se usa TAP: {error}")
-        exposiciones = []
-    if exposiciones:
-        with open(ruta_busqueda, "wb") as f:
-            pickle.dump(exposiciones, f, protocol=pickle.HIGHEST_PROTOCOL)
-        return exposiciones
+    # Búsqueda por SIA (segundos, con tiempo límite). Antes se usaba la consulta
+    # TAP, que tarda minutos y se queda colgada cuando IRSA está inestable.
+    # Si IRSA no responde, _buscar_sia lanza un error y la app lo muestra.
+    exposiciones = _buscar_sia(ra, dec, banda)
 
-    filtro_banda = ""
-    if banda:
-        nombre_banda = _normalizar_banda(banda)
-        filtro_banda = f"AND p.energy_bandpassname = '{nombre_banda}'"
+    if not exposiciones:
+        return exposiciones  # sin datos en esa zona: no se guarda, puede haberlos mañana
 
-    query = f"""
-    SELECT
-        'https://irsa.ipac.caltech.edu/' || a.uri AS base_uri,
-        p.time_bounds_lower,
-        p.energy_bandpassname
-    FROM spherex.artifact a
-    JOIN spherex.plane p ON a.planeid = p.planeid
-    WHERE 1 = CONTAINS(POINT('ICRS', {float(ra)}, {float(dec)}), p.poly)
-          {filtro_banda}
-    ORDER BY p.time_bounds_lower
-    """
-
-    tabla = Irsa.query_tap(query).to_table()
-    exposiciones = []
-    epoca_actual = 0
-    fecha_anterior = None
-
-    for row in tabla:
-        fecha_mjd = float(row["time_bounds_lower"])
-        # Nueva época si pasan más de 30 días entre observaciones
-        if fecha_anterior is not None and (fecha_mjd - fecha_anterior) > 30.0:
-            epoca_actual += 1
-        fecha_anterior = fecha_mjd
-
-        det_str = str(row["energy_bandpassname"]).replace("SPHEREx-", "")
-        exposiciones.append({
-            "fecha": fecha_mjd,
-            "detector": det_str,
-            "url": str(row["base_uri"]),
-            "epoca": epoca_actual
-        })
-
-    # La consulta tarda minutos cuando IRSA está cargado: se guarda en disco.
+    # Se guarda en disco para no repetir la búsqueda.
     with open(ruta_busqueda, "wb") as f:
         pickle.dump(exposiciones, f, protocol=pickle.HIGHEST_PROTOCOL)
 
