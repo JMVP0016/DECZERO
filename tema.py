@@ -23,13 +23,78 @@ h1, h2, h3, .dz-title { font-family: 'Montserrat', sans-serif; letter-spacing: -
 /* less empty space at the top, comfortable width */
 .block-container { padding-top: 2.2rem; max-width: 1150px; }
 
-/* header */
-.dz-hero { padding: 0.4rem 0 1.1rem 0; border-bottom: 1px solid rgba(232,236,244,0.12); margin-bottom: 1.2rem; }
-.dz-brand { display: flex; align-items: center; gap: 1.1rem; margin: 0.35rem 0 0.5rem 0; }
-.dz-brand svg { width: clamp(64px, 9vw, 96px); height: auto; flex-shrink: 0; }
-.dz-kicker { color: #48E0CB; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; }
-.dz-title { font-size: clamp(2.2rem, 6vw, 4rem); font-weight: 800; line-height: 1; margin: 0; color: #F5F6F8; letter-spacing: 0.01em; }
-.dz-tagline { font-size: 1.15rem; color: #AEB8CC; margin: 0; }
+/* hero: a dark panel with a planet horizon, stars and the name. CSS only. */
+.dz-hero {
+  position: relative; overflow: hidden; border-radius: 22px;
+  padding: clamp(1.4rem, 4vw, 3rem) clamp(1.1rem, 4vw, 3rem) 1.2rem;
+  margin-bottom: 1.4rem;
+  background:
+    radial-gradient(120% 90% at 50% -10%, #16335c 0%, #0d1d38 38%, #070c16 78%);
+  border: 1px solid rgba(72,224,203,0.14);
+}
+/* stars: three layers of tiny dots that twinkle at different speeds */
+.dz-stars, .dz-stars::before, .dz-stars::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background-repeat: repeat;
+}
+.dz-stars {
+  background-image:
+    radial-gradient(1px 1px at 12% 22%, #fff 99%, transparent),
+    radial-gradient(1px 1px at 31% 61%, #cfe9ff 99%, transparent),
+    radial-gradient(1.5px 1.5px at 47% 14%, #fff 99%, transparent),
+    radial-gradient(1px 1px at 63% 44%, #fff 99%, transparent),
+    radial-gradient(1px 1px at 78% 19%, #bfeee6 99%, transparent),
+    radial-gradient(1.5px 1.5px at 88% 52%, #fff 99%, transparent),
+    radial-gradient(1px 1px at 22% 78%, #fff 99%, transparent),
+    radial-gradient(1px 1px at 55% 71%, #cfe9ff 99%, transparent);
+  background-size: 260px 190px; opacity: 0.85;
+  animation: dz-twinkle 6s ease-in-out infinite alternate;
+}
+.dz-stars::before {
+  background-image:
+    radial-gradient(1px 1px at 8% 48%, #fff 99%, transparent),
+    radial-gradient(1px 1px at 38% 31%, #fff 99%, transparent),
+    radial-gradient(1px 1px at 71% 66%, #cfe9ff 99%, transparent),
+    radial-gradient(1px 1px at 93% 27%, #fff 99%, transparent);
+  background-size: 190px 140px; opacity: 0.7;
+  animation: dz-twinkle 9s ease-in-out infinite alternate-reverse;
+}
+/* the planet: a huge circle whose top edge is the lit horizon */
+.dz-planet {
+  position: absolute; left: 50%; top: calc(100% - clamp(5.2rem, 13vw, 8.5rem)); width: 210%; aspect-ratio: 1 / 1;
+  transform: translateX(-50%); border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle at 50% 0%, #10294d 0%, #091528 22%, #060b14 55%);
+  box-shadow:
+    0 0 0 1px rgba(140,225,255,0.55),
+    0 -6px 26px 2px rgba(72,224,203,0.45),
+    0 -28px 90px 10px rgba(47,128,237,0.45),
+    0 -70px 180px 30px rgba(47,128,237,0.22);
+  animation: dz-glow 8s ease-in-out infinite alternate;
+}
+.dz-hero-inner { position: relative; z-index: 2; animation: dz-rise 0.9s ease-out both; }
+.dz-kicker { color: #48E0CB; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; }
+.dz-brand { display: flex; align-items: center; gap: 1.1rem; margin: 0.6rem 0 0.7rem 0; }
+.dz-brand svg { width: clamp(60px, 9vw, 104px); height: auto; flex-shrink: 0; }
+.dz-title { font-size: clamp(2.3rem, 7.5vw, 5.2rem); font-weight: 800; line-height: 0.95; margin: 0; color: #F5F6F8; letter-spacing: 0.01em; }
+.dz-tagline { font-size: clamp(1.05rem, 2.2vw, 1.5rem); color: #F5F6F8; margin: 0 0 0.3rem 0; font-family: 'Montserrat', sans-serif; font-weight: 600; }
+.dz-sub { font-size: 1rem; color: #AEB8CC; margin: 0; max-width: 46rem; }
+.dz-facts { position: relative; z-index: 2; display: flex; flex-wrap: wrap; justify-content: center; gap: 0.7rem 2.6rem; margin-top: clamp(2.2rem, 9vw, 6rem); }
+.dz-fact { text-align: center; }
+.dz-fact b { display: block; font-family: 'Montserrat', sans-serif; font-size: clamp(1rem, 2vw, 1.35rem); color: #F5F6F8; }
+.dz-fact span { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: #8FD9CE; }
+
+@keyframes dz-twinkle { from { opacity: 0.35; } to { opacity: 0.9; } }
+@keyframes dz-glow { from { filter: brightness(0.9); } to { filter: brightness(1.2); } }
+@keyframes dz-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .dz-stars, .dz-stars::before, .dz-planet, .dz-hero-inner { animation: none; }
+}
+
+/* numbered section labels, as in the brand sheet */
+.dz-section { display: flex; align-items: baseline; gap: 0.7rem; margin: 1.6rem 0 0.6rem 0; }
+.dz-section i { font-style: normal; color: #48E0CB; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 0.85rem; letter-spacing: 0.1em; }
+.dz-section b { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.05rem; letter-spacing: 0.1em; text-transform: uppercase; color: #F5F6F8; }
+.dz-section::after { content: ""; flex: 1; height: 1px; background: rgba(232,236,244,0.14); }
 
 /* help cards */
 .dz-card { background: #131D2E; border: 1px solid rgba(232,236,244,0.10); border-radius: 12px; padding: 0.9rem 1rem; height: 100%; }
@@ -65,17 +130,42 @@ def aplicar_tema():
     st.markdown(CSS, unsafe_allow_html=True)
 
 
+# Mission facts shown in the hero. Source: https://science.nasa.gov/mission/spherex/
+FACTS = [
+    ("102 colours", "of infrared light"),
+    ("0.75 – 5 µm", "wavelength range"),
+    ("Whole sky", "mapped every six months"),
+]
+
+
 def portada():
-    """Header: who we are, the name of the project and one line that says what it does."""
+    """Hero: who we are, the name of the project and one line that says what it does."""
+    facts = "".join(
+        f'<div class="dz-fact"><b>{big}</b><span>{small}</span></div>' for big, small in FACTS
+    )
     st.markdown(
         f"""
         <div class="dz-hero">
-          <div class="dz-kicker">Team DecZero · NASA Space Apps Challenge 2026</div>
-          <div class="dz-brand">{LOGO_SVG}<div class="dz-title">{PROJECT_NAME}</div></div>
-          <p class="dz-tagline">{TAGLINE} Real infrared images from NASA's SPHEREx
-          space telescope, for any position, in time order.</p>
+          <div class="dz-stars"></div>
+          <div class="dz-planet"></div>
+          <div class="dz-hero-inner">
+            <div class="dz-kicker">Team DecZero · NASA Space Apps Challenge 2026</div>
+            <div class="dz-brand">{LOGO_SVG}<div class="dz-title">{PROJECT_NAME}</div></div>
+            <p class="dz-tagline">{TAGLINE}</p>
+            <p class="dz-sub">Real infrared images from NASA's SPHEREx space telescope,
+            for any position in the sky, in time order.</p>
+          </div>
+          <div class="dz-facts">{facts}</div>
         </div>
         """,
+        unsafe_allow_html=True,
+    )
+
+
+def seccion(numero, titulo):
+    """Numbered section label, for example: 01 EXPLORE."""
+    st.markdown(
+        f'<div class="dz-section"><i>{numero:02d}</i><b>{titulo}</b></div>',
         unsafe_allow_html=True,
     )
 
@@ -110,6 +200,7 @@ def pie():
         <div class="dz-footer">
           Data: SPHEREx spectral images, NASA/IPAC Infrared Science Archive (IRSA),
           read from the public IRSA copy on AWS Open Data.
+          Mission facts: <a href="https://science.nasa.gov/mission/spherex/">science.nasa.gov/mission/spherex</a>.
           This is a student project for the NASA Space Apps Challenge; it is not a NASA product.
           Code: <a href="https://github.com/JMVP0016/DECZERO">github.com/JMVP0016/DECZERO</a>
         </div>

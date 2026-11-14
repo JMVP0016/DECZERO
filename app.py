@@ -215,6 +215,7 @@ def load(ra, dec, band):
 
 
 tema.portada()
+tema.seccion(1, "Explore any position")
 
 params = st.query_params
 start_text = f"{params['ra']} {params['dec']}" if "ra" in params and "dec" in params else ""
@@ -235,7 +236,7 @@ with st.form("search"):
     )
     submitted = st.form_submit_button("Show images", type="primary")
 
-st.caption("Or try one of the five targets of the challenge:")
+tema.seccion(2, "Or start with the five challenge targets")
 clicked = None
 for column, target in zip(st.columns(len(TARGETS)), TARGETS):
     if column.button(target["name"], use_container_width=True):
@@ -271,6 +272,7 @@ if st.session_state.get("error"):
 
 result = st.session_state.get("result")
 if result:
+    tema.seccion(3, "The sequence")
     cutouts = result["cutouts"]
     if result.get("stored"):
         st.success(
@@ -334,6 +336,6 @@ if result:
         "Data: NASA/IPAC IRSA, SPHEREx."
     )
 
-st.write("")
+tema.seccion(4 if st.session_state.get("result") else 3, "How to read the images")
 tema.ayuda()
 tema.pie()
