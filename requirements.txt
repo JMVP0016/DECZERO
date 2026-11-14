@@ -1,0 +1,13 @@
+streamlit
+numpy
+astropy
+astroquery
+pyvo
+reproject
+photutils
+matplotlib
+pillow
+imageio
+pyyaml
+fsspec
+s3fs
