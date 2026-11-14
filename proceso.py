@@ -10,7 +10,6 @@ def agrupar(fechas, modo="epoca", n_dias=14):
     fechas = np.asarray(fechas)
     orden = np.argsort(fechas)
     fechas_ord = fechas[orden]
-    
     grupos = []
     if len(fechas_ord) == 0:
         return grupos
