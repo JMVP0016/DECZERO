@@ -139,3 +139,27 @@ if ejecutar:
                 fig_ep, ax_ep = plt.subplots(figsize=(4.5, 4.2))
                 mostrar_imagen(ax_ep, stack_ep, f"{nombre_unidad} {idx_g + 1} ({len(idxs)} recortes)")
                 cols_ep[col_i].pyplot(fig_ep)
+    # --- Botón de exportación científica FITS ---
+    import io
+    hdu = fits.PrimaryHDU(data=imagen_final.astype(np.float32), header=rejilla.to_header())
+    buf_fits = io.BytesIO()
+    hdu.writeto(buf_fits)
+    st.download_button(
+        label="Descargar apilado científico (.fits con WCS Norte-arriba)",
+        data=buf_fits.getvalue(),
+        file_name=f"deczero_{info_obj['carpeta']}_apilado.fits",
+        mime="application/fits",
+    )
+
+    # --- Mapa de diferencia si hay exactamente 2 épocas ---
+    if modo_grupo == "epoca" and len(grupos) == 2:
+        st.subheader("Análisis Diferencial: Época 2 − Época 1 (Movimiento Propio / Variabilidad)")
+        ep1 = proceso.apilar([alineados[i] for i in grupos[0]])
+        ep2 = proceso.apilar([alineados[i] for i in grupos[1]])
+        diff = ep2 - ep1
+        lim = float(np.nanpercentile(np.abs(diff), 99))
+        fig_dif, ax_dif = plt.subplots(figsize=(5.5, 4.5))
+        im_d = ax_dif.imshow(diff, origin="lower", cmap="coolwarm", vmin=-lim, vmax=lim)
+        ax_dif.set_title(f"Diferencia temporal (Δt = {fechas_ok[grupos[1][0]] - fechas_ok[grupos[0][0]]:.1f} días)")
+        plt.colorbar(im_d, ax=ax_dif, fraction=0.046, pad=0.04, label="Δ Flujo (MJy/sr)")
+        st.pyplot(fig_dif)
