@@ -12,7 +12,12 @@ CSS = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Inter:wght@400;600&display=swap');
 
-html, body, [class*="st-"], .stMarkdown { font-family: 'Inter', sans-serif; }
+/* Text font. Do not use a wildcard selector here: it would also replace the
+   icon font of Streamlit and the icons would show up as words. */
+html, body, .stApp, .stMarkdown, p, label, input, textarea, li { font-family: 'Inter', sans-serif; }
+[data-testid="stIconMaterial"], .material-symbols-rounded, .material-icons {
+  font-family: 'Material Symbols Rounded', 'Material Icons' !important;
+}
 h1, h2, h3, .dz-title { font-family: 'Montserrat', sans-serif; letter-spacing: -0.01em; }
 
 /* less empty space at the top, comfortable width */
