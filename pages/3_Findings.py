@@ -69,6 +69,22 @@ if not reports:
         "“Did you notice something? Report it”."
     )
 
+with st.expander("Prove that a report is yours"):
+    st.write(
+        "When you publish a report you receive a claim code. Nicknames can be copied "
+        "by anyone; the claim code cannot. Type it here to show which report it belongs to."
+    )
+    claim = st.text_input("Claim code", placeholder="XXXX-XXXX")
+    if claim.strip():
+        owned = hallazgos.find_by_claim(claim)
+        if owned:
+            st.success(
+                f"This code belongs to report #{owned['number']}, published by "
+                f"{owned['alias']} on {owned['reported']}."
+            )
+        else:
+            st.error("No report was created with this code.")
+
 # ---------------------------------------------------------------- the board
 
 for report in visible:

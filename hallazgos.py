@@ -16,9 +16,11 @@ Configuration (Streamlit secrets):
     "code-1" = "Dr. Example, astronomer"
 """
 
+import hashlib
 import json
 import os
 import re
+import secrets
 from datetime import datetime, timezone
 
 import requests
@@ -30,6 +32,10 @@ TITLE_PREFIX = "[Finding]"
 MARK_START = "<!-- hawapacha-data"
 MARK_END = "hawapacha-data -->"
 MAX_REPORTS_PER_VISIT = 3
+MAX_REPORTS_PER_HOUR = 15      # for the whole app: a simple brake against spam
+# Only issues written by the app's own account count as reports. The repository
+# is public, so anyone could open an issue that imitates a report or a verdict.
+TRUSTED_AUTHORS = {REPO.split("/")[0]}
 
 KINDS = [
     "Something moves between dates",
@@ -104,6 +110,20 @@ def _headers():
     return headers
 
 
+def _check(response):
+    """Raise an error that includes GitHub's own explanation, to make setup problems clear."""
+    if response.status_code < 400:
+        return
+    try:
+        reason = response.json().get("message", "")
+    except Exception:
+        reason = response.text[:200]
+    hint = ""
+    if response.status_code in (401, 403):
+        hint = " (check that the token is valid and has Issues: Read and write on this repository)"
+    raise RuntimeError(f"GitHub answered {response.status_code}: {reason}{hint}")
+
+
 def _body(data):
     """Issue text: a readable summary for people, plus the data for the app."""
     summary = (
@@ -123,12 +143,16 @@ def _parse(issue):
     body = issue.get("body") or ""
     if MARK_START not in body or MARK_END not in body:
         return None
+    author = (issue.get("user") or {}).get("login")
+    if author is not None and author not in TRUSTED_AUTHORS:
+        return None  # an imitation written by someone else
     try:
         raw = body.split(MARK_START, 1)[1].split(MARK_END, 1)[0]
         data = json.loads(raw)
     except Exception:
         return None
     data["number"] = issue["number"]
+    data["created_at"] = issue["created_at"]
     data["reported"] = issue["created_at"].replace("T", " ").replace("Z", " UTC")[:16] + " UTC"
     data["url"] = issue.get("html_url", "")
     return data
@@ -143,7 +167,7 @@ def _fetch():
         params={"state": "all", "per_page": 100, "sort": "created", "direction": "desc"},
         headers=_headers(), timeout=20,
     )
-    response.raise_for_status()
+    _check(response)
     return [issue for issue in response.json() if "pull_request" not in issue]
 
 
@@ -153,8 +177,44 @@ def list_reports():
     return sorted((r for r in reports if r), key=lambda r: r["number"], reverse=True)
 
 
+def claim_hash(code):
+    """What we store of the claim code: its SHA-256, never the code itself."""
+    normal = re.sub(r"[^0-9A-Za-z]", "", str(code)).upper()
+    return hashlib.sha256(normal.encode()).hexdigest()
+
+
+def new_claim_code():
+    raw = secrets.token_hex(4).upper()
+    return f"{raw[:4]}-{raw[4:]}"
+
+
+def find_by_claim(code):
+    """The report that was created with this claim code, or None."""
+    wanted = claim_hash(code)
+    for report in list_reports():
+        if report.get("claim") == wanted:
+            return report
+    return None
+
+
+def reports_last_hour():
+    limit = datetime.now(timezone.utc).timestamp() - 3600
+    count = 0
+    for report in list_reports():
+        try:
+            created = datetime.strptime(report["created_at"], "%Y-%m-%dT%H:%M:%SZ")
+            if created.replace(tzinfo=timezone.utc).timestamp() >= limit:
+                count += 1
+        except Exception:
+            continue
+    return count
+
+
 def create_report(alias, ra, dec, band, kind, note, view, frame):
+    """Publish a report. Returns (number, claim code); the code is shown only once."""
+    code = new_claim_code()
     data = {
+        "claim": claim_hash(code),
         "alias": clean(alias, 40) or "Anonymous",
         "ra": float(ra), "dec": float(dec), "band": clean(band, 4),
         "kind": kind if kind in KINDS else "Other",
@@ -174,17 +234,17 @@ def create_report(alias, ra, dec, band, kind, note, view, frame):
     else:
         response = requests.post(
             f"{API}/issues", headers=_headers(), timeout=20,
-            json={"title": title, "body": _body(data), "labels": ["finding"]},
+            json={"title": title, "body": _body(data)},
         )
-        response.raise_for_status()
+        _check(response)
         number = response.json()["number"]
     _fetch.clear()
-    return number
+    return number, code
 
 
 def add_event(report, kind, reviewer, text=""):
     """Record that a reviewer opened the report or gave a verdict."""
-    data = {k: v for k, v in report.items() if k not in ("number", "reported", "url")}
+    data = {k: v for k, v in report.items() if k not in ("number", "reported", "url", "created_at")}
     event = {"type": kind, "by": reviewer, "at": now_text(), "text": clean(text, 600)}
     data["events"] = list(data.get("events", [])) + [event]
     data["status"] = kind if kind in VERDICTS else STATUS_OPENED
@@ -195,14 +255,14 @@ def add_event(report, kind, reviewer, text=""):
     if _memory_mode():
         _memory()["issues"][number]["body"] = _body(data)
     else:
-        requests.post(
+        _check(requests.post(
             f"{API}/issues/{number}/comments", headers=_headers(), timeout=20,
             json={"body": comment},
-        ).raise_for_status()
-        requests.patch(
+        ))
+        _check(requests.patch(
             f"{API}/issues/{number}", headers=_headers(), timeout=20,
             json={"body": _body(data)},
-        ).raise_for_status()
+        ))
     _fetch.clear()
 
 
@@ -223,7 +283,16 @@ def report_form(ra, dec, band, view, frame):
         if sent >= MAX_REPORTS_PER_VISIT:
             st.warning("You have reached the limit of reports for this visit.")
             return
-        with st.form("report", clear_on_submit=True):
+        if st.session_state.get("last_claim"):
+            number, code = st.session_state["last_claim"]
+            st.success(
+                f"Published as report #{number}. You can follow it on the Findings page."
+            )
+            st.warning(
+                f"Your claim code is **{code}**. Write it down now: it is shown only once, "
+                "and it is the only way to prove later that this report is yours."
+            )
+        with st.form("report"):
             alias = st.text_input("Your nickname", max_chars=40)
             kind = st.selectbox("What did you notice?", KINDS)
             note = st.text_area(
@@ -232,15 +301,27 @@ def report_form(ra, dec, band, view, frame):
             )
             submitted = st.form_submit_button("Publish report")
         if submitted:
-            if not alias.strip() or len(note.strip()) < 15:
-                st.error("Please write a nickname and a description of at least 15 characters.")
+            if not alias.strip() or len(note.strip()) < 15 or len(note.split()) < 4:
+                st.error(
+                    "Please write a nickname and a description of at least four words "
+                    "(15 characters), so a reviewer can find what you saw."
+                )
                 return
             try:
-                number = create_report(alias, ra, dec, band, kind, note, view, frame)
+                if reports_last_hour() >= MAX_REPORTS_PER_HOUR:
+                    st.error("Too many reports were sent in the last hour. Please try again later.")
+                    return
+                same = [
+                    r for r in list_reports()
+                    if r["alias"] == clean(alias, 40) and r["note"] == clean(note, 600)
+                ]
+                if same:
+                    st.error(f"This report was already published as #{same[0]['number']}.")
+                    return
+                number, code = create_report(alias, ra, dec, band, kind, note, view, frame)
             except Exception as error:
                 st.error(f"The report could not be published. Please try again. Detail: {error}")
                 return
             st.session_state["reports_sent"] = sent + 1
-            st.success(
-                f"Published as report #{number}. You can follow it on the Findings page."
-            )
+            st.session_state["last_claim"] = (number, code)
+            st.rerun()
