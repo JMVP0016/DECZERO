@@ -1,121 +1,182 @@
-﻿import glob
-import os
+# DecZero - NASA Space Apps Challenge 2026 - Planet X and SPHEREx
+# SI disclosure: this file was drafted with an SI tool (Claude, Anthropic)
+# and reviewed and run by the team. See "Use of SI" in README.md.
+"""Minimum version (milestone H1): any coordinate -> real SPHEREx images in time order."""
+
+import re
+
+import astropy.units as u
 import numpy as np
-import matplotlib.pyplot as plt
 import streamlit as st
-from astropy.io import fits
-from astropy.wcs import WCS
+from astropy.coordinates import SkyCoord
+from astropy.time import Time
+from PIL import Image
 
 import datos
-import proceso
 
-st.set_page_config(page_title="DECZERO — SPHEREx Pipeline", layout="wide")
-st.title("DECZERO — Procesamiento y Apilado Científico SPHEREx")
-st.caption("Ingesta de recortes, corrección de luz zodiacal, reproyección Norte-arriba y apilado por épocas.")
+MAX_IMAGES = 24      # live-mode cap agreed after measurement M0
+FOV_ARCMIN = 6.0     # side of each cutout
+DISPLAY_PIXELS = 480
+BANDS = ["D1", "D2", "D3", "D4", "D5", "D6"]
 
-OBJETOS = {
-    "Estrella de Barnard (Movimiento propio)": {"carpeta": "barnard", "ra": 269.45207, "dec": 4.69339},
-    "Epsilon Indi B (Enana marrón cercana)": {"carpeta": "epsilon_indi_b", "ra": 330.84023, "dec": -56.78598},
-    "RW Aurigae (Estrella variable joven)": {"carpeta": "rw_aurigae", "ra": 76.95653, "dec": 30.40144},
-    "R Draconis (Variable tipo Mira)": {"carpeta": "r_draconis", "ra": 248.16364, "dec": 66.75567},
-    "WISE 0855 (Enana marrón ultrafría)": {"carpeta": "wise_0855", "ra": 133.79083, "dec": -7.24389},
-}
+st.set_page_config(page_title="DecZero · SPHEREx viewer", layout="wide")
 
-def cargar_desde_cache_local(carpeta: str, max_n: int) -> list:
-    archivos = sorted(glob.glob(os.path.join("cache", carpeta, "*.fits")))[:max_n]
-    recortes = []
-    for ruta in archivos:
-        with fits.open(ruta) as hdul:
-            header = hdul["IMAGE"].header
-            img = np.array(hdul["IMAGE"].data, dtype=np.float32)
-            zodi = np.array(hdul["ZODI"].data, dtype=np.float32) if "ZODI" in hdul else np.zeros_like(img)
-            if "FLAGS" in hdul:
-                flags = np.array(hdul["FLAGS"].data, dtype=np.int32)
-                bits_malos = datos._bits_mascara(hdul["FLAGS"].header)
-                mascara = (flags & bits_malos) != 0
-            else:
-                mascara = np.zeros(img.shape, dtype=bool)
-            recortes.append({
-                "imagen": img,
-                "fondo": zodi,
-                "mascara": mascara,
-                "wcs": WCS(header),
-                "fecha": float(header.get("MJD-OBS", header.get("MJD-BEG", 0.0))),
-                "detector": f"D{header.get('DETECTOR', '?')}",
-            })
-    return recortes
 
-with st.sidebar:
-    st.header("Configuración")
-    nombre_obj = st.selectbox("Objeto celeste", list(OBJETOS.keys()))
-    info_obj = OBJETOS[nombre_obj]
-    fuente = st.radio("Fuente de datos", ["Caché local (cache/)", "Consulta IRSA en vivo (datos.obtener)"])
-    banda = st.selectbox("Detector / Banda SPHEREx", ["D2", "D1", "D3", "D4", "D5", "D6"])
-    max_n = st.slider("Máximo de recortes", min_value=3, max_value=50, value=15)
-    modo_grupo = st.selectbox("Agrupamiento temporal", ["epoca", "dias"])
-    ejecutar = st.button("Procesar y Apilar", type="primary", use_container_width=True)
+def parse_coordinate(text):
+    """Accept '150.0 +2.2' (degrees) or '08h55m10.8s -7d14m42.5s'. Return (ra, dec) in degrees."""
+    text = text.strip()
+    if not text:
+        raise ValueError("empty")
+    numbers = re.fullmatch(r"([+-]?\d+(?:\.\d+)?)[\s,]+([+-]?\d+(?:\.\d+)?)", text)
+    if numbers:
+        ra, dec = float(numbers.group(1)), float(numbers.group(2))
+    else:
+        coord = SkyCoord(text, unit=(u.hourangle, u.deg), frame="icrs")
+        ra, dec = float(coord.ra.deg), float(coord.dec.deg)
+    if not (0.0 <= ra <= 360.0 and -90.0 <= dec <= 90.0):
+        raise ValueError("out of range")
+    return ra, dec
 
-if ejecutar:
-    with st.spinner("Cargando recortes y ejecutando pipeline..."):
-        if fuente.startswith("Caché"):
-            recortes = cargar_desde_cache_local(info_obj["carpeta"], max_n)
-            ra_centro, dec_centro = info_obj["ra"], info_obj["dec"]
-        else:
-            recortes = datos.obtener(info_obj["ra"], info_obj["dec"], fov=12.0, banda=banda, max_n=max_n)
-            ra_centro, dec_centro = info_obj["ra"], info_obj["dec"]
 
-        if not recortes:
-            st.error("No se encontraron recortes para esta selección.")
-            st.stop()
+def display_limits(cutouts):
+    """One contrast range for the whole sequence, so frames can be compared."""
+    values = []
+    for cutout in cutouts:
+        image = cutout["imagen"].astype(float)
+        values.append((image - np.nanmedian(image)).ravel())
+    values = np.concatenate(values)
+    values = values[np.isfinite(values)]
+    low, high = np.percentile(values, [1.0, 99.5])
+    if high <= low:
+        high = low + 1.0
+    return low, high
 
-        w0 = recortes[0]["wcs"]
-        x_chk, y_chk = w0.world_to_pixel_values(ra_centro, dec_centro)
-        if not (0 <= x_chk < recortes[0]["imagen"].shape[1] and 0 <= y_chk < recortes[0]["imagen"].shape[0]):
-            c = w0.pixel_to_world(58, 58)
-            ra_centro, dec_centro = float(c.ra.deg), float(c.dec.deg)
 
-        imgs_limpias = [
-            proceso.restar_fondo(r["imagen"] - r["fondo"], mascara=r["mascara"])
-            for r in recortes
-        ]
-        wcs_list = [r["wcs"] for r in recortes]
-        mascaras = [r["mascara"] for r in recortes]
-        fechas = [r["fecha"] for r in recortes]
+def to_picture(cutout, low, high):
+    """Raw cutout -> greyscale picture. Only the sky level is subtracted; nothing is aligned."""
+    image = cutout["imagen"].astype(float)
+    image = image - np.nanmedian(image)
+    scaled = np.clip((image - low) / (high - low), 0.0, 1.0)
+    scaled = np.nan_to_num(scaled, nan=0.0)
+    pixels = (255 * np.flipud(scaled)).astype(np.uint8)  # FITS row 0 is the bottom row
+    return Image.fromarray(pixels).resize((DISPLAY_PIXELS, DISPLAY_PIXELS), Image.NEAREST)
 
-        rejilla, forma = proceso.crear_rejilla_norte(ra_centro, dec_centro, tamano_pix=64, escala_arcsec=6.2)
-        alineados, indices_ok = proceso.reproyectar(imgs_limpias, wcs_list, rejilla, forma, mascaras=mascaras)
 
-        if not alineados:
-            st.error("Ningún recorte pudo reproyectarse sobre la rejilla.")
-            st.stop()
+def load(ra, dec, band):
+    """Run the search and the downloads, and keep the outcome in the session."""
+    st.session_state["result"] = None
+    try:
+        with st.spinner("Asking the NASA archive (IRSA) which images cover this position..."):
+            exposures = datos.buscar(ra, dec, banda=band)
+    except Exception as error:
+        st.session_state["error"] = (
+            "The NASA archive (IRSA) is not responding right now. "
+            f"Please try again in a few minutes. Detail: {error}"
+        )
+        return
+    if not exposures:
+        st.session_state["error"] = (
+            f"SPHEREx has no images of this position in detector {band} yet. "
+            "Try another detector or another position."
+        )
+        return
+    with st.spinner(
+        f"Found {len(exposures)} images. Downloading up to {MAX_IMAGES}; "
+        "this can take a few minutes when the archive is busy..."
+    ):
+        cutouts = datos.obtener(ra, dec, fov=FOV_ARCMIN, banda=band, max_n=MAX_IMAGES)
+    if not cutouts:
+        st.session_state["error"] = (
+            "The images exist, but the NASA archive (IRSA) rejected every download. "
+            "It is probably overloaded; please try again in a few minutes."
+        )
+        return
+    st.session_state["error"] = None
+    st.session_state["result"] = {
+        "ra": ra, "dec": dec, "band": band,
+        "available": len(exposures), "cutouts": cutouts,
+    }
 
-        imagen_final = proceso.apilar(alineados)
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Recortes cargados", len(recortes))
-    c2.metric("Alineados válidos", len(alineados))
-    c3.metric("Píxeles NaN finales", int(np.isnan(imagen_final).sum()))
-    c4.metric("Señal máxima (MJy/sr)", f"{float(np.nanmax(imagen_final)):.2f}")
+st.title("SPHEREx sky viewer")
+st.caption(
+    "Type any sky position and see the real images NASA's SPHEREx telescope "
+    "took of it, in time order. Team DecZero · NASA Space Apps Challenge 2026."
+)
 
-    def mostrar_imagen(ax, matriz, titulo):
-        vmin, vmax = np.nanpercentile(matriz, [5, 99.5])
-        im = ax.imshow(matriz, origin="lower", cmap="inferno", vmin=vmin, vmax=vmax)
-        ax.set_title(titulo)
-        plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+params = st.query_params
+start_text = f"{params['ra']} {params['dec']}" if "ra" in params and "dec" in params else ""
+start_band = params.get("band", "D2")
 
-    st.subheader("Comparación Visual: Recorte Individual Crudo vs. Apilado Norte-Arriba")
-    fig, axes = plt.subplots(1, 2, figsize=(11, 4.8))
-    mostrar_imagen(axes[0], recortes[0]["imagen"], f"Crudo individual #0 (MJD {fechas[0]:.1f})")
-    mostrar_imagen(axes[1], imagen_final, f"Apilado Norte-arriba ({len(alineados)} recortes)")
-    st.pyplot(fig)
+with st.form("search"):
+    left, right = st.columns([3, 1])
+    text = left.text_input(
+        "Sky position (RA and Dec)",
+        value=start_text,
+        placeholder="210.80227 54.34895   or   08h55m10.831s -7d14m42.53s",
+    )
+    band = right.selectbox(
+        "Detector (infrared band)",
+        BANDS,
+        index=BANDS.index(start_band) if start_band in BANDS else 1,
+        help="D1 is the bluest (0.75 µm) and D6 the reddest (5 µm).",
+    )
+    submitted = st.form_submit_button("Show images", type="primary")
 
-    fechas_ok = [fechas[i] for i in indices_ok]
-    grupos = proceso.agrupar(fechas_ok, modo=modo_grupo)
-    if len(grupos) >= 2:
-        st.subheader(f"Evolución Temporal ({len(grupos)} épocas detectadas)")
-        cols_ep = st.columns(min(len(grupos), 3))
-        for idx_g, (etiqueta, idxs) in enumerate(list(grupos.items())[:3]):
-            stack_ep = proceso.apilar([alineados[i] for i in idxs])
-            fig_ep, ax_ep = plt.subplots(figsize=(4.5, 4.2))
-            mostrar_imagen(ax_ep, stack_ep, f"{etiqueta} ({len(idxs)} recortes)")
-            cols_ep[idx_g].pyplot(fig_ep)
+first_visit_with_link = bool(start_text) and "result" not in st.session_state
+
+if submitted or first_visit_with_link:
+    try:
+        ra, dec = parse_coordinate(text)
+    except Exception:
+        st.session_state["result"] = None
+        st.session_state["error"] = (
+            "That is not a valid sky position. Write RA and Dec in degrees "
+            "(for example 210.80227 54.34895) or as 08h55m10.8s -7d14m42.5s. "
+            "Dec must be between -90 and +90."
+        )
+    else:
+        st.query_params.update({"ra": f"{ra:.5f}", "dec": f"{dec:.5f}", "band": band})
+        load(ra, dec, band)
+
+if st.session_state.get("error"):
+    st.error(st.session_state["error"])
+
+result = st.session_state.get("result")
+if result:
+    cutouts = result["cutouts"]
+    st.success(
+        f"Showing {len(cutouts)} of {result['available']} images at "
+        f"RA {result['ra']:.5f}°, Dec {result['dec']:.5f}°, detector {result['band']}."
+    )
+
+    if len(cutouts) > 1:
+        index = st.slider("Image", 1, len(cutouts), 1) - 1
+    else:
+        index = 0
+    cutout = cutouts[index]
+    low, high = display_limits(cutouts)
+
+    picture_column, text_column = st.columns([1, 1])
+    picture_column.image(to_picture(cutout, low, high))
+
+    date = Time(cutout["fecha"], format="mjd").strftime("%Y-%m-%d %H:%M UTC")
+    text_column.metric("Date", date)
+    text_column.write(
+        f"**Detector:** {cutout['detector']} · "
+        f"**Wavelength at this position:** {cutout['longitud_onda']:.2f} µm"
+    )
+    text_column.write(
+        f"**Flagged pixels:** {cutout['porcentaje_marcado']:.1f} % · "
+        f"**Data version:** {cutout['version']} · "
+        f"**Field:** {FOV_ARCMIN:.0f} arcmin"
+    )
+    text_column.info(
+        "These are raw images, exactly as they arrive: they are **not aligned**, "
+        "so the sky can look rotated from one image to the next. Each image is also "
+        "taken at a **different wavelength**, so a change in brightness between "
+        "images is not by itself a change over time."
+    )
+
+    dates = [Time(c["fecha"], format="mjd").strftime("%Y-%m-%d") for c in cutouts]
+    st.caption(f"Dates in this sequence: {dates[0]} to {dates[-1]}. Data: NASA/IPAC IRSA, SPHEREx.")
