@@ -15,6 +15,7 @@ from PIL import Image, ImageDraw
 
 import cache_local
 import datos
+import hallazgos
 import proceso
 import tema
 
@@ -324,6 +325,8 @@ if result:
             "taken at a **different wavelength**, so a change in brightness between "
             "images is not by itself a change over time."
         )
+
+    hallazgos.report_form(result["ra"], result["dec"], result["band"], mode, frame["label"])
 
     st.caption(
         f"Field: {FOV_ARCMIN:.0f} arcmin across. Dates in this sequence: "

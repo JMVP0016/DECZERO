@@ -33,6 +33,17 @@ Tests (synthetic data): `pip install pytest` and then `python -m pytest`.
 | `cache/` | The five targets, already processed | David |
 | `validacion.ipynb` | The numbers behind each target | David and Henry |
 
+## Findings board (prototype)
+
+Visitors can report something they noticed in a sequence. Each report is stored as
+a public issue of this repository, so its creation time is an independent record of
+who reported first. Reviewers sign in with a code given by the team; opening a
+report and giving a verdict are both recorded with the reviewer's name. A verdict is
+a reviewer's opinion, not a confirmed discovery.
+
+Setup (Streamlit secrets): `GITHUB_TOKEN` with Issues read/write on this repository,
+and a `[REVIEWERS]` table with one `"code" = "Name, role"` line per reviewer.
+
 ## NASA data
 
 - SPHEREx Level 2 spectral images, NASA/IPAC Infrared Science Archive (IRSA).
@@ -57,7 +68,7 @@ by a team member before being committed.
 
 | Tool | Used for | Files |
 | :--- | :--- | :--- |
-| Claude (Anthropic) | Drafting the repository skeleton, the viewer page, the stored-image reader, the visual theme and help texts, the dependency-check page and the diagnostics page | `app.py`, `cache_local.py`, `tema.py`, `.streamlit/config.toml`, `pages/1_Diagnostics.py`, `pages/2_System_check.py`, `README.md`, `requirements.txt` |
+| Claude (Anthropic) | Drafting the repository skeleton, the viewer page, the stored-image reader, the findings board, the visual theme and help texts, the dependency-check page and the diagnostics page | `app.py`, `cache_local.py`, `tema.py`, `hallazgos.py`, `pages/3_Findings.py`, `.streamlit/config.toml`, `pages/1_Diagnostics.py`, `pages/2_System_check.py`, `README.md`, `requirements.txt` |
 | Claude (Anthropic) | Code review, bug fixes (retries, query cache, flag mask, alignment failures) and synthetic tests | `datos.py`, `proceso.py`, `test_proceso.py`, `sembrar_busquedas.py` |
 
 Each SI-assisted source file also says so in its header comment.
