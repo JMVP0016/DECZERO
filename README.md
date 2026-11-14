@@ -5,6 +5,8 @@ NASA Space Apps Challenge 2026 · Challenge: **Planet X and SPHEREx** · Team De
 A public web page, with no sign-up, where anyone types sky coordinates (RA/Dec)
 and sees the real SPHEREx images of that area in time order.
 
+Live app: https://deczero-bggaafdwwenl9wrdvzjlwn.streamlit.app/
+
 > Work in progress. This repository was created on Saturday, November 14, 2026,
 > at the start of the hackathon.
 
@@ -31,12 +33,16 @@ streamlit run app.py
 
 ## NASA data
 
-- SPHEREx Quick Release data, NASA/IPAC Infrared Science Archive (IRSA).
+- SPHEREx Level 2 spectral images, NASA/IPAC Infrared Science Archive (IRSA).
 
 ## References
 
 To be completed during the hackathon: every external code, text, image and
 tool used, even if open source or freely available.
+
+- IRSA tutorial "Download a collection of SPHEREx Spectral Image cutouts"
+  (Caltech/IPAC-IRSA), source of the position query and cutout URL pattern:
+  https://caltech-ipac.github.io/irsa-tutorials/spherex-cutouts
 
 ## Use of SI
 
@@ -45,7 +51,7 @@ by a team member before being committed.
 
 | Tool | Used for | Files |
 | :--- | :--- | :--- |
-| Claude (Anthropic) | Drafting the repository skeleton and the dependency-check page | `app.py`, `README.md`, `requirements.txt` |
+| Claude (Anthropic) | Drafting the repository skeleton, the dependency-check page and the diagnostics page | `app.py`, `pages/1_Diagnostics.py`, `README.md`, `requirements.txt` |
 
 Each SI-assisted source file also says so in its header comment.
 
