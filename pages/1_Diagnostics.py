@@ -9,11 +9,27 @@
 
 import io
 import time
+import urllib.error
 import urllib.request
 
 import streamlit as st
 from astropy.io import fits
 from astroquery.ipac.irsa import Irsa
+
+RETRY_WAITS = [2, 5, 10]  # seconds to wait after each failed attempt
+
+
+def download(url, entry):
+    """Download one cutout, retrying when IRSA answers 503 (server busy)."""
+    for attempt, wait in enumerate(RETRY_WAITS + [None], start=1):
+        entry["attempts"] = attempt
+        try:
+            return urllib.request.urlopen(url, timeout=120).read()
+        except urllib.error.HTTPError as error:
+            if error.code != 503 or wait is None:
+                raise
+            time.sleep(wait)
+
 
 st.set_page_config(page_title="Diagnostics · DecZero", layout="wide")
 st.title("Diagnostics (M0)")
@@ -62,7 +78,7 @@ if st.button("Run measurement", type="primary"):
         entry = {"mjd": float(row["time_bounds_lower"])}
         start = time.time()
         try:
-            data = urllib.request.urlopen(row["uri"], timeout=120).read()
+            data = download(row["uri"], entry)
             entry["seconds"] = round(time.time() - start, 2)
             entry["MB"] = round(len(data) / 1e6, 2)
             with fits.open(io.BytesIO(data)) as hdus:
