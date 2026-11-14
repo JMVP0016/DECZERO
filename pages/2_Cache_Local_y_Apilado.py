@@ -45,6 +45,16 @@ def cargar_desde_cache_local(carpeta: str, max_n: int) -> list:
             })
     return recortes
 
+def agrupar_epocas_semestrales(fechas: list, brecha_dias: float = 120.0) -> list:
+    orden = sorted(range(len(fechas)), key=lambda i: fechas[i])
+    grupos = [[orden[0]]]
+    for idx in orden[1:]:
+        if fechas[idx] - fechas[grupos[-1][-1]] >= brecha_dias:
+            grupos.append([idx])
+        else:
+            grupos[-1].append(idx)
+    return grupos
+
 with st.sidebar:
     st.header("Configuración")
     nombre_obj = st.selectbox("Objeto celeste", list(OBJETOS.keys()))
@@ -110,16 +120,22 @@ if ejecutar:
     st.pyplot(fig)
 
     fechas_ok = [fechas[i] for i in indices_ok]
-    grupos = proceso.agrupar(fechas_ok, modo=modo_grupo)
+    if modo_grupo == "epoca":
+        grupos = agrupar_epocas_semestrales(fechas_ok, brecha_dias=120.0)
+        nombre_unidad = "Época"
+        titulo_unidad = "épocas"
+    else:
+        grupos = proceso.agrupar(fechas_ok, modo="dias")
+        nombre_unidad = "Ventana"
+        titulo_unidad = "ventanas diarias"
+
     if len(grupos) >= 2:
-        etiqueta_tipo = "épocas" if modo_grupo == "epoca" else "ventanas diarias"
-        st.subheader(f"Evolución Temporal ({len(grupos)} {etiqueta_tipo} detectadas)")
+        st.subheader(f"Evolución Temporal ({len(grupos)} {titulo_unidad} detectadas)")
         for inicio in range(0, len(grupos), 3):
             cols_ep = st.columns(3)
             for col_i, idxs in enumerate(grupos[inicio:inicio + 3]):
                 idx_g = inicio + col_i
                 stack_ep = proceso.apilar([alineados[i] for i in idxs])
                 fig_ep, ax_ep = plt.subplots(figsize=(4.5, 4.2))
-                mostrar_imagen(ax_ep, stack_ep, f"{'Época' if modo_grupo == 'epoca' else 'Ventana'} {idx_g + 1} ({len(idxs)} recortes)")
+                mostrar_imagen(ax_ep, stack_ep, f"{nombre_unidad} {idx_g + 1} ({len(idxs)} recortes)")
                 cols_ep[col_i].pyplot(fig_ep)
-
