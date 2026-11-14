@@ -6,7 +6,9 @@
 # adapted from the official IRSA tutorial "Download a collection of SPHEREx
 # Spectral Image cutouts": https://caltech-ipac.github.io/irsa-tutorials/spherex-cutouts
 import concurrent.futures
+import glob
 import hashlib
+import json
 import http.client
 import logging
 import os
@@ -66,11 +68,91 @@ def _normalizar_banda(banda: str) -> str:
     return banda
 
 
-def buscar(ra: float, dec: float, banda: str = None) -> list:
+DIR_SEMILLAS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache", "busquedas")
+RADIO_SEMILLA_DEG = 0.15  # una semilla sirve para posiciones a menos de 9 minutos de arco
+_SEMILLAS = None
+
+
+def _asignar_epocas(exposiciones: list) -> list:
+    """Numera las épocas: empieza una nueva cuando pasan más de 30 días sin observaciones."""
+    epoca, anterior = 0, None
+    salida = []
+    for exp in sorted(exposiciones, key=lambda e: e["fecha"]):
+        if anterior is not None and (exp["fecha"] - anterior) > 30.0:
+            epoca += 1
+        anterior = exp["fecha"]
+        salida.append({**exp, "epoca": epoca})
+    return salida
+
+
+def _buscar_en_semillas(ra: float, dec: float, banda: str = None):
+    """
+    Búsquedas ya guardadas en el repositorio (cache/busquedas/*.json), creadas con
+    sembrar_busquedas.py. Permiten servir los objetivos del reto aunque IRSA esté caído.
+    Devuelve None si ninguna semilla está cerca de (ra, dec).
+    """
+    global _SEMILLAS
+    if _SEMILLAS is None:
+        _SEMILLAS = []
+        for ruta in sorted(glob.glob(os.path.join(DIR_SEMILLAS, "*.json"))):
+            with open(ruta, encoding="utf-8") as f:
+                _SEMILLAS.append(json.load(f))
+    if not _SEMILLAS:
+        return None
+
+    aqui = SkyCoord(ra=float(ra) * u.degree, dec=float(dec) * u.degree, frame="icrs")
+    for semilla in _SEMILLAS:
+        centro = SkyCoord(ra=semilla["ra"] * u.degree, dec=semilla["dec"] * u.degree, frame="icrs")
+        if aqui.separation(centro).deg <= RADIO_SEMILLA_DEG:
+            exposiciones = semilla["exposiciones"]
+            if banda:
+                detector = _normalizar_banda(banda).replace("SPHEREx-", "")
+                exposiciones = [e for e in exposiciones if e["detector"] == detector]
+            return _asignar_epocas(exposiciones)
+    return None
+
+
+COLECCIONES_SIA = ["spherex_dr1", "spherex_qr3"]
+
+
+def _buscar_sia(ra: float, dec: float, banda: str = None) -> list:
+    """
+    Búsqueda por el servicio SIA de IRSA: responde en segundos, mientras que la
+    consulta TAP tarda minutos. Devuelve la misma lista que buscar().
+    """
+    coord = SkyCoord(ra=float(ra) * u.degree, dec=float(dec) * u.degree, frame="icrs")
+    nombre_banda = _normalizar_banda(banda) if banda else None
+    vistos = {}
+    for coleccion in COLECCIONES_SIA:
+        tabla = Irsa.query_sia(pos=(coord, 1 * u.arcsec), collection=coleccion)
+        for row in tabla:
+            url = str(row["access_url"])
+            bandpass = str(row["energy_bandpassname"])
+            if "/level2/" not in url or not url.endswith(".fits"):
+                continue
+            if not url.startswith(PREFIJO_IRSA):
+                continue
+            if nombre_banda and bandpass != nombre_banda:
+                continue
+            # El mismo archivo puede salir en dos colecciones: se queda una vez.
+            vistos.setdefault(url.rsplit("/", 1)[-1], {
+                "fecha": float(row["t_min"]),
+                "detector": bandpass.replace("SPHEREx-", ""),
+                "url": url,
+            })
+    return _asignar_epocas(list(vistos.values()))
+
+
+def buscar(ra: float, dec: float, banda: str = None, usar_semillas: bool = True) -> list:
     """
     Pregunta a IRSA qué exposiciones de SPHEREx cubren (ra, dec).
     Devuelve lista ordenada por fecha con: 'fecha', 'detector', 'url', 'epoca'.
     """
+    if usar_semillas:
+        guardado = _buscar_en_semillas(ra, dec, banda)
+        if guardado is not None:
+            return guardado
+
     os.makedirs(DIR_CACHE_LOCAL, exist_ok=True)
     clave = hashlib.md5(f"{float(ra):.5f}_{float(dec):.5f}_{banda}".encode()).hexdigest()
     ruta_busqueda = os.path.join(DIR_CACHE_LOCAL, f"busqueda_{clave}.pkl")
@@ -79,6 +161,17 @@ def buscar(ra: float, dec: float, banda: str = None) -> list:
         if edad_horas < HORAS_CACHE_BUSQUEDA:
             with open(ruta_busqueda, "rb") as f:
                 return pickle.load(f)
+
+    # Primero SIA (segundos). Si falla o no devuelve nada, la consulta TAP (minutos).
+    try:
+        exposiciones = _buscar_sia(ra, dec, banda)
+    except Exception as error:
+        print(f"[Aviso] SIA falló, se usa TAP: {error}")
+        exposiciones = []
+    if exposiciones:
+        with open(ruta_busqueda, "wb") as f:
+            pickle.dump(exposiciones, f, protocol=pickle.HIGHEST_PROTOCOL)
+        return exposiciones
 
     filtro_banda = ""
     if banda:
@@ -300,6 +393,16 @@ def _repartir_entre_epocas(exposiciones: list, max_n: int) -> list:
         for idx in indices:
             if len(seleccion) < max_n:
                 seleccion.append(lista[idx])
+
+    # Si alguna época tenía menos imágenes que su cupo, el sobrante se reparte
+    # entre las exposiciones que quedaron fuera, espaciadas en el tiempo.
+    faltan = max_n - len(seleccion)
+    if faltan > 0:
+        elegidas = {exp["url"] for exp in seleccion}
+        resto = [exp for exp in exposiciones if exp["url"] not in elegidas]
+        if resto:
+            indices = np.linspace(0, len(resto) - 1, min(len(resto), faltan), dtype=int)
+            seleccion.extend(resto[i] for i in sorted(set(indices.tolist())))
 
     seleccion.sort(key=lambda x: x["fecha"])
     return seleccion
