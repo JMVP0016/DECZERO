@@ -36,6 +36,8 @@ Tests (synthetic data): `pip install pytest` and then `python -m pytest`.
 ## NASA data
 
 - SPHEREx Level 2 spectral images, NASA/IPAC Infrared Science Archive (IRSA).
+  The position search uses the IRSA TAP service; the pixels are read from the
+  public IRSA copy on AWS Open Data (`s3://nasa-irsa-spherex`).
 
 ## References
 

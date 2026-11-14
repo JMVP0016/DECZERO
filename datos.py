@@ -123,11 +123,93 @@ def buscar(ra: float, dec: float, banda: str = None) -> list:
     return exposiciones
 
 
+PREFIJO_IRSA = "https://irsa.ipac.caltech.edu/ibe/data/spherex/"
+PREFIJO_AWS = "https://nasa-irsa-spherex.s3.amazonaws.com/"
+ESCALA_PIXEL_ARCSEC = 6.15  # tamaño nominal del píxel de SPHEREx
+
+
+def _url_aws(url: str) -> str:
+    """Convierte la URL de IRSA en la del mismo archivo en el almacenamiento público de AWS."""
+    base = url.split("?")[0]
+    if not base.startswith(PREFIJO_IRSA):
+        raise ValueError(f"URL no reconocida: {base}")
+    return PREFIJO_AWS + base[len(PREFIJO_IRSA):]
+
+
+def _bajar_aws(url: str, ra: float, dec: float, fov: float) -> dict:
+    """
+    Lee de AWS solo el trozo de imagen alrededor de (ra, dec), sin pasar por IRSA
+    y sin descargar la extensión EPSF (el 96 % del peso de un recorte de IRSA).
+    """
+    url_s3 = _url_aws(url)
+    coord = SkyCoord(ra=float(ra) * u.degree, dec=float(dec) * u.degree, frame="icrs")
+    medio = int(np.ceil(float(fov) * 60.0 / ESCALA_PIXEL_ARCSEC / 2.0))
+
+    with fits.open(url_s3, use_fsspec=True,
+                   fsspec_kwargs={"block_size": 1_000_000, "cache_type": "bytes"}) as hdulist:
+        header = hdulist["IMAGE"].header
+        version = hdulist[0].header.get("VERSION", "")
+
+        wcs_completo = WCS(header)
+        x, y = wcs_completo.world_to_pixel(coord)
+        x, y = float(x), float(y)
+        ny, nx = int(header["NAXIS2"]), int(header["NAXIS1"])
+        if not (0 <= x < nx and 0 <= y < ny):
+            raise ValueError("La coordenada cae fuera de esta exposición.")
+
+        spectral_wcs = WCS(header, fobj=hdulist, key="W")
+        spectral_wcs.sip = None
+        wavelength, _ = spectral_wcs.pixel_to_world(x, y)
+        wl_um = float(wavelength.to(u.micrometer).value)
+
+        xi, yi = int(round(x)), int(round(y))
+        y0, y1 = max(0, yi - medio), min(ny, yi + medio)
+        x0, x1 = max(0, xi - medio), min(nx, xi + medio)
+        zona = (slice(y0, y1), slice(x0, x1))
+
+        imagen = np.array(hdulist["IMAGE"].section[zona], dtype=np.float32)
+        flags = np.array(hdulist["FLAGS"].section[zona], dtype=np.int32)
+        varianza = np.array(hdulist["VARIANCE"].section[zona], dtype=np.float32)
+        fondo = np.array(hdulist["ZODI"].section[zona], dtype=np.float32)
+        bits = _bits_mascara(hdulist["FLAGS"].header)
+        detector = f"D{header.get('DETECTOR', '?')}"
+        fecha = float(header.get("MJD-OBS", header.get("MJD-BEG", 0.0)))
+
+    mascara = (flags & bits) != 0
+    return {
+        "imagen": imagen,
+        "varianza": varianza,
+        "indicadores": flags,
+        "mascara": mascara,
+        "porcentaje_marcado": 100.0 * float(np.sum(mascara)) / float(mascara.size),
+        "fondo": fondo,
+        "wcs": wcs_completo[zona],
+        "coordenadas": (float(ra), float(dec)),
+        "fecha": fecha,
+        "detector": detector,
+        "longitud_onda": wl_um,
+        "version": version,
+        "url": url_s3,
+        "origen": "AWS",
+    }
+
+
 def bajar(url: str, ra: float, dec: float, fov: float = 12.0) -> dict:
     """
     Pide un recorte centrado en (ra, dec) con tamaño fov (en minutos de arco).
     Devuelve solo lo necesario en memoria y cierra el archivo FITS.
+    Primero lo intenta por AWS (rápido y sin la saturación de IRSA); si falla,
+    usa el servicio de recortes de IRSA con reintentos.
     """
+    for intento in (1, 2):
+        try:
+            return _bajar_aws(url, ra, dec, fov)
+        except ValueError:
+            raise  # la coordenada no está en la imagen: reintentar no ayuda
+        except Exception as e:
+            print(f"[Aviso] AWS falló (intento {intento}): {e}")
+            time.sleep(2)
+
     size_deg = float(fov) / 60.0  # Convertir minutos de arco a grados
     if "?center=" in url:
         url_cutout = url
@@ -175,6 +257,7 @@ def bajar(url: str, ra: float, dec: float, fov: float = 12.0) -> dict:
                     "longitud_onda": wl_um,
                     "version": version,
                     "url": url_cutout,
+                    "origen": "IRSA",
                 }
         except (TimeoutError, OSError, http.client.HTTPException) as e:
             # Solo se reintentan fallos de red (incluye el 503 de IRSA saturado).
