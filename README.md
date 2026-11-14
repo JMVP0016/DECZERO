@@ -19,6 +19,8 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
+Tests (synthetic data): `pip install pytest` and then `python -m pytest`.
+
 ## Files and owners
 
 | File | What it does | Owner |
@@ -52,6 +54,7 @@ by a team member before being committed.
 | Tool | Used for | Files |
 | :--- | :--- | :--- |
 | Claude (Anthropic) | Drafting the repository skeleton, the dependency-check page and the diagnostics page | `app.py`, `pages/1_Diagnostics.py`, `README.md`, `requirements.txt` |
+| Claude (Anthropic) | Code review, bug fixes (retries, query cache, flag mask, alignment failures) and synthetic tests | `datos.py`, `proceso.py`, `test_proceso.py` |
 
 Each SI-assisted source file also says so in its header comment.
 
