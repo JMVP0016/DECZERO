@@ -114,8 +114,9 @@ if ejecutar:
     if len(grupos) >= 2:
         st.subheader(f"Evolución Temporal ({len(grupos)} épocas detectadas)")
         cols_ep = st.columns(min(len(grupos), 3))
-        for idx_g, (etiqueta, idxs) in enumerate(list(grupos.items())[:3]):
+        for idx_g, idxs in enumerate(grupos[:3]):
             stack_ep = proceso.apilar([alineados[i] for i in idxs])
             fig_ep, ax_ep = plt.subplots(figsize=(4.5, 4.2))
-            mostrar_imagen(ax_ep, stack_ep, f"{etiqueta} ({len(idxs)} recortes)")
+            mostrar_imagen(ax_ep, stack_ep, f"Época {idx_g + 1} ({len(idxs)} recortes)")
             cols_ep[idx_g].pyplot(fig_ep)
+
