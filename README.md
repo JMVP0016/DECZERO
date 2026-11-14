@@ -57,6 +57,10 @@ and a `[REVIEWERS]` table with one `"code" = "Name, role"` line per reviewer.
 To be completed during the hackathon: every external code, text, image and
 tool used, even if open source or freely available.
 
+- three.js r160 (MIT licence), used for the 3D scene of the hero, loaded from the
+  jsDelivr CDN: https://threejs.org
+- Montserrat and Inter typefaces (SIL Open Font License), from Google Fonts.
+- SPHEREx mission facts shown in the hero: https://science.nasa.gov/mission/spherex/
 - IRSA tutorial "Download a collection of SPHEREx Spectral Image cutouts"
   (Caltech/IPAC-IRSA), source of the position query and cutout URL pattern:
   https://caltech-ipac.github.io/irsa-tutorials/spherex-cutouts

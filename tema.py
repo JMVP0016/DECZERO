@@ -248,11 +248,224 @@ FACTS = [
 ]
 
 
-def portada():
-    """Hero: who we are, the name of the project and one line that says what it does."""
-    facts = "".join(
+HERO_3D = True          # False shows the plain CSS hero (no WebGL, no external script)
+HERO_3D_HEIGHT = 340    # pixels of the embedded scene
+
+# 3D hero. The text is normal HTML; behind it, a WebGL scene drawn with three.js
+# (https://threejs.org, MIT licence) shows a rotating planet, stars with depth and a
+# simple model of SPHEREx. If WebGL or the script is not available, the CSS planet
+# and stars stay visible, so the hero never appears empty.
+HERO_3D_TEMPLATE = """
+<!DOCTYPE html><html><head><meta charset="utf-8">
+__CSS__
+<style>
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+  .dz-hero { height: 100%; box-sizing: border-box; margin: 0; }
+  #dz-scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block;
+              opacity: 0; transition: opacity 0.8s ease; z-index: 1; }
+  .dz-3d-on #dz-scene { opacity: 1; }
+  .dz-3d-on .dz-stars, .dz-3d-on .dz-planet { display: none; }
+  @media (max-width: 640px) { .dz-sub { display: none; } .dz-facts { gap: 0.4rem 1.4rem; }
+    .dz-kicker { font-size: 0.62rem; letter-spacing: 0.1em; } }
+</style></head>
+<body>
+<div class="dz-hero" id="dz-hero">
+  <div class="dz-stars"></div>
+  <div class="dz-planet"></div>
+  <canvas id="dz-scene"></canvas>
+  <div class="dz-hero-inner">
+    <div class="dz-kicker">Team DecZero · NASA Space Apps Challenge 2026</div>
+    <div class="dz-brand">__LOGO__<div class="dz-title">__NAME__</div></div>
+    <p class="dz-tagline">__TAGLINE__</p>
+    <p class="dz-sub">Real infrared images from NASA's SPHEREx space telescope,
+    for any position in the sky, in time order.</p>
+  </div>
+  <div class="dz-facts">__FACTS__</div>
+</div>
+<script type="module">
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+
+const hero = document.getElementById("dz-hero");
+const canvas = document.getElementById("dz-scene");
+const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(35, 2, 0.1, 400);
+camera.position.set(0, 0, 10);
+
+// ---- stars with depth
+const starCount = 1500, starPos = new Float32Array(starCount * 3);
+for (let i = 0; i < starCount; i++) {
+  starPos[3 * i] = (Math.random() - 0.5) * 60;
+  starPos[3 * i + 1] = (Math.random() - 0.35) * 22;
+  starPos[3 * i + 2] = -4 - Math.random() * 50;
+}
+const starGeo = new THREE.BufferGeometry();
+starGeo.setAttribute("position", new THREE.BufferAttribute(starPos, 3));
+const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({
+  color: 0xdfeeff, size: 0.11, sizeAttenuation: true, transparent: true, opacity: 0.9 }));
+scene.add(stars);
+
+// ---- planet: procedural surface, lit from behind the horizon
+const R = 30, horizonY = -1.25;
+const planet = new THREE.Mesh(
+  new THREE.SphereGeometry(R, 128, 96),
+  new THREE.ShaderMaterial({
+    uniforms: { uTime: { value: 0 } },
+    vertexShader: `
+      varying vec3 vPos; varying vec3 vNormalW; varying vec3 vViewDir;
+      void main() {
+        vPos = position;
+        vec4 world = modelMatrix * vec4(position, 1.0);
+        vNormalW = normalize(mat3(modelMatrix) * normal);
+        vViewDir = normalize(cameraPosition - world.xyz);
+        gl_Position = projectionMatrix * viewMatrix * world;
+      }`,
+    fragmentShader: `
+      varying vec3 vPos; varying vec3 vNormalW; varying vec3 vViewDir;
+      float hash(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
+      float noise(vec3 p) {
+        vec3 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(mix(hash(i), hash(i + vec3(1,0,0)), f.x),
+                       mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
+                   mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x),
+                       mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y), f.z);
+      }
+      float fbm(vec3 p) { float v = 0.0, a = 0.5;
+        for (int i = 0; i < 5; i++) { v += a * noise(p); p *= 2.03; a *= 0.5; } return v; }
+      void main() {
+        float n = fbm(vPos * 0.55);
+        vec3 deep = vec3(0.027, 0.055, 0.105), mid = vec3(0.055, 0.150, 0.300);
+        vec3 col = mix(deep, mid, smoothstep(0.35, 0.75, n));
+        col += vec3(0.28, 0.88, 0.80) * 0.10 * smoothstep(0.62, 0.9, n);   // faint teal veins
+        vec3 sun = normalize(vec3(0.0, 0.55, -1.0));                        // light from behind the limb
+        float lit = clamp(dot(vNormalW, sun) * 1.6 + 0.25, 0.0, 1.0);
+        col *= 0.35 + 0.9 * lit;
+        float rim = pow(1.0 - clamp(dot(vNormalW, vViewDir), 0.0, 1.0), 7.0);
+        col += vec3(0.28, 0.88, 0.80) * rim * 0.55 + vec3(0.18, 0.50, 0.93) * rim * 0.35;
+        gl_FragColor = vec4(col, 1.0);
+      }`
+  }));
+planet.position.set(0, horizonY - R, 0);
+planet.rotation.z = 0.35;
+scene.add(planet);
+
+// ---- atmosphere halo
+const halo = new THREE.Mesh(
+  new THREE.SphereGeometry(R * 1.018, 96, 64),
+  new THREE.ShaderMaterial({
+    side: THREE.BackSide, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
+    vertexShader: `varying vec3 vN; void main() { vN = normalize(normalMatrix * normal);
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `varying vec3 vN; void main() {
+      float i = pow(clamp(0.62 - dot(vN, vec3(0.0, 0.0, 1.0)), 0.0, 1.0), 4.5);
+      gl_FragColor = vec4(mix(vec3(0.18, 0.50, 0.93), vec3(0.28, 0.88, 0.80), 0.5) * i * 2.4, i); }`
+  }));
+halo.position.copy(planet.position);
+scene.add(halo);
+
+// ---- SPHEREx: three nested cone shields, body and solar panel, in line-art style
+const craft = new THREE.Group();
+const dark = new THREE.MeshStandardMaterial({ color: 0x1c2f4f, emissive: 0x0b1626, metalness: 0.3, roughness: 0.5, side: THREE.DoubleSide });
+const ringMat = new THREE.MeshBasicMaterial({ color: 0xf5f6f8 });
+function ring(radius, y) {
+  const r = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.022, 8, 64), ringMat);
+  r.rotation.x = Math.PI / 2; r.position.y = y; craft.add(r);
+}
+const white = new THREE.LineBasicMaterial({ color: 0xf5f6f8 });
+function part(geometry, material, x, y, z) {
+  const mesh = new THREE.Mesh(geometry, material); mesh.position.set(x, y, z); craft.add(mesh);
+  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geometry, 25), white);
+  edges.position.copy(mesh.position); craft.add(edges); return mesh;
+}
+[[1.00, 0.42, 1.30], [0.82, 0.36, 1.18], [0.64, 0.30, 1.06]].forEach(([top, bottom, h]) => {
+  part(new THREE.CylinderGeometry(top, bottom, h, 48, 1, true), dark, 0, h / 2, 0);
+  ring(top, h);                                       // bright rim of each shield
+});
+const mirror = new THREE.Mesh(new THREE.CircleGeometry(0.34, 40),
+  new THREE.MeshBasicMaterial({ color: 0x48e0cb, transparent: true, opacity: 0.85, side: THREE.DoubleSide }));
+mirror.rotation.x = -Math.PI / 2; mirror.position.y = 0.42; craft.add(mirror);
+part(new THREE.BoxGeometry(0.62, 0.46, 0.62), dark, 0, -0.23, 0);
+part(new THREE.BoxGeometry(1.0, 0.05, 0.56),
+  new THREE.MeshStandardMaterial({ color: 0x48e0cb, emissive: 0x1f7a6e, metalness: 0.2, roughness: 0.4 }), 0.82, -0.2, 0);
+craft.rotation.set(0.35, 0.4, -0.55);
+scene.add(craft);
+
+scene.add(new THREE.AmbientLight(0x8fa8d0, 0.9));
+const key = new THREE.DirectionalLight(0xffffff, 1.6); key.position.set(-4, 6, 8); scene.add(key);
+const teal = new THREE.PointLight(0x48e0cb, 30, 40); teal.position.set(6, -1, 4); scene.add(teal);
+
+// ---- layout, pointer and animation
+let wide = true;
+function resize() {
+  const w = hero.clientWidth, h = hero.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+  wide = w / h > 1.9;
+  craft.scale.setScalar(wide ? 0.78 : 0.42);
+}
+window.addEventListener("resize", resize); resize();
+
+const pointer = { x: 0, y: 0 };
+window.addEventListener("pointermove", (e) => {
+  pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+  pointer.y = (e.clientY / window.innerHeight) * 2 - 1;
+});
+
+function frame(ms) {
+  const t = ms / 1000;
+  planet.material.uniforms.uTime.value = t;
+  planet.rotation.y = t * 0.012;                       // the planet turns slowly
+  stars.rotation.z = t * 0.004;
+  const half = Math.tan(THREE.MathUtils.degToRad(17.5)) * 10 * camera.aspect;
+  const baseX = wide ? half * 0.6 : half * 0.42;
+  craft.position.set(baseX + Math.sin(t * 0.25) * 0.3, (wide ? 0.35 : 1.35) + Math.sin(t * 0.6) * 0.1, 1.2);
+  craft.rotation.y = 0.4 + t * 0.22;                   // SPHEREx turns on its axis
+  camera.position.x += (pointer.x * 0.7 - camera.position.x) * 0.04;
+  camera.position.y += (-pointer.y * 0.35 - camera.position.y) * 0.04;
+  camera.lookAt(0, 0, 0);
+  renderer.render(scene, camera);
+  if (!still) requestAnimationFrame(frame);
+}
+frame(0);
+document.body.classList.add("dz-3d-on");               // only now hide the CSS fallback
+if (!still) requestAnimationFrame(frame);
+</script>
+</body></html>
+"""
+
+
+def _embed(html, height):
+    """Embed an HTML document in its own frame, with whichever function this Streamlit has."""
+    if hasattr(st, "iframe"):          # current Streamlit
+        st.iframe(html, height=height)
+    else:                              # older Streamlit
+        import streamlit.components.v1 as components
+        components.html(html, height=height, scrolling=False)
+
+
+def _facts_html():
+    return "".join(
         f'<div class="dz-fact"><b>{big}</b><span>{small}</span></div>' for big, small in FACTS
     )
+
+
+def portada():
+    """Hero: who we are, the name of the project and one line that says what it does."""
+    if HERO_3D:
+        html = (
+            HERO_3D_TEMPLATE
+            .replace("__CSS__", CSS)
+            .replace("__LOGO__", LOGO_SVG)
+            .replace("__NAME__", PROJECT_NAME)
+            .replace("__TAGLINE__", TAGLINE)
+            .replace("__FACTS__", _facts_html())
+        )
+        _embed(html, HERO_3D_HEIGHT)
+        return
+    facts = _facts_html()
     st.markdown(
         f"""
         <div class="dz-hero">
