@@ -120,3 +120,4 @@ if ejecutar:
             mostrar_imagen(ax_ep, stack_ep, f"Época {idx_g + 1} ({len(idxs)} recortes)")
             cols_ep[idx_g].pyplot(fig_ep)
 
+
