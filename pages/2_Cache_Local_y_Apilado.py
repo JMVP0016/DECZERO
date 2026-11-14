@@ -112,12 +112,14 @@ if ejecutar:
     fechas_ok = [fechas[i] for i in indices_ok]
     grupos = proceso.agrupar(fechas_ok, modo=modo_grupo)
     if len(grupos) >= 2:
-        st.subheader(f"Evolución Temporal ({len(grupos)} épocas detectadas)")
+        etiqueta_tipo = "épocas" if modo_grupo == "epoca" else "ventanas diarias"
+        st.subheader(f"Evolución Temporal ({len(grupos)} {etiqueta_tipo} detectadas)")
         for inicio in range(0, len(grupos), 3):
             cols_ep = st.columns(3)
             for col_i, idxs in enumerate(grupos[inicio:inicio + 3]):
                 idx_g = inicio + col_i
                 stack_ep = proceso.apilar([alineados[i] for i in idxs])
                 fig_ep, ax_ep = plt.subplots(figsize=(4.5, 4.2))
-                mostrar_imagen(ax_ep, stack_ep, f"Época {idx_g + 1} ({len(idxs)} recortes)")
+                mostrar_imagen(ax_ep, stack_ep, f"{'Época' if modo_grupo == 'epoca' else 'Ventana'} {idx_g + 1} ({len(idxs)} recortes)")
                 cols_ep[col_i].pyplot(fig_ep)
+
