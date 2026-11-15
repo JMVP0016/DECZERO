@@ -243,12 +243,12 @@ if result:
     )
     view_column, field_column, ring_column, report_column = st.columns(
         [4.5, 1.1, 1.5, 1.4], vertical_alignment="bottom")
-    field = field_column.selectbox(
+    field = field_column.container(key="opt_field").selectbox(
         "Field of view", list(FIELDS),
         help="Side of the patch of sky shown. A smaller field zooms in on the centre.",
     )
     mode = view_column.radio("View", [MODE_STACKED, MODE_SINGLE], horizontal=True)
-    ring = ring_column.checkbox("Show the ring", value=True,
+    ring = ring_column.container(key="opt_ring").checkbox("Show the ring", value=True,
                                 help="The amber ring marks the centre of the view: the position asked for, or the team's position for one of the five targets.")
     # a second report button, visible without scrolling; the window opens further down
     report_now = hallazgos.can_report() and report_column.button(
@@ -273,7 +273,8 @@ if result:
         frame_column, speed_column, blink_column, difference_column = st.columns(
             [1.8, 1.1, 1.2, 1.2], vertical_alignment="bottom")
         index = frame_column.slider("Frame (still picture)", 1, len(frames), 1) - 1
-        speed = speed_column.select_slider("Animation speed", list(SPEEDS), value="Medium")
+        speed = speed_column.container(key="opt_speed").select_slider(
+            "Animation speed", list(SPEEDS), value="Medium")
         aligned_view = mode == MODE_STACKED
         blink = blink_column.checkbox(
             "First and last date only", value=False, disabled=not aligned_view,

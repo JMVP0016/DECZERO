@@ -334,6 +334,11 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 .stApp p.dz-expect { font-size: 0.92rem !important; color: #C9D1E0; margin: 0 0 0.5rem 0; }
 .stApp p.dz-expect b { color: #F5F7FA; }
 [data-testid="stDialog"] [data-testid="stImage"] img { animation: none; }
+/* phones: only the main controls stay, so the pictures come sooner */
+@media (max-width: 640px) {
+  [data-testid="stColumn"]:has(.st-key-opt_field), [data-testid="stColumn"]:has(.st-key-opt_ring),
+  [data-testid="stColumn"]:has(.st-key-opt_speed), [data-testid="stColumn"]:has(.st-key-report_open_top) { display: none !important; }
+}
 /* larger section titles */
 .dz-section { margin-top: 3.6rem; }
 .dz-section b { font-size: clamp(1.25rem, 2.2vw, 1.7rem); letter-spacing: 0.06em; }
@@ -649,7 +654,7 @@ function resize() {
   renderer.setSize(w, h, false);
   camera.aspect = w / h; camera.updateProjectionMatrix();
   wide = w / h > 1.9;
-  craft.scale.setScalar(wide ? 0.78 : 0.42);
+  craft.scale.setScalar(wide ? 0.78 : 0.36);
 }
 window.addEventListener("resize", resize); resize();
 
@@ -666,8 +671,8 @@ function frame(ms) {
   stars.rotation.z = t * 0.004;
   const half = Math.tan(THREE.MathUtils.degToRad(17.5)) * 10 * camera.aspect;
   // wide screens: to the right of the title; phones: low on the right, clear of the text
-  const baseX = wide ? half * 0.6 : half * 0.52;
-  craft.position.set(baseX + Math.sin(t * 0.25) * (wide ? 0.3 : 0.12), (wide ? 0.35 : -1.55) + Math.sin(t * 0.6) * 0.1, 1.2);
+  const baseX = wide ? half * 0.6 : half * 0.66;
+  craft.position.set(baseX + Math.sin(t * 0.25) * (wide ? 0.3 : 0.12), (wide ? 0.35 : -0.95) + Math.sin(t * 0.6) * (wide ? 0.1 : 0.05), 1.2);
   craft.rotation.y = 0.4 + t * 0.22;                   // SPHEREx turns on its axis
   camera.position.x += (pointer.x * 0.7 - camera.position.x) * 0.04;
   camera.position.y += (-pointer.y * 0.35 - camera.position.y) * 0.04;
