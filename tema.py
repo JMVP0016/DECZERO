@@ -546,6 +546,12 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 [data-testid="stFullScreenFrame"]:has(button[aria-label*="Close"]) img {
   max-height: 82vh !important; max-width: 92vw !important; width: auto !important; object-fit: contain; cursor: default;
 }
+/* enlarged image: solid backdrop, centred, and really larger (as big as the screen allows) */
+[data-testid="stFullScreenFrame"]:is([style*="fixed"], :has(button[aria-label*="Exit"]), :has(button[title*="Exit"]), :has(button[aria-label*="Close"])) { background: #070C16 !important; display: flex !important; flex-direction: column; align-items: center; justify-content: center; }
+[data-testid="stFullScreenFrame"]:is([style*="fixed"], :has(button[aria-label*="Exit"]), :has(button[title*="Exit"]), :has(button[aria-label*="Close"])) [data-testid="stImage"], [data-testid="stFullScreenFrame"]:is([style*="fixed"], :has(button[aria-label*="Exit"]), :has(button[title*="Exit"]), :has(button[aria-label*="Close"])) [data-testid="stImageContainer"] { width: 100% !important; max-width: 100% !important; display: flex !important; flex-direction: column; align-items: center; justify-content: center; }
+[data-testid="stFullScreenFrame"]:is([style*="fixed"], :has(button[aria-label*="Exit"]), :has(button[title*="Exit"]), :has(button[aria-label*="Close"])) img { width: min(92vw, 80vh) !important; height: auto !important; max-width: 92vw !important; max-height: 80vh !important; image-rendering: pixelated; animation: none !important; }
+/* thumbnails and pictures inside windows are not meant to be enlarged */
+[class*="st-key-tcard_"] [data-testid="stElementToolbar"], [data-testid="stDialog"] [data-testid="stElementToolbar"] { display: none !important; }
 /* larger section titles */
 .dz-section { margin-top: 3.6rem; }
 .dz-section b { font-size: clamp(1.25rem, 2.2vw, 1.7rem); letter-spacing: 0.06em; }
