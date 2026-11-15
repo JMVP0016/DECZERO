@@ -123,7 +123,7 @@ def load(ra, dec, band):
 
 
 tema.navegacion()
-tema.portada()
+tema.portada(compacta=bool(st.session_state.get("result")))
 tema.seccion(1, "Explore any position")
 
 params = st.query_params
@@ -176,6 +176,8 @@ elif submitted or first_visit_with_link:
             load_target(target)   # a direct link to a target loads instantly
         else:
             load(ra, dec, band)
+        if st.session_state.get("result"):
+            st.rerun()            # redraw with the slim header, so the sequence is in view
 
 if st.session_state.get("error"):
     st.error(st.session_state["error"])

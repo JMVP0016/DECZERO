@@ -105,6 +105,41 @@ h1, h2, h3, .dz-title { font-family: 'Montserrat', sans-serif; letter-spacing: -
 .dz-state.done { color: #5EEAD4; } .dz-state.done i { background: #5EEAD4; }
 [data-testid="stMetricValue"], [data-testid="stCaptionContainer"] { font-variant-numeric: tabular-nums; }
 
+/* ---- consistency fixes found by looking at the real page ---- */
+/* headings, footer and placeholders were falling back to Streamlit's default font */
+.stApp h1, .stApp h2, .stApp h3 { font-family: 'Montserrat', sans-serif !important; letter-spacing: -0.01em; }
+.dz-footer, .dz-footer a, .dz-card p, .dz-card h4 { font-family: 'Inter', sans-serif; }
+.dz-card h4 { font-family: 'Montserrat', sans-serif; }
+input::placeholder, textarea::placeholder { font-family: 'Inter', sans-serif; }
+
+/* message boxes in the palette, not Streamlit's blue and green */
+[data-testid="stAlert"], [data-testid="stAlertContainer"] {
+  background: #172234 !important; color: #F5F7FA !important;
+  border: 1px solid rgba(94,234,212,0.22); border-left: 3px solid #5EEAD4; border-radius: 10px;
+}
+[data-testid="stAlert"] [data-testid="stAlertContainer"] { border: 0; background: transparent !important; }
+[data-testid="stAlert"] p, [data-testid="stAlert"] li, [data-testid="stAlert"] strong,
+[data-testid="stAlert"] div { color: #F5F7FA !important; }
+[data-testid="stAlert"] strong { color: #5EEAD4 !important; }
+
+/* links and selection chips */
+[data-testid="stMarkdownContainer"] a { color: #5EEAD4; }
+.dz-footer a { color: #AEB8CC !important; }
+span[data-baseweb="tag"] { background: #5EEAD4 !important; }
+span[data-baseweb="tag"], span[data-baseweb="tag"] * { color: #0B1220 !important; fill: #0B1220 !important; }
+
+/* help cards of equal height */
+.dz-card { min-height: 11.5rem; }
+@media (max-width: 640px) { .dz-card { min-height: 0; margin-bottom: 0.6rem; } }
+
+/* slim header shown once there is a sequence on screen */
+.dz-bar { display: flex; align-items: center; gap: 0.8rem; padding: 0.2rem 0 0.9rem 0;
+  border-bottom: 1px solid rgba(232,236,244,0.12); margin-bottom: 0.4rem; }
+.dz-bar svg { width: 44px; height: auto; flex-shrink: 0; }
+.dz-bar b { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.6rem; color: #F5F7FA; letter-spacing: 0.01em; }
+.dz-bar span { color: #AEB8CC; font-size: 0.95rem; font-family: 'Inter', sans-serif; }
+@media (max-width: 640px) { .dz-bar span { display: none; } }
+
 /* numbered section labels, as in the brand sheet */
 .dz-section { display: flex; align-items: baseline; gap: 0.7rem; margin: 1.6rem 0 0.6rem 0; }
 .dz-section i { font-style: normal; color: #5EEAD4; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 0.85rem; letter-spacing: 0.1em; }
@@ -281,8 +316,11 @@ __CSS__
               opacity: 0; transition: opacity 0.8s ease; z-index: 1; }
   .dz-3d-on #dz-scene { opacity: 1; }
   .dz-3d-on .dz-stars, .dz-3d-on .dz-planet { display: none; }
-  @media (max-width: 640px) { .dz-sub { display: none; } .dz-facts { gap: 0.4rem 1.4rem; }
-    .dz-kicker { font-size: 0.62rem; letter-spacing: 0.1em; } }
+  .dz-si { left: 0.9rem; text-align: right; }
+  @media (max-width: 640px) { .dz-sub { display: none; } .dz-facts { gap: 0.4rem 1.4rem; margin-top: 1.1rem; }
+    .dz-kicker { font-size: 0.6rem; letter-spacing: 0.08em; }
+    .dz-title { font-size: 1.85rem; } .dz-brand svg { width: 44px; } .dz-brand { gap: 0.6rem; }
+    .dz-tagline { font-size: 1rem; } .dz-si { font-size: 0.56rem; text-align: left; } }
 </style></head>
 <body>
 <div class="dz-hero" id="dz-hero">
@@ -437,8 +475,9 @@ function frame(ms) {
   planet.rotation.y = t * 0.012;                       // the planet turns slowly
   stars.rotation.z = t * 0.004;
   const half = Math.tan(THREE.MathUtils.degToRad(17.5)) * 10 * camera.aspect;
-  const baseX = wide ? half * 0.6 : half * 0.42;
-  craft.position.set(baseX + Math.sin(t * 0.25) * 0.3, (wide ? 0.35 : 1.35) + Math.sin(t * 0.6) * 0.1, 1.2);
+  // wide screens: to the right of the title; phones: low on the right, clear of the text
+  const baseX = wide ? half * 0.6 : half * 0.52;
+  craft.position.set(baseX + Math.sin(t * 0.25) * (wide ? 0.3 : 0.12), (wide ? 0.35 : -1.55) + Math.sin(t * 0.6) * 0.1, 1.2);
   craft.rotation.y = 0.4 + t * 0.22;                   // SPHEREx turns on its axis
   camera.position.x += (pointer.x * 0.7 - camera.position.x) * 0.04;
   camera.position.y += (-pointer.y * 0.35 - camera.position.y) * 0.04;
@@ -469,8 +508,18 @@ def _facts_html():
     )
 
 
-def portada():
-    """Hero: who we are, the name of the project and one line that says what it does."""
+def portada(compacta=False):
+    """
+    Hero: who we are, the name of the project and one line that says what it does.
+    With compacta=True it is a slim bar, so the sequence is visible without scrolling.
+    """
+    if compacta:
+        st.markdown(
+            f'<div class="dz-bar">{LOGO_SVG}<b>{PROJECT_NAME}</b><span>{TAGLINE} '
+            "Real SPHEREx images of any position, in time order.</span></div>",
+            unsafe_allow_html=True,
+        )
+        return
     if HERO_3D:
         html = (
             HERO_3D_TEMPLATE
