@@ -104,42 +104,51 @@ def to_picture(image, low, high, mark=None, label="", scale_arcsec=None, compass
 
 
 def single_frames(cutouts, ra, dec, ring, target=None):
-    """One frame per image. Only the sky level is subtracted; nothing is aligned."""
+    """
+    One frame per image, each turned so that north is up and east is left.
+    Nothing is combined: only the sky level is subtracted from each image.
+    """
+    grid, shape = proceso.crear_rejilla_norte(ra, dec, tamano_pix=GRID_PIXELS)
+    aligned, kept = proceso.reproyectar(
+        [c["imagen"] for c in cutouts],
+        [c["wcs"] for c in cutouts],
+        grid, shape,
+        mascaras=[c["mascara"] for c in cutouts],
+    )
     images = []
-    for cutout in cutouts:
-        image = cutout["imagen"].astype(float)
-        images.append(image - np.nanmedian(image))
+    with np.errstate(all="ignore"):
+        for image in aligned:
+            image = np.asarray(image, dtype=float)
+            images.append(image - np.nanmedian(image))
     low, high = limits(images)
+    mark = None
+    if ring:
+        x, y = grid.world_to_pixel_values(ra, dec)
+        mark = (float(x), float(y))
     frames = []
-    for cutout, image in zip(cutouts, images):
-        mark = None
-        if ring:
-            try:
-                x, y = cutout["wcs"].world_to_pixel_values(ra, dec)
-                mark = (float(x), float(y))
-            except Exception:
-                mark = None
+    for image, index in zip(images, kept):
+        cutout = cutouts[index]
         expected = None
         if target is not None:
-            try:
-                x, y = cutout["wcs"].world_to_pixel_values(*objetivos.expected_position(target, cutout["fecha"]))
-                expected = (float(x), float(y))
-            except Exception:
-                expected = None
+            x, y = grid.world_to_pixel_values(*objetivos.expected_position(target, cutout["fecha"]))
+            expected = (float(x), float(y))
         label = mjd_to_text(cutout["fecha"], with_time=True)
         frames.append({
-            "picture": to_picture(image, low, high, mark=mark, label=label, scale_arcsec=PIXEL_ARCSEC,
-                                  expected=expected),
+            "picture": to_picture(image, low, high, mark=mark, label=label, scale_arcsec=GRID_ARCSEC,
+                                  compass=True, expected=expected),
             "label": label,
             "details": (
                 f"**Detector:** {cutout['detector']} · "
                 f"**Wavelength at this position:** {cutout['longitud_onda']:.2f} µm · "
                 f"**Flagged pixels in the whole image:** {cutout['porcentaje_marcado']:.1f} % · "
-                f"**Data version:** {cutout['version']}"
+                f"**Data version:** {cutout['version']} · "
+                f"**Orientation:** north up, east left"
             ),
         })
-    side = max(max(c["imagen"].shape) for c in cutouts)
-    return frames, {"field_arcmin": side * PIXEL_ARCSEC / 60.0}
+    return frames, {
+        "field_arcmin": GRID_PIXELS * GRID_ARCSEC / 60.0,
+        "not_aligned": len(cutouts) - len(kept),
+    }
 
 
 def stacked_frames(cutouts, ra, dec, ring, target=None, title="", plain=False):

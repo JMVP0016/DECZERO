@@ -26,7 +26,7 @@ FOV_ARCMIN = 10.0    # side of each cutout
 BANDS = ["D1", "D2", "D3", "D4", "D5", "D6"]
 
 MODE_STACKED = "Aligned (best for spotting motion)"
-MODE_SINGLE = "Single images (not aligned)"
+MODE_SINGLE = "Single images (one per exposure)"
 SPEEDS = {"Slow": 900, "Medium": 450, "Fast": 200}   # milliseconds per frame
 
 
@@ -263,7 +263,7 @@ if result:
         blink = blink_column.checkbox(
             "First and last date only", value=False, disabled=not aligned_view,
             help="Blink between the two dates that are furthest apart. Only in the aligned view: "
-                 "single images are rotated differently, so blinking them would be misleading.",
+                 "single images are too noisy to blink first against last.",
         ) and aligned_view
     else:
         index = 0
@@ -320,10 +320,11 @@ if result:
     else:
         st.info(
             legend + "\n\n"
-            "These are single images with only the sky level subtracted. They are **not aligned**: "
-            "the sky looks rotated and shifted from one image to the next, so a dot changing place "
-            "here does not mean it moved. Each image is also taken at a **different wavelength**, "
-            "so a change in brightness is not by itself a change over time."
+            "These are single images, one per exposure, with only the sky level subtracted and "
+            "turned so that **north is up and east is left**. Nothing is combined, so they are "
+            "noisier, and a dot seen in only one of them is usually a cosmic ray or a bad pixel. "
+            "Each image is taken at a **different wavelength**, so a change in brightness is not "
+            "by itself a change over time."
         )
 
 
