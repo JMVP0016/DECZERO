@@ -378,9 +378,32 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
   border-bottom: 1px solid rgba(148,175,210,0.10); font-family: 'Inter', sans-serif; }
 .dz-contrib-list li:last-child { border-bottom: 0; }
 .dz-contrib-list i { font-style: normal; font-weight: 500; font-size: 1.1rem; color: #6C7D96; width: 2.2rem; }
-.dz-contrib-list b { font-weight: 500; font-size: 1.15rem; color: #F5F7FA; flex: 1; }
+.dz-contrib-list b { display: flex; align-items: center; gap: 0.55rem; font-weight: 500; font-size: 1.15rem; color: #F5F7FA; flex: 1; }
 .dz-contrib-list span { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.7rem; color: #4FD1C5; font-variant-numeric: tabular-nums; }
 .stApp p.dz-contrib-foot { text-align: center; font-size: 0.82rem !important; color: #5C708B; margin: 1rem 0 0.2rem 0; }
+/* 5-sided star reputation & 24h cooldown card */
+.dz-rep-card { background: #131E30; border: 1px solid rgba(94,234,212,0.28); border-radius: 16px; padding: 1.25rem 1.4rem; margin: 0.8rem 0 1.2rem 0; }
+.dz-rep-top { display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.3rem; align-items: center; }
+@media (max-width: 760px) { .dz-rep-top { grid-template-columns: 1fr; } }
+.dz-rep-main { display: flex; align-items: center; gap: 1.1rem; }
+.dz-rep-main svg { flex-shrink: 0; }
+.stApp p.dz-rep-kicker { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.72rem !important; letter-spacing: 0.14em; text-transform: uppercase; color: #5EEAD4; margin: 0; }
+.stApp p.dz-rep-title { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.25rem !important; color: #F5F7FA; margin: 0.1rem 0 0.25rem 0; }
+.stApp p.dz-rep-sub { font-family: 'Inter', sans-serif; font-size: 0.88rem !important; color: #AEB8CC; margin: 0; line-height: 1.45; }
+.dz-cooldown-box { background: #172234; border: 1px solid rgba(232,236,244,0.12); border-left: 3px solid #5EEAD4; border-radius: 12px; padding: 0.9rem 1.1rem; }
+.dz-cooldown-box.wait { border-left-color: #FBBF24; }
+.dz-cooldown-box span { display: block; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: #5EEAD4; }
+.dz-cooldown-box.wait span { color: #FBBF24; }
+.dz-cooldown-box b { display: block; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.3rem; color: #F5F7FA; margin: 0.15rem 0; font-variant-numeric: tabular-nums; }
+.dz-cooldown-box em { display: block; font-style: normal; font-size: 0.8rem; color: #AEB8CC; }
+.dz-star-scale { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.6rem; margin-top: 1.1rem; padding-top: 1rem; border-top: 1px solid rgba(232,236,244,0.10); }
+@media (max-width: 640px) { .dz-star-scale { grid-template-columns: repeat(2, 1fr); } }
+.dz-star-step { display: flex; align-items: center; gap: 0.5rem; padding: 0.45rem 0.6rem; border-radius: 10px; background: rgba(11,18,32,0.55); border: 1px solid rgba(232,236,244,0.08); }
+.dz-star-step.active { border-color: rgba(94,234,212,0.65); background: rgba(94,234,212,0.08); }
+.dz-star-step div b { display: block; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.78rem; color: #F5F7FA; }
+.dz-star-step div span { display: block; font-size: 0.72rem; color: #8792A8; }
+@keyframes dz-star-pulse { 0%, 100% { filter: drop-shadow(0 0 6px rgba(94,234,212,0.65)); } 50% { filter: drop-shadow(0 0 14px rgba(94,234,212,0.95)); } }
+.dz-star-max { animation: dz-star-pulse 2.8s ease-in-out infinite; }
 /* fullscreen image: leave breathing room around the image so tapping outside closes it */
 [data-testid="stFullScreenFrame"][style*="fixed"] { background: rgba(7,12,22,0.92) !important; backdrop-filter: blur(4px); cursor: zoom-out; }
 [data-testid="stFullScreenFrame"][style*="fixed"] img { max-height: 82vh !important; max-width: 92vw !important; width: auto !important; object-fit: contain; cursor: default; }
@@ -875,16 +898,135 @@ def seccion(numero, titulo):
 SAMPLE_CITIZENS = [("Ana M.", 24), ("Luis R.", 18), ("Sofía V.", 12)]
 SAMPLE_EXPERTS = [("Elena P.", 21), ("Mateo S.", 16), ("Lucía C.", 11)]
 
+# The 5 kite facets of a 5-pointed star centered at (50, 50), matching the HAWAPACHA logo palette.
+STAR_FACETS = [
+    "M 50.0,50.0 L 39.7,35.8 L 50.0,10.0 L 60.3,35.8 Z",   # Side 1 (Top - lit from the start)
+    "M 50.0,50.0 L 60.3,35.8 L 88.0,37.6 L 66.6,55.4 Z",   # Side 2 (Top-right - 5+ validated)
+    "M 50.0,50.0 L 66.6,55.4 L 73.5,82.4 L 50.0,67.5 Z",   # Side 3 (Bottom-right - 10+ validated)
+    "M 50.0,50.0 L 50.0,67.5 L 26.5,82.4 L 33.4,55.4 Z",   # Side 4 (Bottom-left - 15+ validated)
+    "M 50.0,50.0 L 33.4,55.4 L 12.0,37.6 L 39.7,35.8 Z",   # Side 5 (Top-left - 20+ validated, full glow)
+]
+
+STAR_LEVELS = [
+    (1, "First Light", "Start (0–4 validated)"),
+    (2, "Sky Watcher", "5+ validated reports"),
+    (3, "Deep Field Observer", "10+ validated reports"),
+    (4, "Astrometry Tracker", "15+ validated reports"),
+    (5, "Full Star Brilliance", "20+ validated (max glow)"),
+]
+
+
+def estrella_svg(lados=1, tamano=56):
+    """
+    5-sided star in the HAWAPACHA logo colours (#0B1220, #F5F7FA, #5EEAD4).
+    Every account starts with 1 side lit; each additional side lights up every
+    5 expert-validated reports, reaching full star brilliance at 5/5.
+    """
+    lados = max(1, min(5, int(lados)))
+    full = lados == 5
+    cls = ' class="dz-star-max"' if full else ""
+    ring_stroke = "#F5F7FA" if full else "rgba(245,247,250,0.22)"
+    ring_width = "3.4" if full else "2.2"
+    horizon = (
+        '<rect x="6" y="48" width="88" height="4" rx="2" fill="#5EEAD4" fill-opacity="0.45"/>'
+        if full else ""
+    )
+    facets = []
+    for idx, path in enumerate(STAR_FACETS, start=1):
+        if idx <= lados:
+            facets.append(
+                f'<path d="{path}" fill="#5EEAD4" stroke="#F5F7FA" stroke-width="2.2" stroke-linejoin="round"/>'
+            )
+        else:
+            facets.append(
+                f'<path d="{path}" fill="#131E30" stroke="rgba(245,247,250,0.30)" stroke-width="1.8" stroke-linejoin="round"/>'
+            )
+    core = (
+        '<circle cx="50" cy="50" r="5.5" fill="#F5F7FA"/>'
+        if full else '<circle cx="50" cy="50" r="3.8" fill="#5EEAD4"/>'
+    )
+    return (
+        f'<svg width="{int(tamano)}" height="{int(tamano)}" viewBox="0 0 100 100" '
+        f'xmlns="http://www.w3.org/2000/svg" role="img" '
+        f'aria-label="Observer star: {lados} of 5 sides illuminated"{cls}>'
+        f'<circle cx="50" cy="50" r="44" fill="#0B1220" stroke="{ring_stroke}" stroke-width="{ring_width}"/>'
+        f'{horizon}{"".join(facets)}{core}</svg>'
+    )
+
+
+def tarjeta_reputacion(nick, rep, cooldown_text=None):
+    """Observer reputation card with the 5-sided star, 10-report tier, and 24h cooldown status."""
+    import html as _html
+    sides = rep["sides"]
+    title = dict((k, t) for k, t, _ in STAR_LEVELS).get(sides, "First Light")
+    if sides < 5:
+        next_line = (
+            f"<b>{rep['next_side_in']}</b> more expert-validated report"
+            f"{'s' if rep['next_side_in'] != 1 else ''} to illuminate side <b>{sides + 1}/5</b>."
+        )
+    else:
+        next_line = "<b>Maximum level reached:</b> all 5 sides of your star shine at full brilliance."
+    if cooldown_text:
+        cd_html = (
+            '<div class="dz-cooldown-box wait">'
+            '<span>24h anti-spam cooldown active</span>'
+            f'<b>{_html.escape(cooldown_text)}</b>'
+            '<em>To prevent spam or troll reports, each account can publish 1 report every 24 hours.</em>'
+            '</div>'
+        )
+    else:
+        cd_html = (
+            '<div class="dz-cooldown-box">'
+            '<span>24h report window</span>'
+            '<b>Ready to report</b>'
+            '<em>Limit: 1 report every 24 hours per account to keep the review queue clean.</em>'
+            '</div>'
+        )
+    steps_html = "".join(
+        f'<div class="dz-star-step{" active" if lvl == sides else ""}">'
+        f'{estrella_svg(lvl, 30)}'
+        f'<div><b>{lvl}/5 · {name}</b><span>{rule}</span></div></div>'
+        for lvl, name, rule in STAR_LEVELS
+    )
+    st.markdown(
+        '<div class="dz-rep-card">'
+        '<div class="dz-rep-top">'
+        '<div class="dz-rep-main">'
+        f'{estrella_svg(sides, 74)}'
+        '<div>'
+        f'<p class="dz-rep-kicker">Observer Star · {sides}/5 sides illuminated · Reputation tier {rep["behavior_level"]}</p>'
+        f'<p class="dz-rep-title">{_html.escape(str(nick))} — {title}</p>'
+        f'<p class="dz-rep-sub">'
+        f'<b>{rep["validated"]}</b> expert-validated report{"s" if rep["validated"] != 1 else ""} '
+        f'(+1 star side every 5 validated) · <b>{rep["total"]}</b> total report{"s" if rep["total"] != 1 else ""} sent '
+        f'(+1 reputation tier every 10 reports, {rep["next_rep_in"]} to next tier). {next_line}'
+        '</p>'
+        '</div>'
+        '</div>'
+        f'{cd_html}'
+        '</div>'
+        f'<div class="dz-star-scale">{steps_html}</div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
 
 def contribuciones(citizen_rows, expert_rows, usar_ejemplo=False):
     """
     Two-column Community contributions board:
-      - Left:  Citizen science (Reports sent for review)
+      - Left:  Citizen science (Reports sent for review), with each observer's 5-sided star
       - Right: Professional astronomy (Completed reviews)
     """
     import html as _html
 
-    def _items(rows):
+    def _citizen_items(rows):
+        return "".join(
+            f'<li><i>{idx}</i><b>{estrella_svg(min(5, 1 + int(count) // 5), 26)}'
+            f'{_html.escape(str(name))}</b><span>{int(count)}</span></li>'
+            for idx, (name, count) in enumerate(rows, start=1)
+        )
+
+    def _expert_items(rows):
         return "".join(
             f'<li><i>{idx}</i><b>{_html.escape(str(name))}</b><span>{int(count)}</span></li>'
             for idx, (name, count) in enumerate(rows, start=1)
@@ -900,12 +1042,12 @@ def contribuciones(citizen_rows, expert_rows, usar_ejemplo=False):
         '<h2 class="dz-contrib-title">Community contributions</h2>'
         '<div class="dz-contrib-grid">'
         '<div class="dz-contrib-card">'
-        '<div class="dz-contrib-head"><b>Citizen science</b><span>Reports sent for review</span></div>'
-        f'<ol class="dz-contrib-list">{_items(citizen_rows)}</ol>'
+        '<div class="dz-contrib-head"><b>Citizen science</b><span>Reports sent for review · 5-sided star rank</span></div>'
+        f'<ol class="dz-contrib-list">{_citizen_items(citizen_rows)}</ol>'
         '</div>'
         '<div class="dz-contrib-card">'
         '<div class="dz-contrib-head"><b>Professional astronomy</b><span>Completed reviews</span></div>'
-        f'<ol class="dz-contrib-list">{_items(expert_rows)}</ol>'
+        f'<ol class="dz-contrib-list">{_expert_items(expert_rows)}</ol>'
         '</div>'
         '</div>'
         f'{foot}'

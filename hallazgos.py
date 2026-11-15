@@ -43,6 +43,7 @@ MARK_START = "<!-- hawapacha-data"
 MARK_END = "hawapacha-data -->"
 MAX_REPORTS_PER_VISIT = 3
 MAX_REPORTS_PER_HOUR = 15      # for the whole app: a simple brake against spam
+REPORT_COOLDOWN_SECONDS = 24 * 3600   # 1 report per 24h per account to prevent spam/trolls
 # Only issues written by the app's own account count as reports. The repository
 # is public, so anyone could open an issue that imitates a report or a verdict.
 TRUSTED_AUTHORS = {REPO.split("/")[0]}
@@ -181,7 +182,7 @@ def sign_in():
 
 
 def sign_out():
-    for key in ("test_user", "role", "returned", "return_cleared", "reviewer_code"):
+    for key in ("test_user", "role", "returned", "return_cleared", "reviewer_code", "skip_cooldown"):
         st.session_state.pop(key, None)
     if _memory_mode():
         st.rerun()
@@ -437,9 +438,17 @@ def account_box(place=None, key="account", back=""):
         return None
     left, right = place.columns([4, 1], vertical_alignment="center")
     role = reviewer_name(user)
+    try:
+        import tema
+        rep = reputation_of({**user, "nick": nick})
+        star = f'{tema.estrella_svg(rep["sides"], 22)} '
+        star_label = f' · star {rep["sides"]}/5 · rep tier {rep["behavior_level"]}'
+    except Exception:
+        star = ""
+        star_label = ""
     left.markdown(
         '<div class="dz-who"><span>Signed in as</span>'
-        + nick + (f" · reviewer: {clean(role, 80)}" if role else "") + "</div>",
+        + star + nick + star_label + (f" · reviewer: {clean(role, 80)}" if role else "") + "</div>",
         unsafe_allow_html=True,
     )
     if right.button("Sign out", key=key + "_out", use_container_width=True):
@@ -542,6 +551,79 @@ def list_reports():
 def reports_of(user):
     """Reports published from this account."""
     return [r for r in list_reports() if user and r.get("owner") == user["id"]]
+
+
+def cooldown_seconds_left(user, items=None):
+    """
+    Seconds left in the 24-hour per-account report cooldown, or 0 if ready.
+    Prevents infinite or troll reports from one account.
+    """
+    if not user or st.session_state.get("skip_cooldown"):
+        return 0
+    owned = (
+        [r for r in items if r.get("owner") == user["id"]]
+        if items is not None else reports_of(user)
+    )
+    if not owned:
+        return 0
+    now_ts = datetime.now(timezone.utc).timestamp()
+    newest = 0.0
+    for r in owned:
+        try:
+            ts = datetime.strptime(r["created_at"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc).timestamp()
+            if ts > newest:
+                newest = ts
+        except Exception:
+            continue
+    if newest <= 0:
+        return 0
+    left = int(REPORT_COOLDOWN_SECONDS - (now_ts - newest))
+    return max(0, left)
+
+
+def format_countdown(seconds):
+    """Format remaining seconds as HHh MMm SSs."""
+    seconds = max(0, int(seconds))
+    hours, rem = divmod(seconds, 3600)
+    minutes, secs = divmod(rem, 60)
+    return f"{hours:02d}h {minutes:02d}m {secs:02d}s"
+
+
+def reputation_of(user_or_alias, items=None):
+    """
+    Observer reputation & 5-sided star progress:
+      - Every observer starts with 1 side illuminated (1/5).
+      - Each additional side illuminates for every 5 expert-validated reports
+        (verdict signed by an expert and not 'Image artifact'), up to 5/5 (full star glow).
+      - Reputation tier rises by +1 for every 10 total reports submitted.
+    """
+    all_reports = items if items is not None else list_reports()
+    if isinstance(user_or_alias, dict):
+        uid = user_or_alias.get("id")
+        nick = str(user_or_alias.get("nick", "")).strip().lower()
+        owned = [
+            r for r in all_reports
+            if (uid and r.get("owner") == uid)
+            or (not r.get("owner") and nick and str(r.get("alias", "")).strip().lower() == nick)
+        ]
+    else:
+        nick = str(user_or_alias or "").strip().lower()
+        owned = [r for r in all_reports if str(r.get("alias", "")).strip().lower() == nick]
+    total = len(owned)
+    valid_verdicts = {VERDICTS[0], VERDICTS[2], VERDICTS[3]}
+    validated = sum(1 for r in owned if r.get("status") in valid_verdicts)
+    sides = min(5, 1 + (validated // 5))
+    next_side_in = 0 if sides >= 5 else 5 - (validated % 5)
+    behavior_level = 1 + (total // 10)
+    next_rep_in = 10 - (total % 10)
+    return {
+        "total": total,
+        "validated": validated,
+        "sides": sides,
+        "next_side_in": next_side_in,
+        "behavior_level": behavior_level,
+        "next_rep_in": next_rep_in,
+    }
 
 
 def claim_hash(code):
@@ -668,15 +750,18 @@ def _report_dialog(ra, dec, band, view, frame, picture, account=None):
             )
             c1, c2 = st.columns(2)
             if c1.button("Follow it in My reports", type="primary", use_container_width=True):
+                st.session_state.pop("claim_in_dialog", None)
                 st.session_state["role"] = "amateur"
                 st.session_state["space"] = "mine"
                 st.switch_page("pages/3_Findings.py")
             if c2.button("Stay in the Viewer", use_container_width=True):
+                st.session_state.pop("claim_in_dialog", None)
                 st.rerun()
             return
         else:
             _claim_box(*st.session_state["claim_in_dialog"])
         if st.button("Done", type="primary"):
+            st.session_state.pop("claim_in_dialog", None)
             st.rerun()
         return
     st.caption(
@@ -715,6 +800,14 @@ def _report_dialog(ra, dec, band, view, frame, picture, account=None):
         )
         return
     try:
+        if account:
+            wait = cooldown_seconds_left(account)
+            if wait > 0:
+                form_column.error(
+                    f"24-hour cooldown active: next report available in {format_countdown(wait)} "
+                    "(1 report per 24 hours per account to prevent spam)."
+                )
+                return
         if reports_last_hour() >= MAX_REPORTS_PER_HOUR:
             form_column.error("Too many reports were sent in the last hour. Please try again later.")
             return
@@ -731,6 +824,7 @@ def _report_dialog(ra, dec, band, view, frame, picture, account=None):
         form_column.error(f"The report could not be published. Please try again. Detail: {error}")
         return
     st.session_state["reports_sent"] = st.session_state.get("reports_sent", 0) + 1
+    st.session_state.pop("skip_cooldown", None)
     if not account:
         st.session_state["last_claim"] = (number, code)
     st.session_state["claim_in_dialog"] = (number, code)
@@ -749,6 +843,7 @@ def report_button(ra, dec, band, view, frame, picture=None, open_now=False):
     """
     clicked = False
     account = None
+    wait_seconds = 0
     with st.container(key="cta"):
         text, action = st.columns([3, 1], vertical_alignment="center")
         text.markdown(
@@ -765,12 +860,30 @@ def report_button(ra, dec, band, view, frame, picture=None, open_now=False):
             account = account_box(key="cta_account",     # sign-in or nickname first
                                   back=f"viewer:{float(ra):.5f}:{float(dec):.5f}:{clean(band, 2)}")
             if account:
-                clicked = st.button("Report a finding", type="primary", key="report_open")
+                wait_seconds = cooldown_seconds_left(account)
+                if wait_seconds > 0:
+                    st.markdown(
+                        '<div class="dz-cooldown-box wait">'
+                        '<span>24h anti-spam cooldown active</span>'
+                        f'<b>Next report in {format_countdown(wait_seconds)}</b>'
+                        '<em>Each account can publish 1 report every 24 hours to prevent spam and keep the review queue clean.</em>'
+                        '</div>',
+                        unsafe_allow_html=True,
+                    )
+                    if is_team_reviewer(account):
+                        if st.button("Reset 24h cooldown (team demo)", key="reset_cd_cta"):
+                            st.session_state["skip_cooldown"] = True
+                            st.rerun()
+                else:
+                    clicked = st.button("Report a finding", type="primary", key="report_open")
         else:
             clicked = action.button("Report a finding", type="primary", key="report_open", use_container_width=True)
-    ready = account is not None or not accounts_enabled()
+    ready = (account is not None and wait_seconds == 0) or not accounts_enabled()
     if open_now and not ready:
-        st.info("Sign in first, in the band “Noticed something in these images?” below the pictures.")
+        if account and wait_seconds > 0:
+            st.warning(f"24-hour cooldown active: next report available in {format_countdown(wait_seconds)}.")
+        else:
+            st.info("Sign in first, in the band “Noticed something in these images?” below the pictures.")
     if (clicked or open_now) and ready and can_report():
         st.session_state.pop("claim_in_dialog", None)
         _report_dialog(ra, dec, band, view, frame, picture, account)

@@ -267,6 +267,14 @@ elif space == "mine" and hallazgos.accounts_enabled():
     tema.pasos(hallazgos.AMATEUR_FLOW)
     if account:
         found = hallazgos.reports_of(account)
+        rep = hallazgos.reputation_of(account, found)
+        wait_seconds = hallazgos.cooldown_seconds_left(account, found)
+        cd_text = f"Next report in {hallazgos.format_countdown(wait_seconds)}" if wait_seconds > 0 else None
+        tema.tarjeta_reputacion(account["nick"], rep, cooldown_text=cd_text)
+        if wait_seconds > 0 and hallazgos.is_team_reviewer(account):
+            if st.button("Reset 24h cooldown (team demo)", key="reset_cd_mine"):
+                st.session_state["skip_cooldown"] = True
+                st.rerun()
         waiting = sum(r["status"] == hallazgos.STATUS_NEW for r in found)
         opened = sum(r["status"] == hallazgos.STATUS_OPENED for r in found)
         candidates = sum(r["status"] == hallazgos.VERDICTS[2] for r in found)
