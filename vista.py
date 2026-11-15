@@ -38,7 +38,7 @@ def limits(images):
     return low, high
 
 
-def to_picture(image, low, high, mark=None, label="", scale_arcsec=None, compass=False, expected=None):
+def to_picture(image, low, high, mark=None, label="", scale_arcsec=None, compass=False, expected=None):  # noqa: E501
     """
     2D array -> colour picture of DISPLAY_PIXELS x DISPLAY_PIXELS.
       - A non-square image is padded to a square, never stretched.
@@ -142,7 +142,7 @@ def single_frames(cutouts, ra, dec, ring, target=None):
     return frames, {"field_arcmin": side * PIXEL_ARCSEC / 60.0}
 
 
-def stacked_frames(cutouts, ra, dec, ring, target=None, title=""):
+def stacked_frames(cutouts, ra, dec, ring, target=None, title="", plain=False):
     """Images aligned north up and combined (median) within each observing epoch."""
     grid, shape = proceso.crear_rejilla_norte(ra, dec, tamano_pix=GRID_PIXELS)
     aligned, kept = proceso.reproyectar(
@@ -186,8 +186,9 @@ def stacked_frames(cutouts, ra, dec, ring, target=None, title=""):
             x, y = grid.world_to_pixel_values(*objetivos.expected_position(target, float(np.mean(dates))))
             expected = (float(x), float(y))
         frames.append({
-            "picture": to_picture(stack, low, high, mark=mark, label=label,
-                                  scale_arcsec=GRID_ARCSEC, compass=True, expected=expected),
+            "picture": (to_picture(stack, low, high) if plain else
+                        to_picture(stack, low, high, mark=mark, label=label,
+                                   scale_arcsec=GRID_ARCSEC, compass=True, expected=expected)),
             "mjd": float(np.mean(dates)),
             "label": label,
             "details": (

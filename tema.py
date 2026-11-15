@@ -140,10 +140,27 @@ span[data-baseweb="tag"], span[data-baseweb="tag"] * { color: #0B1220 !important
 .dz-bar span { color: #AEB8CC; font-size: 0.95rem; font-family: 'Inter', sans-serif; }
 @media (max-width: 640px) { .dz-bar span { display: none; } }
 
+/* target cards */
+.st-key-targets [data-testid="stVerticalBlockBorderWrapper"] { background: #172234; border-color: rgba(232,236,244,0.10) !important;
+  border-radius: 14px; transition: border-color 0.2s ease, transform 0.2s ease; }
+.st-key-targets [data-testid="stVerticalBlockBorderWrapper"]:hover { border-color: rgba(94,234,212,0.55) !important; transform: translateY(-2px); }
+.st-key-targets [data-testid="stImage"] img { border-radius: 10px; box-shadow: none; border: 0; width: 100%; aspect-ratio: 1 / 1; object-fit: cover; }
+.dz-tname { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.02rem; color: #F5F7FA; margin: 0.15rem 0 0.1rem 0; }
+.dz-tkind { color: #5EEAD4; font-size: 0.62rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; margin: 0; }
+.dz-tline { color: #AEB8CC; font-size: 0.86rem; line-height: 1.35; margin: 0.25rem 0 0.2rem 0; min-height: 4.8rem; }
+@media (max-width: 640px) {
+  .st-key-targets [data-testid="stImage"] img { aspect-ratio: 5 / 2; }
+  .dz-tline { min-height: 0; }
+}
+
+/* more air between the blocks of the page */
+.dz-hero { margin-bottom: 2.2rem; }
+.dz-bar { margin-bottom: 1.2rem; }
+
 /* numbered section labels, as in the brand sheet */
-.dz-section { display: flex; align-items: baseline; gap: 0.7rem; margin: 1.6rem 0 0.6rem 0; }
+.dz-section { display: flex; align-items: baseline; gap: 0.8rem; margin: 3rem 0 1.1rem 0; }
 .dz-section i { font-style: normal; color: #5EEAD4; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 0.85rem; letter-spacing: 0.1em; }
-.dz-section b { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.05rem; letter-spacing: 0.1em; text-transform: uppercase; color: #F5F7FA; }
+.dz-section b { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.2rem; letter-spacing: 0.1em; text-transform: uppercase; color: #F5F7FA; }
 .dz-section::after { content: ""; flex: 1; height: 1px; background: rgba(232,236,244,0.14); }
 
 /* help cards */
@@ -273,6 +290,38 @@ def estado(texto, revisado):
     """Review state as a label with a shape, not colour alone."""
     clase = "done" if revisado else "waiting"
     return f'<span class="dz-state {clase}"><i></i>{texto}</span>'
+
+
+THUMBS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "thumbs")
+
+
+def tarjetas(objetivos, compactas=False):
+    """
+    One card per challenge target: a real SPHEREx picture, what it is, and a button.
+    With compactas=True it is a single row of buttons, so the sequence stays in view.
+    Returns the target that was clicked, or None.
+    """
+    elegido = None
+    if compactas:
+        for columna, objetivo in zip(st.columns(len(objetivos)), objetivos):
+            if columna.button(objetivo["name"], key=f"open_{objetivo['folder']}", use_container_width=True):
+                elegido = objetivo
+        return elegido
+    with st.container(key="targets"):
+        for columna, objetivo in zip(st.columns(len(objetivos)), objetivos):
+            with columna.container(border=True):
+                miniatura = os.path.join(THUMBS, f"{objetivo['folder']}.png")
+                if os.path.exists(miniatura):
+                    st.image(miniatura, use_container_width=True)
+                st.markdown(
+                    f'<p class="dz-tkind">{objetivo["kind"]}</p>'
+                    f'<p class="dz-tname">{objetivo["name"]}</p>'
+                    f'<p class="dz-tline">{objetivo["line"]}</p>',
+                    unsafe_allow_html=True,
+                )
+                if st.button("Open", key=f"open_{objetivo['folder']}", use_container_width=True):
+                    elegido = objetivo
+    return elegido
 
 
 def navegacion():

@@ -23,25 +23,30 @@ import numpy as np
 
 TARGETS = [
     {"name": "Barnard's Star", "folder": "barnard", "band": "D2",
+     "kind": "Moves", "line": "The fastest-moving star in our sky.",
      "ra": 269.4463, "dec": 4.7679,
      "ref_ra": 269.452075, "ref_dec": 4.693391, "ref_epoch": 2000.0,
      "pm_ra": -801.55, "pm_dec": 10362.39},
     {"name": "WISE 0855", "folder": "wise_0855", "band": "D6",
+     "kind": "Moves", "line": "One of the coldest brown dwarfs known.",
      "ra": 133.7590, "dec": -7.2421,
      # position given in the challenge statement; its epoch (about 2010.3) is inferred
      "ref_ra": 133.795129, "ref_dec": -7.245147, "ref_epoch": 2010.34,
      "pm_ra": -8118.0, "pm_dec": 680.0},
     {"name": "Epsilon Indi B", "folder": "epsilon_indi_b", "band": "D2",
+     "kind": "Moves", "line": "A nearby pair of brown dwarfs.",
      "ra": 331.0960, "dec": -56.8013,
      # CHECK: the team table has ref_ra 331.07725, which falls about 35 to 65 arcsec from
      # the source for any epoch tried; 331.0438 at 2000.0 lands on it within 2 arcsec.
      "ref_ra": 331.0438, "ref_dec": -56.782639, "ref_epoch": 2000.0,
      "pm_ra": 3966.66, "pm_dec": -2536.19},
     {"name": "RW Aurigae", "folder": "rw_aurigae", "band": "D2",
+     "kind": "Varies", "line": "A young star whose brightness changes.",
      "ra": 76.9564, "dec": 30.4014,
      "ref_ra": 76.95653, "ref_dec": 30.401441, "ref_epoch": 2000.0,
      "pm_ra": 4.86, "pm_dec": -24.16},
     {"name": "R Draconis", "folder": "r_draconis", "band": "D2",
+     "kind": "Varies", "line": "A red giant that pulses every few months.",
      "ra": 248.1675, "dec": 66.7550,
      # CHECK: the team table has ref_dec 66.763417, about 30 arcsec north of the star
      # in the images; 66.7550 lands on it.

@@ -2,7 +2,8 @@
 # SI disclosure: this file was drafted with an SI tool (Claude, Anthropic)
 # and reviewed and run by the team. See "Use of SI" in README.md.
 """
-Makes one animated GIF per challenge target for the project page, in gifs/.
+Makes one animated GIF per challenge target for the project page, in gifs/, and
+one small still picture per target for the cards of the app, in assets/thumbs/.
 
 Usage:  python hacer_gifs.py
 
@@ -19,10 +20,13 @@ import cache_local
 import vista
 from objetivos import TARGETS
 
-CARPETA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gifs")
+AQUI = os.path.dirname(os.path.abspath(__file__))
+CARPETA = os.path.join(AQUI, "gifs")
+MINIATURAS = os.path.join(AQUI, "assets", "thumbs")
 MILISEGUNDOS = 900
 
 os.makedirs(CARPETA, exist_ok=True)
+os.makedirs(MINIATURAS, exist_ok=True)
 for objetivo in TARGETS:
     recortes = cache_local.leer_objetivo(objetivo["folder"], objetivo["band"])
     if not recortes:
@@ -34,3 +38,9 @@ for objetivo in TARGETS:
     with open(ruta, "wb") as archivo:
         archivo.write(vista.animation(cuadros, MILISEGUNDOS))
     print(f"{objetivo['name']}: {len(cuadros)} frames, {os.path.getsize(ruta) / 1e3:.0f} kB -> {ruta}")
+
+    # Card picture: the middle of the first frame, with no marks or labels on it.
+    limpios, _ = vista.stacked_frames(recortes, objetivo["ra"], objetivo["dec"], False, None, "", plain=True)
+    lado = vista.DISPLAY_PIXELS
+    centro = limpios[0]["picture"].crop((lado // 4, lado // 4, 3 * lado // 4, 3 * lado // 4))
+    centro.save(os.path.join(MINIATURAS, f"{objetivo['folder']}.png"))

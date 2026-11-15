@@ -146,10 +146,7 @@ with st.form("search"):
     submitted = st.form_submit_button("Show images", type="primary")
 
 tema.seccion(2, "Or start with the five challenge targets")
-clicked = None
-for column, target in zip(st.columns(len(TARGETS)), TARGETS):
-    if column.button(target["name"], use_container_width=True):
-        clicked = target
+clicked = tema.tarjetas(TARGETS, compactas=bool(st.session_state.get("result")))
 
 first_visit_with_link = bool(start_text) and "result" not in st.session_state
 
