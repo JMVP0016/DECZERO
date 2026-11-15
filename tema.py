@@ -141,9 +141,9 @@ span[data-baseweb="tag"], span[data-baseweb="tag"] * { color: #0B1220 !important
 @media (max-width: 640px) { .dz-bar span { display: none; } }
 
 /* target cards */
-.st-key-targets [data-testid="stVerticalBlockBorderWrapper"] { background: #172234; border-color: rgba(232,236,244,0.10) !important;
+[class*="st-key-tcard_"] { background: #172234; border-color: rgba(232,236,244,0.10) !important;
   border-radius: 14px; transition: border-color 0.2s ease, transform 0.2s ease; }
-.st-key-targets [data-testid="stVerticalBlockBorderWrapper"]:hover { border-color: rgba(94,234,212,0.55) !important; transform: translateY(-2px); }
+[class*="st-key-tcard_"]:hover { border-color: rgba(94,234,212,0.55) !important; transform: translateY(-2px); }
 .st-key-targets [data-testid="stImage"] img { border-radius: 10px; box-shadow: none; border: 0; width: 100%; aspect-ratio: 1 / 1; object-fit: cover; }
 .dz-tname { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.02rem; color: #F5F7FA; margin: 0.15rem 0 0.1rem 0; }
 .dz-tkind { color: #5EEAD4; font-size: 0.62rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; margin: 0; }
@@ -217,12 +217,12 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 /* target cards: the picture zooms a little and the button fills in on hover */
 .st-key-targets [data-testid="stImage"] { overflow: hidden; border-radius: 10px; }
 .st-key-targets [data-testid="stImage"] img { transition: transform 0.6s cubic-bezier(.2,.7,.2,1); }
-.st-key-targets [data-testid="stVerticalBlockBorderWrapper"]:hover [data-testid="stImage"] img { transform: scale(1.08); }
-.st-key-targets [data-testid="stVerticalBlockBorderWrapper"]:hover { box-shadow: 0 14px 34px rgba(0,0,0,0.35); }
+[class*="st-key-tcard_"]:hover [data-testid="stImage"] img { transform: scale(1.08); }
+[class*="st-key-tcard_"]:hover { box-shadow: 0 14px 34px rgba(0,0,0,0.35); }
 .st-key-targets .stButton > button { border-color: rgba(94,234,212,0.45); letter-spacing: 0.08em; text-transform: uppercase; font-size: 0.8rem;
   transition: background 0.2s ease, color 0.2s ease; }
-.st-key-targets [data-testid="stVerticalBlockBorderWrapper"]:hover .stButton > button { background: #5EEAD4; border-color: #5EEAD4; }
-.st-key-targets [data-testid="stVerticalBlockBorderWrapper"]:hover .stButton > button p { color: #0B1220; }
+[class*="st-key-tcard_"]:hover .stButton > button { background: #5EEAD4; border-color: #5EEAD4; }
+[class*="st-key-tcard_"]:hover .stButton > button p { color: #0B1220; }
 
 /* three steps under the hero */
 .dz-steps { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid rgba(232,236,244,0.14);
@@ -271,9 +271,9 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
   color: #5EEAD4; margin: 0.4rem 0 0 0; }
 .st-key-claim [data-testid="stCode"] code { font-size: 1.6rem; letter-spacing: 0.12em; color: #F5F7FA; }
 /* findings board: one card per report */
-.st-key-board [data-testid="stVerticalBlockBorderWrapper"] { background: #172234; border-color: rgba(232,236,244,0.10) !important; border-radius: 14px;
+[class*="st-key-rep_"] { background: #172234; border-color: rgba(232,236,244,0.10) !important; border-radius: 14px;
   transition: border-color 0.2s ease; }
-.st-key-board [data-testid="stVerticalBlockBorderWrapper"]:hover { border-color: rgba(94,234,212,0.45) !important; }
+[class*="st-key-rep_"]:hover { border-color: rgba(94,234,212,0.45) !important; }
 .dz-rnum { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.25rem; color: #5EEAD4;
   margin-right: 0.6rem; }
 .dz-rkind { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.05rem; color: #F5F7FA; }
@@ -287,6 +287,51 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 .dz-footer-top span { font-family: 'Montserrat', sans-serif; font-weight: 600; color: #5EEAD4; font-size: 0.8rem; letter-spacing: 0.16em;
   text-transform: uppercase; padding-bottom: 0.5rem; }
 .dz-footer { border-top: 0 !important; margin-top: 0.6rem !important; }
+
+/* --- fixes after the visual audit (Streamlit 1.67 markup) --- */
+/* Streamlit forces 16px on every <p>; our own labels need their size back */
+.stApp p.dz-tkind { font-size: 0.7rem !important; letter-spacing: 0.12em; }
+.stApp p.dz-tname { font-size: 1.02rem !important; }
+.stApp p.dz-tline { font-size: 0.86rem !important; min-height: 5.9rem; }
+@media (max-width: 640px) { .stApp p.dz-tline { min-height: 0; } }
+.stApp p.dz-cta-title { font-size: 1.1rem !important; }
+.stApp p.dz-cta-line { font-size: 0.92rem !important; margin-bottom: 0.3rem; }
+.stApp p.dz-rby { font-size: 0.85rem !important; }
+.stApp p.dz-claim-label { font-size: 0.72rem !important; }
+.st-key-cta { padding: 1.1rem 1.3rem 1.3rem 1.3rem; }
+/* filter chips: dark text on turquoise */
+[data-testid="stMultiSelect"] span[data-tag] { background: #5EEAD4 !important; }
+[data-testid="stMultiSelect"] span[data-tag], [data-testid="stMultiSelect"] span[data-tag] * { color: #0B1220 !important; fill: #0B1220 !important; }
+/* brand fonts inside the widgets and the window title */
+.stApp input, .stApp textarea, [data-baseweb="select"] * { font-family: 'Inter', sans-serif !important; }
+[role="dialog"] h2 { font-family: 'Montserrat', sans-serif !important; font-weight: 800; letter-spacing: -0.01em; }
+.stButton button p, .stDownloadButton button p, [data-testid="stFormSubmitButton"] button p { font-weight: 600; }
+/* the page behind the report window stays dark */
+[data-testid="stDialog"] { background: rgba(4,8,16,0.78) !important; backdrop-filter: blur(3px); }
+/* the "write it down" notice is a warning: amber, not turquoise */
+.st-key-claim .dz-context em { font-size: 0.92rem; color: #F5F7FA; }
+/* no host toolbar over the page, no empty band under the footer */
+[data-testid="stToolbar"] { display: none !important; }
+[data-testid="stHeader"] { background: transparent !important; }
+.stApp .block-container { padding-bottom: 3rem; }
+/* larger section titles */
+.dz-section { margin-top: 3.6rem; }
+.dz-section b { font-size: clamp(1.25rem, 2.2vw, 1.7rem); letter-spacing: 0.06em; }
+.dz-section i { font-size: 1rem; }
+.dz-sub { text-wrap: balance; }
+.stApp p.dz-plabel { font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 0.72rem !important; letter-spacing: 0.14em;
+  text-transform: uppercase; color: #5EEAD4; margin: 0 0 0.2rem 0; }
+.dz-card em { font-size: 2.1rem; }
+.dz-state { float: right; }
+@media (max-width: 640px) {
+  .st-key-targets [data-testid="stImage"] img { aspect-ratio: 16 / 9; }
+  .dz-state { float: none; }
+  /* the two menu links side by side, and the four board numbers two by two */
+  [data-testid="stHorizontalBlock"]:has([data-testid="stPageLink"]) { flex-direction: row !important; flex-wrap: nowrap; gap: 0.5rem; }
+  [data-testid="stHorizontalBlock"]:has([data-testid="stPageLink"]) > [data-testid="stColumn"] { width: auto !important; flex: 0 0 auto !important; min-width: 0 !important; }
+  [data-testid="stHorizontalBlock"]:has([data-testid="stMetric"]) { flex-wrap: wrap; }
+  [data-testid="stHorizontalBlock"]:has([data-testid="stMetric"]) > [data-testid="stColumn"] { width: calc(50% - 0.5rem) !important; flex: 0 0 calc(50% - 0.5rem) !important; min-width: 0 !important; }
+}
 </style>
 """
 
@@ -350,9 +395,9 @@ def loader_html(mensaje, detalle=""):
 
 
 @contextmanager
-def cargando(mensaje, detalle=""):
+def cargando(mensaje, detalle="", lugar=None):
     """Show the animated SPHEREx scene while a slow step runs, then remove it."""
-    lugar = st.empty()
+    lugar = lugar or st.empty()
     lugar.markdown(loader_html(mensaje, detalle), unsafe_allow_html=True)
     try:
         yield
@@ -383,7 +428,7 @@ def tarjetas(objetivos, compactas=False):
         return elegido
     with st.container(key="targets"):
         for columna, objetivo in zip(st.columns(len(objetivos)), objetivos):
-            with columna.container(border=True):
+            with columna.container(border=True, key=f"tcard_{objetivo['folder']}"):
                 miniatura = os.path.join(THUMBS, f"{objetivo['folder']}.png")
                 if os.path.exists(miniatura):
                     st.image(miniatura, use_container_width=True)

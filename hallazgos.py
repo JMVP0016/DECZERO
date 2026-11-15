@@ -56,7 +56,7 @@ VERDICTS = [
 
 # What happens with a report, shown next to the form and at the top of the board.
 REPORT_FLOW = [
-    ("You report", "It is published at once, with a public date and time that nobody can change."),
+    ("You report", "It is published at once, with a public date and time set by GitHub, not by us."),
     ("Reviewer opens it", "The reviewer signs with a name and checks catalogues and the images."),
     ("Signed verdict", "Known object, image artifact, inconclusive, or candidate worth a follow-up."),
 ]
@@ -282,9 +282,11 @@ def _claim_box(number, code):
         st.success(f"Published as report #{number}. You can follow it on the Findings board.")
         st.markdown('<p class="dz-claim-label">Your claim code</p>', unsafe_allow_html=True)
         st.code(code, language=None)
-        st.warning(
-            "Write down this claim code now: it is shown only once, and it is the "
-            "only way to prove later that this report is yours."
+        st.markdown(
+            '<div class="dz-context"><span>Write it down now</span>'
+            "<em>This code is shown only once, and it is the only way to prove later "
+            "that this report is yours.</em></div>",
+            unsafe_allow_html=True,
         )
 
 
@@ -298,7 +300,7 @@ def _report_dialog(ra, dec, band, view, frame, picture):
         return
     st.caption(
         "Your report is published at once on the public Findings board, with a date and time "
-        "that nobody can change. A reviewer then opens it and signs a verdict."
+        "set by GitHub, not by us. A reviewer then opens it and signs a verdict."
     )
     seen, form_column = st.columns([2, 3], gap="medium")
     if picture is not None:

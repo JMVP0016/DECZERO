@@ -73,10 +73,13 @@ columns[1].metric("Waiting for review", counts[hallazgos.STATUS_NEW])
 columns[2].metric("Reviewed", sum(counts[v] for v in hallazgos.VERDICTS))
 columns[3].metric("Candidates", counts[hallazgos.VERDICTS[2]])
 
+if reports and not visible:
+    st.info("No reports match these filters.")
+
 if not reports:
     st.info(
         "No reports yet. Open a sequence on the main page and use "
-        "“Did you notice something? Report it”."
+        "the “Report a finding” button."
     )
 
 with st.expander("Prove that a report is yours"):
@@ -99,7 +102,7 @@ with st.expander("Prove that a report is yours"):
 
 with st.container(key="board"):
     for report in visible:
-        with st.container(border=True):
+        with st.container(border=True, key=f"rep_{report['number']}"):
             head, status = st.columns([3, 1])
             head.markdown(
                 f'<span class="dz-rnum">#{int(report["number"])}</span>'

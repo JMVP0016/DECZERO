@@ -28,7 +28,7 @@ TARGETS = [
      "ref_ra": 269.452075, "ref_dec": 4.693391, "ref_epoch": 2000.0,
      "pm_ra": -801.55, "pm_dec": 10362.39},
     {"name": "WISE 0855", "folder": "wise_0855", "band": "D6",
-     "kind": "Moves", "line": "One of the coldest brown dwarfs known.",
+     "kind": "Moves", "line": "Too cold and faint to see here. The cross-hair marks where it should be.",
      "ra": 133.7590, "dec": -7.2421,
      # position given in the challenge statement; its epoch (about 2010.3) is inferred
      "ref_ra": 133.795129, "ref_dec": -7.245147, "ref_epoch": 2010.34,
@@ -46,7 +46,7 @@ TARGETS = [
      "ref_ra": 76.95653, "ref_dec": 30.401441, "ref_epoch": 2000.0,
      "pm_ra": 4.86, "pm_dec": -24.16},
     {"name": "R Draconis", "folder": "r_draconis", "band": "D2",
-     "kind": "Varies", "line": "A red giant that pulses every few months.",
+     "kind": "Varies", "line": "A pulsing red giant. Its core overloads the detector here.",
      "ra": 248.1675, "dec": 66.7550,
      # CHECK: the team table has ref_dec 66.763417, about 30 arcsec north of the star
      # in the images; 66.7550 lands on it.

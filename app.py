@@ -78,7 +78,7 @@ def stored_target(ra, dec, band):
 
 def load_target(target):
     """One of the five targets: stored images if we have them, live download otherwise."""
-    with tema.cargando(f"Opening the SPHEREx images of {target['name']}", "Stored by the team"):
+    with tema.cargando(f"Opening the SPHEREx images of {target['name']}", "Stored by the team", lugar=notice):
         cutouts = cache_local.leer_objetivo(target["folder"], target["band"])
     if not cutouts:
         load(target["ra"], target["dec"], target["band"])
@@ -93,14 +93,17 @@ def load_target(target):
 def load(ra, dec, band):
     """Run the search and the downloads, and keep the outcome in the session."""
     st.session_state["result"] = None
+    st.session_state["error_detail"] = None
     try:
-        with tema.cargando("Asking NASA which SPHEREx images cover this position", "Searching the archive"):
+        with tema.cargando("Asking NASA which SPHEREx images cover this position", "Searching the archive", lugar=notice):
             exposures = datos.buscar(ra, dec, banda=band)
     except Exception as error:
         st.session_state["error"] = (
-            "The NASA archive (IRSA) is not responding right now. "
-            f"Please try again in a few minutes. Detail: {error}"
+            "The NASA archive (IRSA) is not responding right now, so new positions cannot "
+            "be searched. Please try again in a few minutes. Meanwhile, the five challenge "
+            "targets are stored by the team and always work."
         )
+        st.session_state["error_detail"] = f"Technical detail: {error}"
         return
     if not exposures:
         st.session_state["error"] = (
@@ -110,7 +113,7 @@ def load(ra, dec, band):
         return
     with tema.cargando(
         f"Found {len(exposures)} images. Bringing up to {MAX_IMAGES} of them",
-        "This can take about a minute",
+        "This can take about a minute", lugar=notice,
     ):
         cutouts = datos.obtener(ra, dec, fov=FOV_ARCMIN, banda=band, max_n=MAX_IMAGES)
     if not cutouts:
@@ -141,8 +144,8 @@ start_band = params.get("band", "D2")
 if has_result:
     chooser = st.expander("Change position or target")
 else:
-    chooser = st.container()
     tema.seccion(1, "Explore any position")
+    chooser = st.container()
 
 with chooser:
     with st.form("search"):
@@ -159,12 +162,17 @@ with chooser:
             help="D1 is the bluest (0.75 µm) and D6 the reddest (5 µm).",
         )
         submitted = st.form_submit_button("Show images", type="primary")
+    if not has_result:
+        notice = st.empty()   # waiting scene and errors appear here, right under the form
 
     if has_result:
         st.caption("Or open one of the five challenge targets:")
     else:
         tema.seccion(2, "Or start with the five challenge targets")
     clicked = tema.tarjetas(TARGETS, compactas=has_result)
+
+if has_result:
+    notice = st.empty()       # the chooser is folded: show messages under it, not inside
 
 first_visit_with_link = bool(start_text) and "result" not in st.session_state
 
@@ -179,6 +187,7 @@ elif submitted or first_visit_with_link:
         ra, dec = parse_coordinate(text)
     except Exception:
         st.session_state["result"] = None
+        st.session_state["error_detail"] = None
         st.session_state["error"] = (
             "That is not a valid sky position. Write RA and Dec in degrees "
             "(for example 210.80227 54.34895) or as 08h55m10.8s -7d14m42.5s. "
@@ -195,7 +204,10 @@ elif submitted or first_visit_with_link:
             st.rerun()            # redraw with the slim header, so the sequence is in view
 
 if st.session_state.get("error"):
-    st.error(st.session_state["error"])
+    with notice.container():
+        st.error(st.session_state["error"])
+        if st.session_state.get("error_detail"):
+            st.caption(st.session_state["error_detail"])
 
 result = st.session_state.get("result")
 if result:
@@ -203,7 +215,8 @@ if result:
     cutouts = result["cutouts"]
     if result.get("stored"):
         st.success(
-            f"{result['stored']}: {len(cutouts)} images stored by the team, "
+            f"{result['stored']}: {len(cutouts)} images stored by the team "
+            "(combined below into one frame per observing period), "
             f"detector {result['band']}, around RA {result['ra']:.5f}°, Dec {result['dec']:.5f}°."
         )
     else:
@@ -256,6 +269,9 @@ if result:
     frame = frames[index]
 
     picture_column, movie_column = st.columns(2)
+    picture_column.markdown('<p class="dz-plabel">Still frame · move the slider</p>', unsafe_allow_html=True)
+    if len(frames) > 1:
+        movie_column.markdown('<p class="dz-plabel">Animation · plays by itself</p>', unsafe_allow_html=True)
     picture_column.image(frame["picture"], caption=f"Frame {index + 1} of {len(frames)} · {frame['label']}")
     with picture_column.expander("Technical details of this frame"):
         st.write(frame["details"])
