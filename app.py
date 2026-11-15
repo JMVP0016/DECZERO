@@ -218,7 +218,7 @@ if result:
     if result.get("stored"):
         st.success(
             f"{result['stored']}: {len(cutouts)} images stored by the team "
-            "(combined below into one frame per observing period), "
+            "(the Aligned view combines them into one frame per observing period), "
             f"detector {result['band']}, around RA {result['ra']:.5f}°, Dec {result['dec']:.5f}°."
         )
     else:

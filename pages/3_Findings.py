@@ -134,7 +134,7 @@ with st.container(key="board"):
                     if st.button("I am opening this report to review it", key=key + "open"):
                         hallazgos.add_event(report, hallazgos.STATUS_OPENED, reviewer)
                         st.rerun()
-                else:
+                elif report["status"] == hallazgos.STATUS_OPENED:   # one verdict per report
                     with st.form(key + "form"):
                         verdict = st.selectbox("Verdict", hallazgos.VERDICTS, key=key + "v")
                         reason = st.text_area(

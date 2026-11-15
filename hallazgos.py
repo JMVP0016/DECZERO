@@ -284,8 +284,8 @@ def _claim_box(number, code):
         st.code(code, language=None)
         st.markdown(
             '<div class="dz-context"><span>Write it down now</span>'
-            "<em>This code is shown only once, and it is the only way to prove later "
-            "that this report is yours.</em></div>",
+            "<em>This code is not stored anywhere: once you leave this page it cannot be "
+            "recovered, and it is the only way to prove later that this report is yours.</em></div>",
             unsafe_allow_html=True,
         )
 

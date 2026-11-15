@@ -189,7 +189,9 @@ def stacked_frames(cutouts, ra, dec, ring, target=None, title="", plain=False):
         mark = (float(x), float(y))
     frames = []
     for stack, dates, waves, count in stacks:
-        label = f"{title}{mjd_to_text(min(dates))} to {mjd_to_text(max(dates))} - {count} images"
+        first_day, last_day = mjd_to_text(min(dates)), mjd_to_text(max(dates))
+        span = first_day if first_day == last_day else f"{first_day} to {last_day}"
+        label = f"{title}{span} - {count} images"
         expected = None
         if target is not None:
             x, y = grid.world_to_pixel_values(*objetivos.expected_position(target, float(np.mean(dates))))

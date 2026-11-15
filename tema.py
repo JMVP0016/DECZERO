@@ -799,7 +799,7 @@ def pie():
         <div class="dz-footer-top"><b>{PROJECT_NAME}</b><span>{TAGLINE}</span></div>
         <div class="dz-footer">
           HAWAPACHA, by team DecZero (Ecuador).
-          Data: SPHEREx spectral images, NASA/IPAC Infrared Science Archive (IRSA),
+          Data: SPHEREx spectral images (DR1 and QR3, the latest releases at IRSA in November 2026), NASA/IPAC Infrared Science Archive (IRSA),
           read from the public IRSA copy on AWS Open Data.
           Mission facts: <a href="https://science.nasa.gov/mission/spherex/">science.nasa.gov/mission/spherex</a>.
           This is a student project for the NASA Space Apps Challenge; it is not a NASA product.
