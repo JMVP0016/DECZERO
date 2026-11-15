@@ -279,7 +279,7 @@ def add_event(report, kind, reviewer, text=""):
 
 def _claim_box(number, code):
     with st.container(border=True, key="claim"):
-        st.success(f"Published as report #{number}. You can follow it on the Findings board.")
+        st.success(f"Observation saved as report #{number}. You can follow it on the Findings board.")
         st.markdown('<p class="dz-claim-label">Your claim code</p>', unsafe_allow_html=True)
         st.code(code, language=None)
         st.markdown(

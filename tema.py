@@ -120,7 +120,7 @@ input::placeholder, textarea::placeholder { font-family: 'Inter', sans-serif; }
 [data-testid="stAlert"] [data-testid="stAlertContainer"] { border: 0; background: transparent !important; }
 [data-testid="stAlert"] p, [data-testid="stAlert"] li, [data-testid="stAlert"] strong,
 [data-testid="stAlert"] div { color: #F5F7FA !important; }
-[data-testid="stAlert"] strong { color: #5EEAD4 !important; }
+[data-testid="stAlert"] strong { color: #F5F7FA !important; }
 
 /* links and selection chips */
 [data-testid="stMarkdownContainer"] a { color: #5EEAD4; }
@@ -324,6 +324,16 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 /* the sequence comes in gently instead of popping up */
 [data-testid="stImage"] img { animation: dz-rise 0.6s ease-out both; }
 @media (prefers-reduced-motion: reduce) { .dz-bar-live, [data-testid="stImage"] img { animation: none; } }
+/* help window */
+.st-key-help_open button, .st-key-help_open_home button { border-color: #FBBF24 !important; }
+.st-key-help_open button:hover, .st-key-help_open_home button:hover { background: rgba(251,191,36,0.12) !important; }
+.st-key-help_open [data-testid="stIconMaterial"], .st-key-help_open_home [data-testid="stIconMaterial"] { color: #FBBF24; }
+.dz-guide i { font-style: normal; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 0.8rem; letter-spacing: 0.1em; color: #5EEAD4; }
+.dz-guide b { display: block; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.05rem; color: #F5F7FA; margin: 0.1rem 0 0.3rem 0; }
+.stApp .dz-guide p { font-size: 0.93rem !important; line-height: 1.5; color: #C9D1E0; margin: 0 0 1rem 0; }
+.stApp p.dz-expect { font-size: 0.92rem !important; color: #C9D1E0; margin: 0 0 0.5rem 0; }
+.stApp p.dz-expect b { color: #F5F7FA; }
+[data-testid="stDialog"] [data-testid="stImage"] img { animation: none; }
 /* larger section titles */
 .dz-section { margin-top: 3.6rem; }
 .dz-section b { font-size: clamp(1.25rem, 2.2vw, 1.7rem); letter-spacing: 0.06em; }
@@ -349,6 +359,7 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 # The Hawapacha mark: a sky circle crossed by the equator line, with two objects.
 LOGO_SVG = """
 <svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="HAWAPACHA logo">
+<title>HAWAPACHA: a sky circle crossed by the equator line, with two observed positions</title>
   <circle cx="60" cy="50" r="40" fill="none" stroke="#F5F7FA" stroke-width="6"/>
   <circle cx="44" cy="32" r="6" fill="#5EEAD4"/>
   <circle cx="76" cy="68" r="6" fill="#5EEAD4"/>
@@ -509,8 +520,8 @@ __CSS__
     <div class="dz-kicker">Team DecZero · NASA Space Apps Challenge 2026</div>
     <div class="dz-brand">__LOGO__<div class="dz-title">__NAME__</div></div>
     <p class="dz-tagline">__TAGLINE__</p>
-    <p class="dz-sub">Real infrared images from NASA's SPHEREx space telescope,
-    for any position in the sky, in time order.</p>
+    <p class="dz-sub">Compare real SPHEREx images of the same patch of sky across dates,
+    and record what you notice.</p>
   </div>
   <div class="dz-facts">__FACTS__</div>
   <p class="dz-si">Planet and SPHEREx illustration made by the team with SI assistance; not an official image</p>
@@ -682,13 +693,16 @@ def _embed(html, height):
 
 def subir():
     """Scroll the page back to the top (used right after a sequence is opened)."""
-    import streamlit.components.v1 as components
-    components.html(
-        "<script>try { const d = window.parent.document;"
-        "const m = d.querySelector('[data-testid=\"stMain\"]') || d.scrollingElement;"
-        "m.scrollTo({top: 0}); } catch (e) {}</script>",
-        height=0,
-    )
+    try:
+        import streamlit.components.v1 as components
+        components.html(
+            "<script>try { const d = window.parent.document;"
+            "const m = d.querySelector('[data-testid=\"stMain\"]') || d.scrollingElement;"
+            "m.scrollTo({top: 0}); } catch (e) {}</script>",
+            height=0,
+        )
+    except Exception:
+        pass   # a convenience only: never let it break the page
 
 
 def _facts_html():
@@ -709,7 +723,7 @@ def portada(compacta=False):
             # a slim strip of the hero: the same stars and lit horizon, still moving
             '<div class="dz-bar dz-bar-live"><div class="dz-stars"></div><div class="dz-planet"></div>'
             f'{LOGO_SVG}<b>{PROJECT_NAME}</b><span>{TAGLINE} '
-            "Real SPHEREx images of any position, in time order.</span></div>",
+            "Compare real SPHEREx images across dates and record what you notice.</span></div>",
             unsafe_allow_html=True,
         )
         return
@@ -734,8 +748,8 @@ def portada(compacta=False):
             <div class="dz-kicker">Team DecZero · NASA Space Apps Challenge 2026</div>
             <div class="dz-brand">{LOGO_SVG}<div class="dz-title">{PROJECT_NAME}</div></div>
             <p class="dz-tagline">{TAGLINE}</p>
-            <p class="dz-sub">Real infrared images from NASA's SPHEREx space telescope,
-            for any position in the sky, in time order.</p>
+            <p class="dz-sub">Compare real SPHEREx images of the same patch of sky across dates,
+            and record what you notice.</p>
           </div>
           <div class="dz-facts">{facts}</div>
           <p class="dz-si">Planet illustration made by the team with SI assistance; not an official image</p>
@@ -774,13 +788,106 @@ HELP = [
      "Real pictures of the same small patch of sky, taken on different dates by "
      "NASA's SPHEREx space telescope in infrared light."),
     ("What should I look for?",
-     "In the aligned view, a dot that changes place between dates may be something nearby "
-     "moving across the sky. A dot that gets brighter or fainter may be a variable star."),
+     "In the Aligned view, a dot that changes place between periods, while its neighbours "
+     "stay put, may be a nearby object moving across the sky. A dot that is brighter or "
+     "fainter in a whole period may be a variable star, but read the next card first."),
     ("What can fool me?",
-     "A dot that shows up in only one picture is usually a cosmic ray or a bad pixel. "
-     "Each picture is also taken in a slightly different infrared colour, so brightness "
-     "can change for that reason alone."),
+     "Each exposure is taken in a different infrared colour, so brightness can change for "
+     "that reason alone. Stars with a plain white core overloaded the detector. Purple "
+     "squares, white blocks and anything seen in only one exposure come from the camera."),
 ]
+
+
+HELP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "help")
+
+# The guide of the help window: picture, what the picture shows, title, text.
+# Every picture is a crop of the real SPHEREx images stored for the challenge targets.
+GUIDE = [
+    ("views.png", "Epsilon Indi B: Aligned (left) and one single exposure (right)",
+     "Two ways to look",
+     "“Aligned” shows one picture per observing period (a few days or weeks), made by combining "
+     "that period's images, so it is the cleanest view. “Single images” shows every exposure on "
+     "its own: more detail in time, but noisier and with gaps."),
+    ("moved.png", "Epsilon Indi B, enlarged: April 2025 (left) and October 2026 (right)",
+     "What “it moved” means",
+     "The same dot sits in a different place in a later period, while the stars around it stay "
+     "exactly where they were. Real shifts here are small: in one year Barnard's Star, the "
+     "fastest star in the sky, moves about one fifth of the ring's width."),
+    ("colour.png", "The same star in two exposures taken minutes apart",
+     "What “it changed brightness” means",
+     "Be careful: each exposure sees the spot in a different infrared colour, so a star can "
+     "look brighter or fainter minutes apart without changing at all. Only trust a change that "
+     "shows in the Aligned view between periods, and never for a star with a plain white core."),
+    ("fooled.png", "Barnard's Star, overloaded white core (left); R Draconis, white blocks and purple squares (right)",
+     "What usually fools people",
+     "Small purple squares are pixels flagged as bad (cosmic-ray hits, hot pixels); big purple "
+     "areas are the edge of the detector. A plain white core means the star overloaded the "
+     "detector. White blocks with straight edges, wide glows around very bright stars and "
+     "anything seen in only one exposure come from the camera, not the sky."),
+    ("marks.png", "Epsilon Indi B: whole view (left) and the centre enlarged (right)",
+     "Ring, cross-hair and labels",
+     "The amber ring marks the centre of the view and never moves. The turquoise cross-hair shows "
+     "where the catalogue says the target should be on that date. The label on top gives the "
+     "date(s) and how many images were combined. The bar is one arcminute; north is up and east "
+     "is left."),
+    (None, "",
+     "When to report it",
+     "Report a dot that moves or changes in the Aligned view in at least two periods, when it is "
+     "not on a purple patch, a white core or the edge of the picture. Write what you saw (which "
+     "way it moved and roughly how far, or brighter/fainter), between which dates, and how sure "
+     "you are. “Not sure” is a valid answer."),
+]
+
+EXPECT = [
+    ("Barnard's Star", "Its white core fills the ring. Tick “First and last date only” and watch the glow "
+     "and the cross-hair slide up (north) by about a fifth of the ring's width in one year."),
+    ("Epsilon Indi B", "A clear dot in the ring that drifts left and down by about a ninth of the ring's "
+     "width in 17 months: easiest to see with “First and last date only” or the difference image."),
+    ("WISE 0855", "Not visible in single images. In the Aligned view, the two periods with 18 and 19 "
+     "images show at best a very faint smudge inside the cross-hair."),
+    ("RW Aurigae", "A bright star that stays put; no change in brightness can be seen by eye here."),
+    ("R Draconis", "The core is overloaded in every image, so its brightness cannot be read."),
+]
+
+ASTRONOMERS = (
+    "Data: SPHEREx Level 2 spectral images (IRSA, DR1 and QR3), one detector band per view; each "
+    "exposure samples the position at a different wavelength through the linear variable filter. "
+    "Processing: flagged pixels are masked, a spatial median is subtracted per exposure, images are "
+    "reprojected onto a 3″ north-up tangent grid (native pixel 6.15″) and median-combined per epoch "
+    "(a gap of more than 30 days starts a new epoch). Display: one arcsinh stretch per sequence. "
+    "Limits: no PSF matching, no photometric or colour correction, no astrometric refinement beyond "
+    "the Level 2 WCS; stacks mix wavelengths, so they are not photometric. The cross-hair is the "
+    "catalogue position plus linear proper motion, without parallax. Treat what is shown as qualitative."
+)
+
+
+@st.dialog("How to read the images", width="large")
+def _ayuda_ventana():
+    st.caption("Every picture below is a crop of the real SPHEREx images in this app.")
+    for number, (picture, shows, title, text) in enumerate(GUIDE, start=1):
+        left, right = st.columns([2, 3], gap="medium", vertical_alignment="center")
+        path = os.path.join(HELP_DIR, picture) if picture else None
+        if path and os.path.exists(path):
+            left.image(path, caption=shows, use_container_width=True)
+        right.markdown(
+            f'<div class="dz-guide"><i>{number:02d}</i><b>{title}</b><p>{text}</p></div>',
+            unsafe_allow_html=True,
+        )
+    with st.expander("What to expect in each of the five targets"):
+        st.markdown("".join(
+            f'<p class="dz-expect"><b>{name}.</b> {text}</p>' for name, text in EXPECT
+        ), unsafe_allow_html=True)
+    with st.expander("For astronomers: data, processing and limits"):
+        st.write(ASTRONOMERS)
+
+
+def ayuda_boton(lugar=None, clave="help_open"):
+    """The magnifier button that opens the help window. lugar: a column or container."""
+    lugar = lugar or st
+    if lugar.button("How to read the images", key=clave, icon=":material/search:",
+                    use_container_width=True,
+                    help="A short guide with real examples: what counts as a change and what can fool you."):
+        _ayuda_ventana()
 
 
 def ayuda():
@@ -798,7 +905,8 @@ def pie():
         f"""
         <div class="dz-footer-top"><b>{PROJECT_NAME}</b><span>{TAGLINE}</span></div>
         <div class="dz-footer">
-          HAWAPACHA, by team DecZero (Ecuador).
+          HAWAPACHA means celestial space, from the Kichwa expression <i>hawa pacha</i>.
+          Made by team DecZero in Ecuador, on the equator line.
           Data: SPHEREx spectral images (DR1 and QR3, the latest releases at IRSA in November 2026), NASA/IPAC Infrared Science Archive (IRSA),
           read from the public IRSA copy on AWS Open Data.
           Mission facts: <a href="https://science.nasa.gov/mission/spherex/">science.nasa.gov/mission/spherex</a>.

@@ -25,12 +25,12 @@ MAX_IMAGES = 24      # live-mode cap agreed after measurement M0
 FOV_ARCMIN = 10.0    # side of each cutout
 BANDS = ["D1", "D2", "D3", "D4", "D5", "D6"]
 
-MODE_STACKED = "Aligned (best for spotting motion)"
-MODE_SINGLE = "Single images (one per exposure)"
+MODE_STACKED = "Aligned (best for motion)"
+MODE_SINGLE = "Single images (per exposure)"
 SPEEDS = {"Slow": 900, "Medium": 450, "Fast": 200}   # milliseconds per frame
 
 
-st.set_page_config(page_title="HAWAPACHA · SPHEREx sky viewer", page_icon=tema.ICON, layout="wide")
+st.set_page_config(page_title="HAWAPACHA — Find the change in the sky", page_icon=tema.ICON, layout="wide")
 tema.aplicar_tema()
 
 
@@ -51,17 +51,22 @@ def parse_coordinate(text):
     return ra, dec
 
 
-def build_frames(result, mode, ring):
+FIELDS = {"10 arcmin": 200, "6 arcmin": 120, "4 arcmin": 80}   # side of the view -> grid pixels of 3"
+
+
+def build_frames(result, mode, ring, grid_pixels=200):
     """Frames for this result and view. Kept in the session so the slider answers at once."""
-    key = (result["ra"], result["dec"], result["band"], len(result["cutouts"]), mode, ring)
+    key = (result["ra"], result["dec"], result["band"], len(result["cutouts"]), mode, ring, grid_pixels)
     kept = st.session_state.get("frames")
     if kept and kept["key"] == key:
         return kept["frames"], kept["info"]
     target = next((t for t in TARGETS if t["name"] == result.get("stored")), None)
     if mode == MODE_STACKED:
-        frames, info = stacked_frames(result["cutouts"], result["ra"], result["dec"], ring, target)
+        frames, info = stacked_frames(result["cutouts"], result["ra"], result["dec"], ring, target,
+                                      grid_pixels=grid_pixels)
     else:
-        frames, info = single_frames(result["cutouts"], result["ra"], result["dec"], ring, target)
+        frames, info = single_frames(result["cutouts"], result["ra"], result["dec"], ring, target,
+                                     grid_pixels=grid_pixels)
     st.session_state["frames"] = {"key": key, "frames": frames, "info": info}
     return frames, info
 
@@ -133,6 +138,7 @@ tema.navegacion()
 tema.portada(compacta=bool(st.session_state.get("result")))
 if not st.session_state.get("result"):
     tema.pasos()
+    tema.ayuda_boton(st.columns([1, 1.1, 1])[1], clave="help_open_home")
 has_result = bool(st.session_state.get("result"))
 
 params = st.query_params
@@ -227,12 +233,18 @@ if result:
             f"RA {result['ra']:.5f}°, Dec {result['dec']:.5f}°, detector {result['band']}."
         )
 
-    st.caption(
-        "Look for a dot that shifts inside the amber ring or changes brightness from one date "
-        "to the next. A dot that shows up in a single frame is usually a cosmic ray or a bad pixel. "
-        "Amber ring: centre of the view. Purple: no data."
+    hint_column, help_column = st.columns([3.6, 1.4], vertical_alignment="center")
+    tema.ayuda_boton(help_column)
+    hint_column.caption(
+        "Look for a dot that changes place between observing periods while the stars around it "
+        "stay put. Amber ring: centre of the view. Purple: no data."
     )
-    view_column, ring_column, report_column = st.columns([3, 1, 1], vertical_alignment="bottom")
+    view_column, field_column, ring_column, report_column = st.columns(
+        [4.5, 1.1, 1.5, 1.4], vertical_alignment="bottom")
+    field = field_column.selectbox(
+        "Field of view", list(FIELDS),
+        help="Side of the patch of sky shown. A smaller field zooms in on the centre.",
+    )
     mode = view_column.radio("View", [MODE_STACKED, MODE_SINGLE], horizontal=True)
     ring = ring_column.checkbox("Show the ring", value=True,
                                 help="The amber ring marks the centre of the view: the position asked for, or the team's position for one of the five targets.")
@@ -241,7 +253,7 @@ if result:
         "Report a finding", key="report_open_top", use_container_width=True,
         help="Noticed something in these images? Publish it on the Findings board.",
     )
-    frames, info = build_frames(result, mode, ring)
+    frames, info = build_frames(result, mode, ring, FIELDS[field])
     if info.get("not_aligned"):
         st.warning(f"{info['not_aligned']} images could not be aligned and were left out.")
     if info.get("thin_epochs"):
@@ -252,11 +264,12 @@ if result:
         )
 
     # Controls first, in one row, so the two pictures below start at the same height.
-    blink, speed = False, "Medium"
+    blink, speed, show_difference = False, "Medium", False
     if info.get("noisy") and len(frames) > 1:
         st.caption("Some observing periods here have very few images, so their frames are noisy.")
     if len(frames) > 1:
-        frame_column, speed_column, blink_column = st.columns([2, 1.2, 1.2], vertical_alignment="bottom")
+        frame_column, speed_column, blink_column, difference_column = st.columns(
+            [1.8, 1.1, 1.2, 1.2], vertical_alignment="bottom")
         index = frame_column.slider("Frame (still picture)", 1, len(frames), 1) - 1
         speed = speed_column.select_slider("Animation speed", list(SPEEDS), value="Medium")
         aligned_view = mode == MODE_STACKED
@@ -265,6 +278,12 @@ if result:
             help="Blink between the two dates that are furthest apart. Only in the aligned view: "
                  "single images are too noisy to blink first against last.",
         ) and aligned_view
+        show_difference = difference_column.checkbox(
+            "Difference image", value=False,
+            disabled=not (aligned_view and info.get("difference") is not None),
+            help="Shows the last observing period minus the first, in place of the animation. "
+                 "What did not change cancels out. Only in the aligned view.",
+        ) and aligned_view and info.get("difference") is not None
     else:
         index = 0
         st.caption("Only one observing period is available here, so there is nothing to compare yet.")
@@ -272,13 +291,24 @@ if result:
 
     picture_column, movie_column = st.columns(2)
     picture_column.markdown('<p class="dz-plabel">Still frame · move the slider</p>', unsafe_allow_html=True)
-    if len(frames) > 1:
+    if show_difference:
+        movie_column.markdown('<p class="dz-plabel">Difference · last period minus first</p>', unsafe_allow_html=True)
+    elif len(frames) > 1:
         movie_column.markdown('<p class="dz-plabel">Animation · plays by itself</p>', unsafe_allow_html=True)
     picture_column.image(frame["picture"], caption=f"Frame {index + 1} of {len(frames)} · {frame['label']}")
     with picture_column.expander("Technical details of this frame"):
         st.write(frame["details"])
 
-    if len(frames) > 1:
+    if show_difference:
+        movie_column.image(
+            info["difference"],
+            caption="White: brighter in the last period. Black: brighter in the first. Grey: no change.",
+        )
+        movie_column.caption(
+            "An object that moved shows as a black spot next to a white one. Bright stars leave "
+            "rings and smudges here, because each period mixes different infrared colours."
+        )
+    elif len(frames) > 1:
         # the GIF is kept too: encoding 40 frames on every slider move made it lag
         gif_key = (st.session_state["frames"]["key"], speed, blink)
         kept_gif = st.session_state.get("gif")
@@ -306,25 +336,27 @@ if result:
         + (" (the team's position for this target). " if result.get("stored") else " (the position you asked for). ")
         + ("**Turquoise cross-hair:** where the catalogue position and proper motion say this "
            "target should be on that date. " if result.get("stored") else "") +
-        "**Purple:** no data there. The core of a very bright star is drawn plain white "
-        "where the star overloaded the detector, so its exact centre cannot be measured."
+        "**Purple:** no data: small squares are pixels flagged as bad, large areas are the edge "
+        "of the detector. **Plain white:** the star overloaded the detector there, so neither "
+        "its exact centre nor its brightness can be measured. White blocks with straight edges "
+        "next to a bright star are flagged pixels too, not objects."
     )
     if mode == MODE_STACKED:
         st.info(
             legend + "\n\n"
-            "Each frame combines (median) the images of one observing period, aligned so that "
-            "**north is up and east is left**. A dot that changes place between frames may be "
-            "something moving across the sky. The images combined in a frame were taken at "
-            "**different wavelengths** within the detector band."
+            "Each frame is the middle value (median) of all the images of one observing period, "
+            "lined up so that **north is up and east is left**. A dot that changes place between "
+            "frames, while the other stars stay put, may be something moving across the sky. The "
+            "images in a frame were taken in **different infrared colours**, so small brightness "
+            "differences between frames are expected."
         )
     else:
         st.info(
             legend + "\n\n"
-            "These are single images, one per exposure, with only the sky level subtracted and "
-            "turned so that **north is up and east is left**. Nothing is combined, so they are "
-            "noisier, and a dot seen in only one of them is usually a cosmic ray or a bad pixel. "
-            "Each image is taken at a **different wavelength**, so a change in brightness is not "
-            "by itself a change over time."
+            "These are single exposures, turned so that **north is up and east is left**; nothing "
+            "is combined, so they are noisier and have purple gaps where pixels were flagged as "
+            "bad. Each one sees the spot in a **different infrared colour**: a star that looks "
+            "brighter or fainter from one exposure to the next has usually not changed."
         )
 
 
@@ -334,8 +366,9 @@ if result:
         "Data: NASA/IPAC IRSA, SPHEREx."
     )
 
-tema.seccion(2 if has_result else 3, "How to read the images")
-tema.ayuda()
+if not has_result:   # with a sequence open, the guide is the button next to the pictures
+    tema.seccion(3, "How to read the images")
+    tema.ayuda()
 tema.pie()
 if st.session_state.pop("scroll_top", False):
     tema.subir()   # on a phone the page would stay halfway down after opening a sequence

@@ -14,7 +14,7 @@ fresco.actualizar()   # after an upload, do not mix new pages with old modules i
 import hallazgos
 import tema
 
-st.set_page_config(page_title="Findings · HAWAPACHA", page_icon=tema.ICON, layout="wide")
+st.set_page_config(page_title="HAWAPACHA — Findings board", page_icon=tema.ICON, layout="wide")
 tema.aplicar_tema()
 tema.navegacion()
 tema.portada(compacta=True)

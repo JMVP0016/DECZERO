@@ -38,7 +38,8 @@ def limits(images):
     return low, high
 
 
-def to_picture(image, low, high, mark=None, label="", scale_arcsec=None, compass=False, expected=None):  # noqa: E501
+def to_picture(image, low, high, mark=None, label="", scale_arcsec=None, compass=False, expected=None,
+               difference=False):
     """
     2D array -> colour picture of DISPLAY_PIXELS x DISPLAY_PIXELS.
       - A non-square image is padded to a square, never stretched.
@@ -47,6 +48,8 @@ def to_picture(image, low, high, mark=None, label="", scale_arcsec=None, compass
       - expected = (x, y) draws the turquoise cross-hair of the catalogue position.
       - label is written on a strip at the top; scale_arcsec (size of one input
         pixel) adds a 1-arcmin bar; compass adds the orientation note.
+      - difference=True is for one image minus another: the grey scale is linear,
+        so "no change" is mid grey, and holes are never drawn as white star cores.
     """
     height, width = image.shape
     side = max(height, width)
@@ -55,14 +58,15 @@ def to_picture(image, low, high, mark=None, label="", scale_arcsec=None, compass
     square[pad_y:pad_y + height, pad_x:pad_x + width] = image
 
     scaled = np.clip((square - low) / (high - low), 0.0, 1.0)
-    scaled = np.arcsinh(10.0 * scaled) / np.arcsinh(10.0)      # brings out faint sources
+    if not difference:
+        scaled = np.arcsinh(10.0 * scaled) / np.arcsinh(10.0)  # brings out faint sources
     grey = (255 * np.nan_to_num(scaled, nan=0.0)).astype(np.uint8)
     rgb = np.stack([grey, grey, grey], axis=-1)
     missing = ~np.isfinite(square)
     rgb[missing] = NO_DATA_COLOUR
     # A hole surrounded by very bright pixels is the overloaded core of a bright
     # star, not missing sky: draw it white, as the star would look, not purple.
-    regions, count = ndimage.label(missing)
+    regions, count = ndimage.label(missing) if not difference else (None, 0)
     for number in range(1, count + 1):
         region = regions == number
         rim = ndimage.binary_dilation(region) & ~missing
@@ -103,12 +107,12 @@ def to_picture(image, low, high, mark=None, label="", scale_arcsec=None, compass
     return picture
 
 
-def single_frames(cutouts, ra, dec, ring, target=None):
+def single_frames(cutouts, ra, dec, ring, target=None, grid_pixels=GRID_PIXELS):
     """
     One frame per image, each turned so that north is up and east is left.
     Nothing is combined: only the sky level is subtracted from each image.
     """
-    grid, shape = proceso.crear_rejilla_norte(ra, dec, tamano_pix=GRID_PIXELS)
+    grid, shape = proceso.crear_rejilla_norte(ra, dec, tamano_pix=grid_pixels)
     aligned, kept = proceso.reproyectar(
         [c["imagen"] for c in cutouts],
         [c["wcs"] for c in cutouts],
@@ -146,14 +150,14 @@ def single_frames(cutouts, ra, dec, ring, target=None):
             ),
         })
     return frames, {
-        "field_arcmin": GRID_PIXELS * GRID_ARCSEC / 60.0,
+        "field_arcmin": grid_pixels * GRID_ARCSEC / 60.0,
         "not_aligned": len(cutouts) - len(kept),
     }
 
 
-def stacked_frames(cutouts, ra, dec, ring, target=None, title="", plain=False):
+def stacked_frames(cutouts, ra, dec, ring, target=None, title="", plain=False, grid_pixels=GRID_PIXELS):
     """Images aligned north up and combined (median) within each observing epoch."""
-    grid, shape = proceso.crear_rejilla_norte(ra, dec, tamano_pix=GRID_PIXELS)
+    grid, shape = proceso.crear_rejilla_norte(ra, dec, tamano_pix=grid_pixels)
     aligned, kept = proceso.reproyectar(
         [c["imagen"] for c in cutouts],
         [c["wcs"] for c in cutouts],
@@ -208,8 +212,21 @@ def stacked_frames(cutouts, ra, dec, ring, target=None, title="", plain=False):
                 f"**Orientation:** north up, east left"
             ),
         })
+    # Last period minus first: what is the same in both cancels out, and an object
+    # that moved shows as a dark spot (where it was) next to a bright one (where it is).
+    difference = None
+    if len(stacks) > 1 and not plain:
+        with np.errstate(all="ignore"):
+            change = stacks[-1][0] - stacks[0][0]
+        if np.isfinite(change).any():
+            limit = float(np.nanpercentile(np.abs(change), 99.5)) or 1.0
+            difference = to_picture(
+                change, -limit, limit, mark=mark, scale_arcsec=GRID_ARCSEC, compass=True, difference=True,
+                label=f"{mjd_to_text(max(stacks[-1][1]))} minus {mjd_to_text(min(stacks[0][1]))}",
+            )
     return frames, {
-        "field_arcmin": GRID_PIXELS * GRID_ARCSEC / 60.0,
+        "difference": difference,
+        "field_arcmin": grid_pixels * GRID_ARCSEC / 60.0,
         "not_aligned": len(cutouts) - len(kept),
         "thin_epochs": thin,
         "noisy": min(count for _, _, _, count in stacks) < MIN_IMAGES_PER_EPOCH,

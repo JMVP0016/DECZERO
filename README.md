@@ -2,6 +2,10 @@
 
 NASA Space Apps Challenge 2026 · Challenge: **Planet X and SPHEREx** · Team DecZero (Ecuador).
 
+*HAWAPACHA means celestial space, from the Kichwa expression "hawa pacha". The name
+joins astronomical exploration with the team's Ecuadorian identity and its place on
+the equator line. (Linguistic reference: Kichwa glossary, FLACSO, 2018, p. 79.)*
+
 A public web page, with no sign-up, where anyone types sky coordinates (RA/Dec)
 and sees the real SPHEREx images of that area in time order.
 
@@ -19,23 +23,37 @@ hackathon.
   per observing period (median of the images of that period) or one frame per exposure.
 - Five challenge targets open with one click from images stored in this repository.
 - A cross-hair marks where the catalogue position and proper motion put each target.
+- A difference image (last observing period minus the first) and a choice of field
+  of view (4, 6 or 10 arcmin).
+- A help window with real examples of what counts as a change and what can fool you.
 - Visitors can report what they noticed; reports go to a public findings board
   where a reviewer signs a verdict.
 
 ## Validation (15 Nov 2026)
 
-Tested on the five targets named by the challenge; motion measured on one.
+Tested on the five targets named by the challenge. The shift of each target between
+its first and last observing period was measured on the stored SPHEREx images and
+compared with the catalogue proper motion.
 
-| Target | Expected | Seen in the SPHEREx images | Result |
-| :--- | :--- | :--- | :--- |
-| Epsilon Indi B | 2025.32 to 2026.75: +5.7" in RA, -3.6" in Dec (proper motion) | +5.3" in RA, -3.5" in Dec (photocentre of the unresolved pair, uncertainty about 1") | Measured: agrees |
-| Barnard's Star | About 10.4" per year, northwards | A visible shift to the north between periods | Not measurable: the core saturates the detector |
-| WISE 0855 | About 8.1" per year, westwards | No source in detector D6 | Not detected |
-| RW Aurigae | Motion below 0.03" per year | The star is there; brightness not quantified because each exposure has a different wavelength | Not measured |
-| R Draconis | Motion below 0.03" per year | The core saturates the detector | Not measurable |
+| Target | Period | Measured shift (east, north) | Expected | Result |
+| :--- | :--- | :--- | :--- | :--- |
+| Epsilon Indi B (D2) | 2025.32 to 2026.75 | +5.1", -3.9" | +5.7", -3.6" from proper motion alone; about +5.3", -4.0" with parallax | Agrees |
+| Barnard's Star (D2) | 2025.65 to 2026.64 | -0.5", +10.2" | -0.8", +10.3" | North shift agrees; the core is saturated, so only the wings were fitted |
+| WISE 0855 (D6) | 2025.88 to 2026.32 | about -2.8", +0.6" (uncertainty about 1") | -3.6", +0.3" | Faint source (about 10 sigma per stacked period) at the expected place; candidate detection, not seen in single exposures |
+| RW Aurigae (D2) | 2025.69 to 2026.70 | +0.3", 0.0" | 0.0", 0.0" | No motion, as expected (control) |
+| R Draconis (D2) | 2025.47 to 2026.47 | +0.1", -0.3" | about 0 | No motion, as expected (control) |
 
-One SPHEREx pixel is 6.15". The app does not detect anything by itself: the
-person looking at the sequence is the one who notices a change.
+How it was measured: for Epsilon Indi B and RW Aurigae, a 2D Gaussian fitted in each
+exposure and averaged per period; for Barnard's Star and R Draconis, whose cores
+saturate, a Moffat profile fitted to the unsaturated wings; for WISE 0855, the centroid
+in the stack of each period. Statistical errors are 0.1" to 0.4"; the systematic floor,
+from the two controls, is about 0.5" (one SPHEREx pixel is 6.15"). The parallax values
+used are approximate.
+
+Limits: brightness changes of RW Aurigae and R Draconis cannot be measured here.
+Their cores saturate in detector D2, and each exposure sees the star at a different
+wavelength. The app does not detect anything by itself: the person looking at the
+sequence is the one who notices a change.
 
 ## Run locally
 
@@ -109,7 +127,7 @@ by a team member before being committed.
 
 | Tool | Used for | Files |
 | :--- | :--- | :--- |
-| Claude (Anthropic) | Drafting the repository skeleton, the viewer page, the stored-image reader, the findings board, the visual theme and help texts, the dependency-check page and the diagnostics page | `app.py`, `cache_local.py`, `tema.py`, `hallazgos.py`, `pages/3_Findings.py`, `.streamlit/config.toml`, `pages/1_Diagnostics.py`, `pages/2_System_check.py`, `fresco.py`, `probar_datos.py`, `README.md`, `requirements.txt` |
+| Claude (Anthropic) | Drafting the repository skeleton, the viewer page, the stored-image reader, the findings board, the visual theme and help texts, the dependency-check page and the diagnostics page | `app.py`, `cache_local.py`, `tema.py`, `hallazgos.py`, `pages/3_Findings.py`, `.streamlit/config.toml`, `pages/1_Diagnostics.py`, `pages/2_System_check.py`, `fresco.py`, `probar_datos.py`, `hacer_ayuda.py`, `README.md`, `requirements.txt` |
 | Claude (Anthropic) | Code review, bug fixes (retries, query cache, flag mask, alignment failures) and synthetic tests | `datos.py`, `proceso.py`, `test_proceso.py`, `sembrar_busquedas.py`, `objetivos.py`, `regenerar_cache.py`, `vista.py`, `hacer_gifs.py`, `assets/icon.png` |
 
 Each SI-assisted source file also says so in its header comment.

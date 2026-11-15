@@ -23,12 +23,12 @@ import numpy as np
 
 TARGETS = [
     {"name": "Barnard's Star", "folder": "barnard", "band": "D2",
-     "kind": "Moves", "line": "The fastest-moving star in our sky.",
+     "kind": "Moves", "line": "The fastest-moving star in our sky. Its core overloads the detector here.",
      "ra": 269.4463, "dec": 4.7679,
      "ref_ra": 269.452075, "ref_dec": 4.693391, "ref_epoch": 2000.0,
      "pm_ra": -801.55, "pm_dec": 10362.39},
     {"name": "WISE 0855", "folder": "wise_0855", "band": "D6",
-     "kind": "Moves", "line": "Too cold and faint to see here. The cross-hair marks where it should be.",
+     "kind": "Moves", "line": "Very cold and faint: at best a faint smudge inside the cross-hair in the Aligned view.",
      "ra": 133.7590, "dec": -7.2421,
      # position given in the challenge statement; its epoch (about 2010.3) is inferred
      "ref_ra": 133.795129, "ref_dec": -7.245147, "ref_epoch": 2010.34,
@@ -41,7 +41,7 @@ TARGETS = [
      "ref_ra": 331.0438, "ref_dec": -56.782639, "ref_epoch": 2000.0,
      "pm_ra": 3966.66, "pm_dec": -2536.19},
     {"name": "RW Aurigae", "folder": "rw_aurigae", "band": "D2",
-     "kind": "Varies", "line": "A young star whose brightness changes.",
+     "kind": "Varies", "line": "A young star known to change brightness; here it looks steady.",
      "ra": 76.9564, "dec": 30.4014,
      "ref_ra": 76.95653, "ref_dec": 30.401441, "ref_epoch": 2000.0,
      "pm_ra": 4.86, "pm_dec": -24.16},
