@@ -375,11 +375,13 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 /* community contributions dual board (citizen science & professional astronomy) */
 .dz-contrib-wrap { margin: 1.4rem 0 2rem 0; }
 .dz-contrib-top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
-.dz-contrib-px { display: flex; align-items: center; gap: 0.7rem; background: rgba(19,30,48,0.75); border: 1px solid rgba(94,234,212,0.28);
-  border-radius: 999px; padding: 0.32rem 0.9rem 0.32rem 0.45rem; }
+.dz-contrib-px { display: flex; align-items: center; gap: 0.65rem; background: rgba(19,30,48,0.75); border: 1px solid rgba(94,234,212,0.28);
+  border-radius: 999px; padding: 0.32rem 0.9rem 0.32rem 0.5rem; }
 .dz-contrib-px span { font-family: 'Montserrat', sans-serif; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #5EEAD4; }
-.dz-px-orbit { transform-origin: 24px 24px; animation: dz-spin 16s linear infinite; }
-.dz-px-ring { transform-origin: 24px 24px; animation: dz-spin 26s linear infinite reverse; }
+@keyframes dz-logo-orbit { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(22deg); } }
+@keyframes dz-logo-bar { 0%, 100% { opacity: 1; } 50% { opacity: 0.72; } }
+.dz-px-orbit { transform-origin: 60px 50px; animation: dz-logo-orbit 5s ease-in-out infinite; }
+.dz-px-ring { animation: dz-logo-bar 3.5s ease-in-out infinite; }
 .stApp p.dz-contrib-kicker { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.85rem !important;
   letter-spacing: 0.08em; text-transform: uppercase; color: #6C8CB0; margin: 0 0 0.2rem 0; }
 .stApp h2.dz-contrib-title { font-family: 'Montserrat', sans-serif !important; font-weight: 800;
@@ -1342,23 +1344,17 @@ def tarjeta_reputacion_experto(reviewer, rep):
 
 
 def _planeta_x_animado_svg(size=42):
-    """Animated orbital Planet X & SPHEREx badge for the Community contributions header."""
+    """Animated official HAWAPACHA logo (sky circle, equator line, and two moving observed positions)."""
+    h = int(round(size * 100 / 120))
     return (
-        f'<svg width="{size}" height="{size}" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" '
-        'role="img" aria-label="Animated Planet X orbital badge">'
-        '<circle cx="24" cy="24" r="21" fill="#0B1220" stroke="#1E2C42" stroke-width="1"/>'
-        '<g class="dz-px-ring">'
-        '<ellipse cx="24" cy="24" rx="18" ry="8" transform="rotate(-24 24 24)" '
-        'fill="none" stroke="#A78BFA" stroke-opacity="0.45" stroke-width="1.1" stroke-dasharray="2 3"/>'
-        '</g>'
-        '<circle cx="24" cy="24" r="9.5" fill="#172844" stroke="#5EEAD4" stroke-width="1.3"/>'
-        '<path d="M15.2 21.5 Q24 25.5 32.8 21.5" fill="none" stroke="#5EEAD4" stroke-opacity="0.55" stroke-width="1"/>'
-        '<path d="M15.8 26.8 Q24 30.2 32.2 26.8" fill="none" stroke="#A78BFA" stroke-opacity="0.55" stroke-width="1"/>'
+        f'<svg width="{size}" height="{h}" viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg" '
+        'role="img" aria-label="Animated HAWAPACHA logo">'
+        '<circle cx="60" cy="50" r="40" fill="none" stroke="#F5F7FA" stroke-width="6"/>'
         '<g class="dz-px-orbit">'
-        '<circle cx="24" cy="24" r="16.5" fill="none" stroke="#5EEAD4" stroke-opacity="0.32" stroke-width="1" stroke-dasharray="3 4"/>'
-        '<circle cx="40.5" cy="24" r="2.8" fill="#5EEAD4"/>'
-        '<circle cx="7.5" cy="24" r="2.1" fill="#A78BFA"/>'
+        '<circle class="dz-dot" cx="44" cy="32" r="6" fill="#5EEAD4"/>'
+        '<circle class="dz-dot" cx="76" cy="68" r="6" fill="#5EEAD4" style="animation-delay:1.1s"/>'
         '</g>'
+        '<rect class="dz-px-ring" x="8" y="47" width="104" height="6" rx="2" fill="#5EEAD4"/>'
         '</svg>'
     )
 
