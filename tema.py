@@ -254,16 +254,14 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
   }
 }
 
-/* report form: steps joined by a line, the position being reported, the claim code */
-.dz-flow { list-style: none; margin: 0.2rem 0 1.2rem 0; padding: 0; }
-.dz-flow li { display: flex; gap: 0.9rem; position: relative; padding: 0 0 1.1rem 0; margin: 0; }
-.dz-flow li::before { content: ""; position: absolute; left: 1.05rem; top: 2.2rem; bottom: 0; width: 1px; background: rgba(94,234,212,0.35); }
-.dz-flow li:last-child::before { display: none; }
-.dz-flow i { flex: 0 0 2.1rem; height: 2.1rem; border: 1px solid rgba(94,234,212,0.75); border-radius: 50%; display: flex; align-items: center;
-  justify-content: center; font-style: normal; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 0.72rem; color: #5EEAD4; }
-.dz-flow b { display: block; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 0.92rem; letter-spacing: 0.06em;
-  text-transform: uppercase; color: #F5F7FA; }
-.dz-flow span { display: block; font-family: 'Inter', sans-serif; font-size: 0.9rem; line-height: 1.4; color: #AEB8CC; }
+/* report: the band with the button, the window, the position being reported, the claim code */
+.st-key-cta { background: linear-gradient(90deg, rgba(94,234,212,0.10), rgba(23,34,52,0.9) 55%); border: 1px solid rgba(94,234,212,0.35);
+  border-radius: 14px; padding: 1rem 1.2rem; margin: 0.6rem 0 0.4rem 0; }
+.dz-cta-title { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.1rem; color: #F5F7FA; margin: 0; }
+.dz-cta-line { font-family: 'Inter', sans-serif; font-size: 0.92rem; color: #AEB8CC; margin: 0.15rem 0 0 0; }
+[data-testid="stDialog"] [role="dialog"] { background: #0B1220; border: 1px solid rgba(94,234,212,0.35); border-radius: 16px; }
+[data-testid="stDialog"] .dz-context { margin-top: 0.6rem; }
+@media (max-width: 640px) { [data-testid="stDialog"] [data-testid="stImage"] img { height: 170px; object-fit: cover; } }
 .dz-context { border-left: 2px solid #FBBF24; background: #172234; border-radius: 0 10px 10px 0; padding: 0.7rem 0.9rem; font-family: 'Inter', sans-serif; }
 .dz-context span { display: block; font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: #FBBF24; font-weight: 600; }
 .dz-context b { display: block; font-family: 'Montserrat', sans-serif; font-size: 1rem; color: #F5F7FA; margin: 0.15rem 0; }
@@ -693,15 +691,6 @@ def pasos(lista=None):
         for n, (title, text) in enumerate(lista or STEPS, start=1)
     )
     st.markdown(f'<div class="dz-steps">{items}</div>', unsafe_allow_html=True)
-
-
-def flujo(pasos_lista):
-    """Vertical list of numbered steps joined by a line (HTML, for st.markdown)."""
-    items = "".join(
-        f'<li><i>{n:02d}</i><div><b>{title}</b><span>{text}</span></div></li>'
-        for n, (title, text) in enumerate(pasos_lista, start=1)
-    )
-    return f'<ol class="dz-flow">{items}</ol>'
 
 
 def seccion(numero, titulo):

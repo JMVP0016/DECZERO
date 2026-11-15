@@ -213,10 +213,15 @@ if result:
         "to the next. A dot that shows up in a single frame is usually a cosmic ray or a bad pixel. "
         "Amber ring: centre of the view. Purple: no data."
     )
-    view_column, ring_column = st.columns([3, 1])
+    view_column, ring_column, report_column = st.columns([3, 1, 1], vertical_alignment="bottom")
     mode = view_column.radio("View", [MODE_STACKED, MODE_SINGLE], horizontal=True)
     ring = ring_column.checkbox("Show the ring", value=True,
                                 help="The amber ring marks the centre of the view: the position asked for, or the team's position for one of the five targets.")
+    # a second report button, visible without scrolling; the window opens further down
+    report_now = hallazgos.can_report() and report_column.button(
+        "Report a finding", key="report_open_top", use_container_width=True,
+        help="Noticed something in these images? Publish it on the Findings board.",
+    )
     frames, info = build_frames(result, mode, ring)
     if info.get("not_aligned"):
         st.warning(f"{info['not_aligned']} images could not be aligned and were left out.")
@@ -269,6 +274,11 @@ if result:
             "Download animation (GIF)", gif, file_name="spherex_sequence.gif", mime="image/gif"
         )
 
+    hallazgos.report_button(
+        result["ra"], result["dec"], result["band"], mode, frame["label"], frame["picture"],
+        open_now=report_now,
+    )
+
     legend = (
         "**Amber ring:** the centre of this view"
         + (" (the team's position for this target). " if result.get("stored") else " (the position you asked for). ")
@@ -294,8 +304,6 @@ if result:
             "so a change in brightness is not by itself a change over time."
         )
 
-    tema.seccion(2, "Did you notice something? Report it")
-    hallazgos.report_form(result["ra"], result["dec"], result["band"], mode, frame["label"])
 
     st.caption(
         f"Field: {info['field_arcmin']:.0f} arcmin across. Dates in this sequence: "
@@ -303,6 +311,6 @@ if result:
         "Data: NASA/IPAC IRSA, SPHEREx."
     )
 
-tema.seccion(3, "How to read the images")
+tema.seccion(2 if has_result else 3, "How to read the images")
 tema.ayuda()
 tema.pie()

@@ -277,33 +277,33 @@ def add_event(report, kind, reviewer, text=""):
 
 # ---------------------------------------------------------------- report form
 
-def report_form(ra, dec, band, view, frame):
-    """Report form under a sequence: what happens with a report on the left, the form on the right."""
-    import tema
+def _claim_box(number, code):
+    with st.container(border=True, key="claim"):
+        st.success(f"Published as report #{number}. You can follow it on the Findings board.")
+        st.markdown('<p class="dz-claim-label">Your claim code</p>', unsafe_allow_html=True)
+        st.code(code, language=None)
+        st.warning(
+            "Write down this claim code now: it is shown only once, and it is the "
+            "only way to prove later that this report is yours."
+        )
 
-    if not can_write():
-        st.info("Reporting is not set up on this copy of the app yet.")
-        return
-    sent = st.session_state.get("reports_sent", 0)
-    if st.session_state.get("last_claim"):
-        number, code = st.session_state["last_claim"]
-        with st.container(border=True, key="claim"):
-            st.success(f"Published as report #{number}. You can follow it on the Findings board.")
-            st.markdown(
-                '<p class="dz-claim-label">Your claim code</p>', unsafe_allow_html=True
-            )
-            st.code(code, language=None)
-            st.warning(
-                "Write down this claim code now: it is shown only once, and it is the "
-                "only way to prove later that this report is yours."
-            )
-    if sent >= MAX_REPORTS_PER_VISIT:
-        st.warning("You have reached the limit of reports for this visit.")
-        return
 
-    explain, form_column = st.columns([2, 3], gap="large")
-    explain.markdown(tema.flujo(REPORT_FLOW), unsafe_allow_html=True)
-    explain.markdown(
+@st.dialog("Report a finding", width="large")
+def _report_dialog(ra, dec, band, view, frame, picture):
+    """The report form, in a window over the page. It shows the frame being reported."""
+    if st.session_state.get("claim_in_dialog"):
+        _claim_box(*st.session_state["claim_in_dialog"])
+        if st.button("Done", type="primary"):
+            st.rerun()
+        return
+    st.caption(
+        "Your report is published at once on the public Findings board, with a date and time "
+        "that nobody can change. A reviewer then opens it and signs a verdict."
+    )
+    seen, form_column = st.columns([2, 3], gap="medium")
+    if picture is not None:
+        seen.image(picture, use_container_width=True)
+    seen.markdown(
         '<div class="dz-context"><span>You are reporting</span>'
         f"<b>RA {ra:.5f}°, Dec {dec:.5f}°</b>"
         f"<em>Detector {clean(band, 4)} · {clean(view, 40).split(' (')[0]} view · frame: {clean(frame, 60)}</em></div>",
@@ -318,31 +318,63 @@ def report_form(ra, dec, band, view, frame):
             "Describe it: what changes, and between which dates",
             max_chars=600, height=110,
         )
-        submitted = st.form_submit_button("Report what I noticed", type="primary")
-    if submitted:
-        if not alias.strip() or len(note.strip()) < 15 or len(note.split()) < 4:
-            form_column.error(
-                "Please write a nickname and a description of at least four words "
-                "(15 characters), so a reviewer can find what you saw."
-            )
+        submitted = st.form_submit_button("Publish report", type="primary")
+    if not submitted:
+        return
+    if not alias.strip() or len(note.strip()) < 15 or len(note.split()) < 4:
+        form_column.error(
+            "Please write a nickname and a description of at least four words "
+            "(15 characters), so a reviewer can find what you saw."
+        )
+        return
+    try:
+        if reports_last_hour() >= MAX_REPORTS_PER_HOUR:
+            form_column.error("Too many reports were sent in the last hour. Please try again later.")
             return
-        try:
-            if reports_last_hour() >= MAX_REPORTS_PER_HOUR:
-                form_column.error("Too many reports were sent in the last hour. Please try again later.")
-                return
-            same = [
-                r for r in list_reports()
-                if r["alias"] == clean(alias, 40) and r["note"] == clean(f"{place}: {note}", 600)
-            ]
-            if same:
-                form_column.error(f"This report was already published as #{same[0]['number']}.")
-                return
-            number, code = create_report(
-                alias, ra, dec, band, kind, f"{place}: {note}", view, frame
-            )
-        except Exception as error:
-            form_column.error(f"The report could not be published. Please try again. Detail: {error}")
+        same = [
+            r for r in list_reports()
+            if r["alias"] == clean(alias, 40) and r["note"] == clean(f"{place}: {note}", 600)
+        ]
+        if same:
+            form_column.error(f"This report was already published as #{same[0]['number']}.")
             return
-        st.session_state["reports_sent"] = sent + 1
-        st.session_state["last_claim"] = (number, code)
-        st.rerun()
+        number, code = create_report(alias, ra, dec, band, kind, f"{place}: {note}", view, frame)
+    except Exception as error:
+        form_column.error(f"The report could not be published. Please try again. Detail: {error}")
+        return
+    st.session_state["reports_sent"] = st.session_state.get("reports_sent", 0) + 1
+    st.session_state["last_claim"] = (number, code)
+    st.session_state["claim_in_dialog"] = (number, code)
+    st.rerun(scope="fragment")   # redraw only this window, now with the claim code
+
+
+def can_report():
+    """True if this visitor can still send a report."""
+    return can_write() and st.session_state.get("reports_sent", 0) < MAX_REPORTS_PER_VISIT
+
+
+def report_button(ra, dec, band, view, frame, picture=None, open_now=False):
+    """
+    A band under the pictures with one button; the form opens in a window.
+    open_now=True opens the window too (used by the second button above the pictures).
+    """
+    clicked = False
+    with st.container(key="cta"):
+        text, action = st.columns([3, 1], vertical_alignment="center")
+        text.markdown(
+            '<p class="dz-cta-title">Noticed something in these images?</p>'
+            '<p class="dz-cta-line">Report it. It goes on the public Findings board with the '
+            "time you reported it, and a reviewer checks it.</p>",
+            unsafe_allow_html=True,
+        )
+        if not can_write():
+            action.caption("Reporting is not set up on this copy of the app yet.")
+        elif st.session_state.get("reports_sent", 0) >= MAX_REPORTS_PER_VISIT:
+            action.caption("You have reached the limit of reports for this visit.")
+        else:
+            clicked = action.button("Report a finding", type="primary", key="report_open", use_container_width=True)
+    if clicked or (open_now and can_report()):
+        st.session_state.pop("claim_in_dialog", None)
+        _report_dialog(ra, dec, band, view, frame, picture)
+    if st.session_state.get("last_claim"):
+        _claim_box(*st.session_state["last_claim"])
