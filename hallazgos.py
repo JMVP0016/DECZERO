@@ -899,6 +899,15 @@ def _claim_box(number, code):
 @st.dialog("Report a finding", width="large")
 def _report_dialog(ra, dec, band, view, frame, picture, account=None):
     """The report form, in a window over the page. It shows the frame being reported."""
+    if not account and accounts_enabled():
+        user = current_user()
+        if user:
+            try:
+                nick = nickname_of(user)
+                if nick:
+                    account = {**user, "nick": nick}
+            except Exception:
+                pass
     if st.session_state.get("claim_in_dialog"):
         if account:
             st.success(
@@ -936,25 +945,36 @@ def _report_dialog(ra, dec, band, view, frame, picture, account=None):
         unsafe_allow_html=True,
     )
     with form_column.form("report"):
-        first, second = st.columns(2)
-        if account:
-            first.text_input("Your nickname", value=account["nick"], disabled=True)
+        if account and account.get("nick"):
             alias = account["nick"]
+            st.markdown(
+                f'<div class="dz-who" style="margin-bottom:0.4rem;"><span>Reporting as</span>'
+                f'<b>{clean(alias, 40)}</b></div>',
+                unsafe_allow_html=True,
+            )
+            first, second = st.columns(2)
+            kind = first.selectbox("What did you notice?", KINDS)
+            place = second.selectbox("Where in the picture?", PLACES)
         else:
+            first, second = st.columns(2)
             alias = first.text_input("Your nickname", max_chars=40, placeholder="No personal data")
-        kind = second.selectbox("What did you notice?", KINDS)
-        place = st.selectbox("Where in the picture?", PLACES)
+            kind = second.selectbox("What did you notice?", KINDS)
+            place = st.selectbox("Where in the picture?", PLACES)
         note = st.text_area(
             "Describe it: what changes, and between which dates",
             max_chars=600, height=110,
+            placeholder="For example: Faint dot moves from bottom-left to top-right between 2025-08 and 2026-02.",
         )
         submitted = st.form_submit_button("Publish report", type="primary")
     if not submitted:
         return
-    if not alias.strip() or len(note.strip()) < 15 or len(note.split()) < 4:
+    if not alias.strip():
+        form_column.error("Please enter a nickname before publishing.")
+        return
+    if len(note.strip()) < 5:
         form_column.error(
-            "Please write a nickname and a description of at least four words "
-            "(15 characters), so a reviewer can find what you saw."
+            "Please write a short description of what changes in the image (at least 5 characters) "
+            "so a reviewer knows where to look."
         )
         return
     try:
