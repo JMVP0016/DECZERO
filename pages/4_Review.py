@@ -216,18 +216,11 @@ if space == "mine" and hallazgos.accounts_enabled():
         "Follow the reports you sent. Your account has one nickname, which nobody else can "
         "use, and every report you publish is signed with it."
     )
-    tema.pasos(hallazgos.AMATEUR_FLOW)
     if account:
         found = hallazgos.reports_of(account)
         rep = hallazgos.reputation_of(account, reports)
         wait_seconds = hallazgos.cooldown_seconds_left(account, found)
         cd_text = f"Next report in {hallazgos.format_countdown(wait_seconds)}" if wait_seconds > 0 else None
-        tema.tarjeta_reputacion(account["nick"], rep, cooldown_text=cd_text)
-        if wait_seconds > 0 and hallazgos.is_deczero_team(account):
-            if st.button("Reset 24h cooldown (team demo)", key="reset_cd_mine"):
-                st.session_state["skip_cooldown"] = True
-                st.session_state.pop("reports_sent", None)
-                st.rerun()
         waiting = sum(r["status"] == hallazgos.STATUS_NEW for r in found)
         opened = sum(r["status"] == hallazgos.STATUS_OPENED for r in found)
         candidates = sum(r["status"] == hallazgos.VERDICTS[2] for r in found)
@@ -236,6 +229,16 @@ if space == "mine" and hallazgos.accounts_enabled():
         columns[1].metric("Waiting or in review", waiting + opened)
         columns[2].metric("With a verdict", len(found) - waiting - opened)
         columns[3].metric("Candidates", candidates)
+        tema.seccion(2, "My submitted reports")
+        if not found:
+            st.info("You have not sent any report yet. Use “Open the Viewer” below and click “Report a finding” under a sequence.")
+        with st.container(key="board"):
+            for report in found:
+                card(report, track=True)
+                if report["status"] == hallazgos.STATUS_NEW:
+                    st.caption("Nobody has opened this report yet. Reviewers are volunteers; come back later.")
+                elif report["status"] == hallazgos.STATUS_OPENED:
+                    st.caption("A reviewer is looking at this report. The verdict will appear here, signed.")
         with st.container(key="mine_cta"):
             left, right = st.columns([3, 1.3], vertical_alignment="center")
             left.markdown(
@@ -246,17 +249,16 @@ if space == "mine" and hallazgos.accounts_enabled():
             )
             if right.button("Open the Viewer", key="go_viewer_mine", type="primary", use_container_width=True):
                 st.switch_page("app.py")
-        tema.seccion(2, "My submitted reports")
-        if not found:
-            st.info("You have not sent any report yet. Use “Open the Viewer” above and click “Report a finding” under a sequence.")
-        with st.container(key="board"):
-            for report in found:
-                card(report, track=True)
-                if report["status"] == hallazgos.STATUS_NEW:
-                    st.caption("Nobody has opened this report yet. Reviewers are volunteers; come back later.")
-                elif report["status"] == hallazgos.STATUS_OPENED:
-                    st.caption("A reviewer is looking at this report. The verdict will appear here, signed.")
+        tema.seccion(3, "My observer star")
+        tema.tarjeta_reputacion(account["nick"], rep, cooldown_text=cd_text)
+        if wait_seconds > 0 and hallazgos.is_deczero_team(account):
+            if st.button("Reset 24h cooldown (team demo)", key="reset_cd_mine"):
+                st.session_state["skip_cooldown"] = True
+                st.session_state.pop("reports_sent", None)
+                st.rerun()
+        tema.pasos(hallazgos.AMATEUR_FLOW)
     else:
+        tema.pasos(hallazgos.AMATEUR_FLOW)
         st.info("Sign in with Google above to follow the reports you have sent, see your 5-sided Observer Star and publish new reports.")
 
 elif space == "mine":

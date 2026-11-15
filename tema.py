@@ -466,6 +466,8 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 .dz-corner-cd { display: inline-flex; align-items: center; gap: 0.36rem; background: #0B1220; border: 1px solid rgba(94,234,212,0.30);
   border-radius: 999px; padding: 0.12rem 0.62rem; font-family: 'Montserrat', sans-serif; font-size: 0.64rem; font-weight: 700;
   letter-spacing: 0.04em; color: #F5F7FA; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.stApp a.dz-corner-guest { display: inline-block; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: #5EEAD4 !important; text-decoration: none !important; border: 1px solid rgba(94,234,212,0.55); border-radius: 999px; padding: 0.5rem 1.1rem; background: rgba(94,234,212,0.08); }
+.stApp a.dz-corner-guest:hover { background: rgba(94,234,212,0.18); border-color: #5EEAD4; }
 .dz-corner-cd i { width: 0.4rem; height: 0.4rem; border-radius: 50%; background: #5EEAD4; display: inline-block; box-shadow: 0 0 5px #5EEAD4; flex-shrink: 0; }
 .dz-corner-cd em { font-style: normal; color: #5EEAD4; text-transform: uppercase; font-size: 0.6rem; letter-spacing: 0.08em; }
 .dz-corner-cd span { color: #AEB8CC; font-weight: 600; }
@@ -761,6 +763,17 @@ def _insignia_esquina_html():
             '</div>'
             '</div>'
         )
+    try:
+        import hallazgos
+        if hallazgos.accounts_enabled() and not hallazgos.current_user():
+            return (
+                '<div class="dz-corner-wrap">'
+                '<a class="dz-corner-guest" href="/Review" target="_self" '
+                'title="Sign in to report findings and follow them">Sign in</a>'
+                '</div>'
+            )
+    except Exception:
+        pass
     return (
         '<div class="dz-corner-wrap">'
         '<div class="dz-corner-badge" data-signed-in="1" title="Click to switch between My reports and Review">'
@@ -1615,9 +1628,9 @@ def ayuda_boton(lugar=None, clave="help_open"):
 
 def ayuda():
     """Three short help cards, side by side on wide screens and stacked on phones."""
-    for number, (column, (title, text)) in enumerate(zip(st.columns(len(HELP)), HELP), start=1):
+    for column, (title, text) in zip(st.columns(len(HELP)), HELP):
         column.markdown(
-            f'<div class="dz-card"><em>{number:02d}</em><h4>{title}</h4><p>{text}</p></div>',
+            f'<div class="dz-card"><h4>{title}</h4><p>{text}</p></div>',
             unsafe_allow_html=True,
         )
 
