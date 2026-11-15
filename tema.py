@@ -406,10 +406,25 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 .dz-contrib-list span.expert { color: #A78BFA; }
 .stApp p.dz-contrib-foot { text-align: center; font-size: 0.82rem !important; color: #5C708B; margin: 1rem 0 0.2rem 0; }
 /* top-right corner profile & star badge + inline nomination pill + 24h countdown */
-.dz-corner-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 0.28rem; width: 100%; }
+.dz-corner-wrap { position: relative; display: flex; flex-direction: column; align-items: flex-end; gap: 0.28rem; width: 100%; }
 .dz-corner-badge { display: inline-flex; align-items: center; gap: 0.6rem; background: linear-gradient(90deg, rgba(94,234,212,0.10), #131E30 65%);
-  border: 1px solid rgba(94,234,212,0.40); border-radius: 999px; padding: 0.26rem 0.9rem 0.26rem 0.42rem; box-shadow: 0 4px 16px rgba(0,0,0,0.28); }
+  border: 1px solid rgba(94,234,212,0.40); border-radius: 999px; padding: 0.26rem 0.9rem 0.26rem 0.42rem; box-shadow: 0 4px 16px rgba(0,0,0,0.28);
+  transition: border-color .16s ease, box-shadow .16s ease, transform .12s ease; }
+.dz-corner-badge[data-signed-in="1"] { cursor: pointer; user-select: none; }
+.dz-corner-badge[data-signed-in="1"]:hover { border-color: #5EEAD4; box-shadow: 0 4px 18px rgba(94,234,212,0.22); }
 .dz-corner-badge.expert { background: linear-gradient(90deg, rgba(167,139,250,0.16), #131E30 65%); border-color: rgba(167,139,250,0.52); }
+.dz-corner-badge.expert[data-signed-in="1"]:hover { border-color: #A78BFA; box-shadow: 0 4px 18px rgba(167,139,250,0.26); }
+.dz-corner-caret { font-style: normal; font-size: 0.68rem; color: #8792A8; margin-left: 0.15rem; transition: transform .16s ease; }
+.dz-corner-wrap.menu-open .dz-corner-caret { transform: rotate(180deg); color: #5EEAD4; }
+.dz-corner-menu { display: none; position: absolute; top: calc(100% + 0.35rem); right: 0; z-index: 999;
+  background: #131E30; border: 1px solid rgba(94,234,212,0.45); border-radius: 12px; padding: 0.35rem;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.55); min-width: 9.5rem; }
+.dz-corner-wrap.menu-open .dz-corner-menu { display: flex; flex-direction: column; gap: 0.2rem; }
+.dz-corner-signout-item { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+  width: 100%; padding: 0.45rem 0.75rem; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-weight: 700;
+  font-size: 0.78rem; letter-spacing: 0.04em; color: #F5F7FA; background: rgba(248,113,113,0.12); border: 1px solid rgba(248,113,113,0.35); }
+.dz-corner-signout-item:hover { background: rgba(248,113,113,0.24); border-color: #F87171; color: #FFFFFF; }
+.st-key-corner_signout_box { position: absolute !important; width: 0 !important; height: 0 !important; overflow: hidden !important; opacity: 0 !important; pointer-events: none !important; margin: 0 !important; padding: 0 !important; }
 .dz-corner-badge svg { flex-shrink: 0; }
 .dz-corner-text { display: flex; flex-direction: column; line-height: 1.15; }
 .dz-corner-nick { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 0.84rem; color: #F5F7FA; display: flex; align-items: center; gap: 0.4rem; white-space: nowrap; }
@@ -660,13 +675,16 @@ def _insignia_esquina_html():
             display = nick or reviewer.split(",")[0].split("—")[0].strip()
             return (
                 '<div class="dz-corner-wrap">'
-                '<div class="dz-corner-badge expert">'
+                '<div class="dz-corner-badge expert" data-signed-in="1" title="Click to sign out">'
                 f'{estrella_svg(sides, 30, kind="expert")}'
                 '<div class="dz-corner-text">'
                 f'<span class="dz-corner-nick">{_html.escape(str(display))}'
-                '<i class="dz-corner-role">Astronomer</i></span>'
+                '<i class="dz-corner-role">Astronomer</i><i class="dz-corner-caret">▾</i></span>'
                 f'<span class="dz-corner-nom">{nom} · {sides}/5 star</span>'
                 '</div></div>'
+                '<div class="dz-corner-menu">'
+                '<button type="button" class="dz-corner-signout-item"><span>Sign out</span><span>↪</span></button>'
+                '</div>'
                 f'<div class="dz-corner-cd expert"><i></i><em>24h countdown</em><span>{_html.escape(cd_text)}</span></div>'
                 '</div>'
             )
@@ -677,13 +695,16 @@ def _insignia_esquina_html():
             role_tag = "Astronomer · Observer" if reviewer else "Observer"
             return (
                 '<div class="dz-corner-wrap">'
-                '<div class="dz-corner-badge">'
+                '<div class="dz-corner-badge" data-signed-in="1" title="Click to sign out">'
                 f'{estrella_svg(sides, 30, kind="citizen")}'
                 '<div class="dz-corner-text">'
                 f'<span class="dz-corner-nick">{_html.escape(str(nick))}'
-                f'<i class="dz-corner-role">{role_tag}</i></span>'
+                f'<i class="dz-corner-role">{role_tag}</i><i class="dz-corner-caret">▾</i></span>'
                 f'<span class="dz-corner-nom">{nom} · {sides}/5 star</span>'
                 '</div></div>'
+                '<div class="dz-corner-menu">'
+                '<button type="button" class="dz-corner-signout-item"><span>Sign out</span><span>↪</span></button>'
+                '</div>'
                 f'<div class="dz-corner-cd"><i></i><em>24h countdown</em><span>{_html.escape(cd_text)}</span></div>'
                 '</div>'
             )
@@ -704,6 +725,17 @@ def _insignia_esquina_html():
 
 def navegacion():
     """Top menu with the three main tabs for visitors, plus the corner star & nomination badge."""
+    try:
+        import hallazgos
+        if st.query_params.get("dz_signout") == "1":
+            st.query_params.pop("dz_signout", None)
+            if hallazgos.current_user():
+                hallazgos.sign_out()
+            else:
+                st.session_state.pop("reviewer_code", None)
+                st.rerun()
+    except Exception:
+        pass
     t1, t2, t3, esquina = st.columns([1.05, 1.75, 2.25, 3.95], vertical_alignment="center")
     try:
         t1.page_link("app.py", label="Viewer")
@@ -715,6 +747,20 @@ def navegacion():
         t2.markdown("[Findings board](/Findings)")
         t3.markdown("[My reports & Review](/Review)")
     esquina.markdown(_insignia_esquina_html(), unsafe_allow_html=True)
+    try:
+        import hallazgos
+        signed_user = hallazgos.current_user()
+        has_code = bool(st.session_state.get("reviewer_code"))
+        if signed_user or has_code:
+            with esquina.container(key="corner_signout_box"):
+                if st.button("Sign out", key="corner_signout_btn"):
+                    if signed_user:
+                        hallazgos.sign_out()
+                    else:
+                        st.session_state.pop("reviewer_code", None)
+                        st.rerun()
+    except Exception:
+        pass
 
 
 def aplicar_tema():
@@ -728,6 +774,27 @@ def aplicar_tema():
             "if (!d._dzFsClose) {"
             "  d._dzFsClose = true;"
             "  d.addEventListener('click', function(e) {"
+            "    const signoutItem = e.target.closest('.dz-corner-signout-item');"
+            "    if (signoutItem) {"
+            "      e.preventDefault(); e.stopPropagation();"
+            "      const wrap = signoutItem.closest('.dz-corner-wrap');"
+            "      if (wrap) wrap.classList.remove('menu-open');"
+            "      const stBtn = d.querySelector('.st-key-corner_signout_box button');"
+            "      if (stBtn) { stBtn.click(); } else {"
+            "        const u = new URL(window.parent.location.href);"
+            "        u.searchParams.set('dz_signout', '1');"
+            "        window.parent.location.href = u.toString();"
+            "      }"
+            "      return;"
+            "    }"
+            "    const cornerBadge = e.target.closest('.dz-corner-badge[data-signed-in=\"1\"]');"
+            "    if (cornerBadge) {"
+            "      e.preventDefault(); e.stopPropagation();"
+            "      const wrap = cornerBadge.closest('.dz-corner-wrap');"
+            "      if (wrap) wrap.classList.toggle('menu-open');"
+            "      return;"
+            "    }"
+            "    d.querySelectorAll('.dz-corner-wrap.menu-open').forEach(function(w) { w.classList.remove('menu-open'); });"
             "    const fs = e.target.closest('[data-testid=\"stFullScreenFrame\"]');"
             "    if (!fs || window.parent.getComputedStyle(fs).position !== 'fixed') return;"
             "    if (e.target.closest('img, button, a, input')) return;"
