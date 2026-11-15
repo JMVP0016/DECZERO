@@ -73,14 +73,14 @@ def community_board(items):
         for name, count in tema.SAMPLE_CITIZENS:
             if name.lower() not in seen and len(c_rows) < 3:
                 c_rows.append((name, count, min(5, 1 + count // 5)))
-        c_rows.sort(key=lambda x: (-x[1], x[0].lower()))
+        c_rows.sort(key=lambda x: -x[1])
     if len(e_rows) < 3:
         sample_used = True
         seen = {row[0].lower() for row in e_rows}
         for name, count in tema.SAMPLE_EXPERTS:
             if name.lower() not in seen and len(e_rows) < 3:
                 e_rows.append((name, count, min(5, 1 + count // 5)))
-        e_rows.sort(key=lambda x: (-x[1], x[0].lower()))
+        e_rows.sort(key=lambda x: -x[1])
     tema.contribuciones(c_rows, e_rows, usar_ejemplo=sample_used)
 
 

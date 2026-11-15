@@ -1124,8 +1124,8 @@ def seccion(numero, titulo):
     )
 
 
-SAMPLE_CITIZENS = [("Ana M.", 24), ("Luis R.", 18), ("Sofía V.", 12)]
-SAMPLE_EXPERTS = [("Elena P.", 21), ("Mateo S.", 16), ("Lucía C.", 11)]
+SAMPLE_CITIZENS = [("Kevin", 0), ("Darwin", 0), ("Prueba DecZero", 0)]
+SAMPLE_EXPERTS = [("David", 0), ("Geo", 0), ("Jonnathan", 0)]
 
 # The 5 kite facets of a 5-pointed star centered at (50, 50), matching the HAWAPACHA logo palette.
 STAR_FACETS = [
@@ -1370,7 +1370,7 @@ def contribuciones(citizen_rows, expert_rows, usar_ejemplo=False):
         return "".join(out)
 
     foot = (
-        '<p class="dz-contrib-foot">Prototype · Sample data (updates live as reports and reviews are published)</p>'
+        '<p class="dz-contrib-foot">Team DecZero · Initial roster (updates live as reports and reviews are published)</p>'
         if usar_ejemplo else ""
     )
     st.markdown(
