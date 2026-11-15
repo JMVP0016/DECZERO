@@ -339,6 +339,18 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
   [data-testid="stColumn"]:has(.st-key-opt_field), [data-testid="stColumn"]:has(.st-key-opt_ring),
   [data-testid="stColumn"]:has(.st-key-opt_speed), [data-testid="stColumn"]:has(.st-key-report_open_top) { display: none !important; }
 }
+/* findings: progress of one report, and the bar that says who is signed in */
+.dz-track { list-style: none; display: flex; margin: 0.4rem 0 0.9rem 0; padding: 0; }
+.dz-track li { flex: 1; position: relative; padding-top: 1.3rem; margin: 0; font-family: 'Inter', sans-serif; font-size: 0.8rem; color: #8792A8; }
+.dz-track li::before { content: ""; position: absolute; left: 0; right: 0; top: 0.42rem; height: 2px; background: rgba(232,236,244,0.16); }
+.dz-track li i { position: absolute; left: 0; top: 0; width: 0.9rem; height: 0.9rem; border-radius: 50%; box-sizing: border-box;
+  border: 2px solid rgba(232,236,244,0.35); background: #0B1220; }
+.dz-track li.on { color: #F5F7FA; }
+.dz-track li.on::before { background: #5EEAD4; }
+.dz-track li.on i { border-color: #5EEAD4; background: #5EEAD4; }
+.dz-who { display: flex; align-items: center; gap: 0.6rem; border-left: 2px solid #5EEAD4; background: #172234; border-radius: 0 10px 10px 0;
+  padding: 0.6rem 0.9rem; font-family: 'Inter', sans-serif; font-size: 0.92rem; color: #F5F7FA; }
+.dz-who span { font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: #5EEAD4; font-weight: 600; }
 /* larger section titles */
 .dz-section { margin-top: 3.6rem; }
 .dz-section b { font-size: clamp(1.25rem, 2.2vw, 1.7rem); letter-spacing: 0.06em; }
@@ -779,6 +791,15 @@ def pasos(lista=None):
         for n, (title, text) in enumerate(lista or STEPS, start=1)
     )
     st.markdown(f'<div class="dz-steps">{items}</div>', unsafe_allow_html=True)
+
+
+def seguimiento(pasos_hechos, textos):
+    """Three dots joined by a line: how far a report has gone (HTML, for st.markdown)."""
+    items = "".join(
+        f'<li class="{"on" if n < pasos_hechos else ""}"><i></i><span>{texto}</span></li>'
+        for n, texto in enumerate(textos)
+    )
+    return f'<ol class="dz-track">{items}</ol>'
 
 
 def seccion(numero, titulo):

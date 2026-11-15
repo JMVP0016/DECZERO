@@ -90,9 +90,17 @@ Tests (synthetic data): `pip install pytest` and then `python -m pytest`.
 
 Visitors can report something they noticed in a sequence. Each report is stored as
 a public issue of this repository, so its creation time is a public timestamp of the
-report. Reviewers sign in with a code given by the team; opening a
-report and giving a verdict are both recorded with the reviewer's name. A verdict is
-a reviewer's opinion, not a confirmed discovery.
+report. The Findings page has three spaces, with no accounts and no personal data:
+
+- **Public board**: every report and its status, for anyone.
+- **My reports**: a visitor follows their own reports with the claim code received
+  when publishing. The code travels in the page address, so a saved link is the way back.
+- **Review desk**: a reviewer signs in with a personal code given by the team, sees
+  the queue (oldest first) and signs verdicts. Opening a report and giving a verdict
+  are both recorded with the reviewer's name. The sign-in lasts while the browser tab is open.
+
+A verdict is a reviewer's opinion, not a confirmed discovery. Closing an issue on
+GitHub removes that report from the board.
 
 Setup (Streamlit secrets): `GITHUB_TOKEN` with Issues read/write on this repository,
 and a `[REVIEWERS]` table with one `"code" = "Name, role"` line per reviewer.

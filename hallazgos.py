@@ -289,6 +289,10 @@ def _claim_box(number, code):
             "recovered, and it is the only way to prove later that this report is yours.</em></div>",
             unsafe_allow_html=True,
         )
+        st.markdown(
+            f"[Follow this report in “My reports”](/Findings?space=mine&claim={code}) · "
+            "save that link: it is your way back, without an account."
+        )
 
 
 @st.dialog("Report a finding", width="large")
