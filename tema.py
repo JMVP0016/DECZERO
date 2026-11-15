@@ -213,6 +213,55 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 
 .dz-footer { color: #8792A8; font-size: 0.8rem; border-top: 1px solid rgba(232,236,244,0.12); padding-top: 0.8rem; margin-top: 1.6rem; }
 .dz-footer a { color: #AEB8CC; }
+
+/* target cards: the picture zooms a little and the button fills in on hover */
+.st-key-targets [data-testid="stImage"] { overflow: hidden; border-radius: 10px; }
+.st-key-targets [data-testid="stImage"] img { transition: transform 0.6s cubic-bezier(.2,.7,.2,1); }
+.st-key-targets [data-testid="stVerticalBlockBorderWrapper"]:hover [data-testid="stImage"] img { transform: scale(1.08); }
+.st-key-targets [data-testid="stVerticalBlockBorderWrapper"]:hover { box-shadow: 0 14px 34px rgba(0,0,0,0.35); }
+.st-key-targets .stButton > button { border-color: rgba(94,234,212,0.45); letter-spacing: 0.08em; text-transform: uppercase; font-size: 0.8rem;
+  transition: background 0.2s ease, color 0.2s ease; }
+.st-key-targets [data-testid="stVerticalBlockBorderWrapper"]:hover .stButton > button { background: #5EEAD4; border-color: #5EEAD4; }
+.st-key-targets [data-testid="stVerticalBlockBorderWrapper"]:hover .stButton > button p { color: #0B1220; }
+
+/* three steps under the hero */
+.dz-steps { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid rgba(232,236,244,0.14);
+  border-bottom: 1px solid rgba(232,236,244,0.14); margin: 0 0 0.4rem 0; }
+.dz-step { display: flex; align-items: center; gap: 1rem; padding: 1.3rem 1.4rem; border-left: 1px solid rgba(232,236,244,0.14); }
+.dz-step:first-child { border-left: 0; padding-left: 0.2rem; }
+.dz-step i { font-style: normal; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: clamp(2.2rem, 4vw, 3.2rem); line-height: 1;
+  color: #0B1220; -webkit-text-stroke: 2px rgba(94,234,212,0.75); paint-order: stroke fill; min-width: 1.5em; }
+.dz-step b { display: block; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 0.95rem; letter-spacing: 0.08em;
+  text-transform: uppercase; color: #F5F7FA; }
+.dz-step span { display: block; font-family: 'Inter', sans-serif; font-size: 0.9rem; line-height: 1.4; color: #AEB8CC; margin-top: 0.15rem; }
+@media (max-width: 760px) {
+  .dz-steps { grid-template-columns: 1fr; }
+  .dz-step { border-left: 0; border-top: 1px solid rgba(232,236,244,0.14); padding: 0.9rem 0.2rem; }
+  .dz-step:first-child { border-top: 0; }
+}
+
+/* help cards: a large outlined number and a turquoise line on hover */
+.dz-card { position: relative; overflow: hidden; transition: border-color 0.2s ease, transform 0.2s ease; }
+.dz-card:hover { border-color: rgba(94,234,212,0.55); transform: translateY(-2px); }
+.dz-card em { position: absolute; right: 0.8rem; top: 0.3rem; font-style: normal; font-family: 'Montserrat', sans-serif; font-weight: 800;
+  font-size: 2.6rem; line-height: 1; color: #172234; -webkit-text-stroke: 2px rgba(232,236,244,0.16); paint-order: stroke fill; }
+.dz-card h4 { padding-right: 3.2rem; }
+
+/* blocks rise into place as they scroll into view (browsers without support show them at once) */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .dz-section, .dz-card, .dz-footer-top { animation: dz-rise linear both; animation-timeline: view(); animation-range: entry 0% entry 45%; }
+  }
+}
+
+/* footer: large word mark, then the credits */
+.dz-footer-top { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 0.6rem 2rem;
+  border-top: 1px solid rgba(232,236,244,0.14); margin-top: 4rem; padding-top: 1.6rem; }
+.dz-footer-top b { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: clamp(2.4rem, 9vw, 6.5rem); line-height: 0.9;
+  letter-spacing: 0.01em; color: #0B1220; -webkit-text-stroke: 2px rgba(232,236,244,0.28); paint-order: stroke fill; }
+.dz-footer-top span { font-family: 'Montserrat', sans-serif; font-weight: 600; color: #5EEAD4; font-size: 0.8rem; letter-spacing: 0.16em;
+  text-transform: uppercase; padding-bottom: 0.5rem; }
+.dz-footer { border-top: 0 !important; margin-top: 0.6rem !important; }
 </style>
 """
 
@@ -564,6 +613,8 @@ def portada(compacta=False):
     """
     if compacta:
         st.markdown(
+            # with a sequence on screen the sections sit closer, so the pictures need less scrolling
+            "<style>.dz-section { margin: 1.5rem 0 0.7rem 0; } .dz-bar { margin-bottom: 0.2rem; }</style>"
             f'<div class="dz-bar">{LOGO_SVG}<b>{PROJECT_NAME}</b><span>{TAGLINE} '
             "Real SPHEREx images of any position, in time order.</span></div>",
             unsafe_allow_html=True,
@@ -601,6 +652,22 @@ def portada(compacta=False):
     )
 
 
+STEPS = [
+    ("Point", "Type a sky position, or open one of the five targets."),
+    ("Fetch", "We bring the real SPHEREx images of that spot from NASA's archive."),
+    ("Compare", "Play them in time order and look for what moves or changes."),
+]
+
+
+def pasos():
+    """Three numbered steps under the hero: what the visitor does on this page."""
+    items = "".join(
+        f'<div class="dz-step"><i>{n:02d}</i><div><b>{title}</b><span>{text}</span></div></div>'
+        for n, (title, text) in enumerate(STEPS, start=1)
+    )
+    st.markdown(f'<div class="dz-steps">{items}</div>', unsafe_allow_html=True)
+
+
 def seccion(numero, titulo):
     """Numbered section label, for example: 01 EXPLORE."""
     st.markdown(
@@ -625,9 +692,9 @@ HELP = [
 
 def ayuda():
     """Three short help cards, side by side on wide screens and stacked on phones."""
-    for column, (title, text) in zip(st.columns(len(HELP)), HELP):
+    for number, (column, (title, text)) in enumerate(zip(st.columns(len(HELP)), HELP), start=1):
         column.markdown(
-            f'<div class="dz-card"><h4>{title}</h4><p>{text}</p></div>',
+            f'<div class="dz-card"><em>{number:02d}</em><h4>{title}</h4><p>{text}</p></div>',
             unsafe_allow_html=True,
         )
 
@@ -635,7 +702,8 @@ def ayuda():
 def pie():
     """Footer with data credits."""
     st.markdown(
-        """
+        f"""
+        <div class="dz-footer-top"><b>{PROJECT_NAME}</b><span>{TAGLINE}</span></div>
         <div class="dz-footer">
           HAWAPACHA, by team DecZero (Ecuador).
           Data: SPHEREx spectral images, NASA/IPAC Infrared Science Archive (IRSA),

@@ -124,6 +124,8 @@ def load(ra, dec, band):
 
 tema.navegacion()
 tema.portada(compacta=bool(st.session_state.get("result")))
+if not st.session_state.get("result"):
+    tema.pasos()
 tema.seccion(1, "Explore any position")
 
 params = st.query_params
