@@ -39,7 +39,7 @@ def limits(images):
 
 
 def to_picture(image, low, high, mark=None, label="", scale_arcsec=None, compass=False, expected=None,
-               difference=False):
+               difference=False, invert=False):
     """
     2D array -> colour picture of DISPLAY_PIXELS x DISPLAY_PIXELS.
       - A non-square image is padded to a square, never stretched.
@@ -48,6 +48,7 @@ def to_picture(image, low, high, mark=None, label="", scale_arcsec=None, compass
       - expected = (x, y) draws the turquoise cross-hair of the catalogue position.
       - label is written on a strip at the top; scale_arcsec (size of one input
         pixel) adds a 1-arcmin bar; compass adds the orientation note.
+      - invert=True draws dark stars on a white sky, which helps to see faint dots.
       - difference=True is for one image minus another: the grey scale is linear,
         so "no change" is mid grey, and holes are never drawn as white star cores.
     """
@@ -61,6 +62,8 @@ def to_picture(image, low, high, mark=None, label="", scale_arcsec=None, compass
     if not difference:
         scaled = np.arcsinh(10.0 * scaled) / np.arcsinh(10.0)  # brings out faint sources
     grey = (255 * np.nan_to_num(scaled, nan=0.0)).astype(np.uint8)
+    if invert:
+        grey = 255 - grey
     rgb = np.stack([grey, grey, grey], axis=-1)
     missing = ~np.isfinite(square)
     rgb[missing] = NO_DATA_COLOUR
@@ -71,7 +74,7 @@ def to_picture(image, low, high, mark=None, label="", scale_arcsec=None, compass
         region = regions == number
         rim = ndimage.binary_dilation(region) & ~missing
         if rim.any() and np.median(square[rim]) >= low + 0.3 * (high - low):
-            rgb[region] = (255, 255, 255)
+            rgb[region] = (0, 0, 0) if invert else (255, 255, 255)
     rgb = np.flipud(rgb)                                        # FITS row 0 is the bottom row
     picture = Image.fromarray(rgb, "RGB").resize((DISPLAY_PIXELS, DISPLAY_PIXELS), Image.NEAREST)
 
@@ -107,7 +110,7 @@ def to_picture(image, low, high, mark=None, label="", scale_arcsec=None, compass
     return picture
 
 
-def single_frames(cutouts, ra, dec, ring, target=None, grid_pixels=GRID_PIXELS):
+def single_frames(cutouts, ra, dec, ring, target=None, grid_pixels=GRID_PIXELS, invert=False):
     """
     One frame per image, each turned so that north is up and east is left.
     Nothing is combined: only the sky level is subtracted from each image.
@@ -139,7 +142,7 @@ def single_frames(cutouts, ra, dec, ring, target=None, grid_pixels=GRID_PIXELS):
         label = mjd_to_text(cutout["fecha"], with_time=True)
         frames.append({
             "picture": to_picture(image, low, high, mark=mark, label=label, scale_arcsec=GRID_ARCSEC,
-                                  compass=True, expected=expected),
+                                  compass=True, expected=expected, invert=invert),
             "label": label,
             "details": (
                 f"**Detector:** {cutout['detector']} · "
@@ -155,7 +158,8 @@ def single_frames(cutouts, ra, dec, ring, target=None, grid_pixels=GRID_PIXELS):
     }
 
 
-def stacked_frames(cutouts, ra, dec, ring, target=None, title="", plain=False, grid_pixels=GRID_PIXELS):
+def stacked_frames(cutouts, ra, dec, ring, target=None, title="", plain=False, grid_pixels=GRID_PIXELS,
+                   invert=False):
     """Images aligned north up and combined (median) within each observing epoch."""
     grid, shape = proceso.crear_rejilla_norte(ra, dec, tamano_pix=grid_pixels)
     aligned, kept = proceso.reproyectar(
@@ -203,7 +207,8 @@ def stacked_frames(cutouts, ra, dec, ring, target=None, title="", plain=False, g
         frames.append({
             "picture": (to_picture(stack, low, high) if plain else
                         to_picture(stack, low, high, mark=mark, label=label,
-                                   scale_arcsec=GRID_ARCSEC, compass=True, expected=expected)),
+                                   scale_arcsec=GRID_ARCSEC, compass=True, expected=expected,
+                                   invert=invert)),
             "mjd": float(np.mean(dates)),
             "label": label,
             "details": (

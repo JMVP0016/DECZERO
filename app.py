@@ -56,19 +56,19 @@ def parse_coordinate(text):
 FIELDS = {"10 arcmin": 200, "6 arcmin": 120, "4 arcmin": 80}   # side of the view -> grid pixels of 3"
 
 
-def build_frames(result, mode, ring, grid_pixels=200):
+def build_frames(result, mode, ring, grid_pixels=200, invert=False):
     """Frames for this result and view. Kept in the session so the slider answers at once."""
-    key = (result["ra"], result["dec"], result["band"], len(result["cutouts"]), mode, ring, grid_pixels)
+    key = (result["ra"], result["dec"], result["band"], len(result["cutouts"]), mode, ring, grid_pixels, invert)
     kept = st.session_state.get("frames")
     if kept and kept["key"] == key:
         return kept["frames"], kept["info"]
     target = next((t for t in TARGETS if t["name"] == result.get("stored")), None)
     if mode == MODE_STACKED:
         frames, info = stacked_frames(result["cutouts"], result["ra"], result["dec"], ring, target,
-                                      grid_pixels=grid_pixels)
+                                      grid_pixels=grid_pixels, invert=invert)
     else:
         frames, info = single_frames(result["cutouts"], result["ra"], result["dec"], ring, target,
-                                     grid_pixels=grid_pixels)
+                                     grid_pixels=grid_pixels, invert=invert)
     st.session_state["frames"] = {"key": key, "frames": frames, "info": info}
     return frames, info
 
@@ -248,14 +248,18 @@ if result:
         help="Side of the patch of sky shown. A smaller field zooms in on the centre.",
     )
     mode = view_column.radio("View", [MODE_STACKED, MODE_SINGLE], horizontal=True)
-    ring = ring_column.container(key="opt_ring").checkbox("Show the ring", value=True,
+    look = ring_column.container(key="opt_ring")
+    invert = look.checkbox(
+        "White sky", value=False,
+        help="Dark stars on a white background. Many people find faint dots easier to see this way.")
+    ring = look.checkbox("Show the ring", value=True,
                                 help="The amber ring marks the centre of the view: the position asked for, or the team's position for one of the five targets.")
     # a second report button, visible without scrolling; the window opens further down
     report_now = hallazgos.can_report() and report_column.button(
         "Report a finding", key="report_open_top", use_container_width=True,
         help="Noticed something in these images? Publish it on the Findings board.",
     )
-    frames, info = build_frames(result, mode, ring, FIELDS[field])
+    frames, info = build_frames(result, mode, ring, FIELDS[field], invert)
     if info.get("not_aligned"):
         st.warning(f"{info['not_aligned']} images could not be aligned and were left out.")
     if info.get("thin_epochs"):
