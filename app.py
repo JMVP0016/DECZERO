@@ -141,7 +141,6 @@ tema.navegacion()
 tema.portada(compacta=bool(st.session_state.get("result")))
 if not st.session_state.get("result"):
     tema.pasos()
-    tema.ayuda_boton(st.columns([1, 1.1, 1])[1], clave="help_open_home")
 has_result = bool(st.session_state.get("result"))
 
 params = st.query_params
