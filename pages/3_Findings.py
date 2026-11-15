@@ -24,48 +24,62 @@ import hallazgos
 import tema
 
 st.set_page_config(page_title="HAWAPACHA — Findings board", page_icon=tema.ICON, layout="wide")
-tema.aplicar_tema()
-tema.navegacion()
-tema.portada()
 
 params = st.query_params
-if params.get("space") in ("mine", "desk") or "claim" in params:
-    st.session_state["review_space"] = "desk" if params.get("space") == "desk" else "mine"
+legacy_space = params.get("space") or params.get("view")
+if legacy_space in ("mine", "desk") or "claim" in params:
+    target_space = "desk" if legacy_space == "desk" else "mine"
+    st.session_state["review_space"] = target_space
+    st.session_state["space"] = target_space
     if "claim" in params:
         st.session_state["claim_param"] = params.get("claim", "")
     st.switch_page("pages/4_Review.py")
+
+tema.aplicar_tema()
+tema.navegacion()
+tema.portada()
 
 PUBLIC_SPACES = {"board": "All reports", "top": "Confirmed candidates"}
 
 
 def community_board(items):
     """Build and draw the two-column Community contributions leaderboard."""
-    citizens, experts = {}, {}
+    c_counts, c_names, e_counts, e_names = {}, {}, {}, {}
     for rep in items:
         alias = str(rep.get("alias", "")).strip()
         if alias:
-            citizens[alias] = citizens.get(alias, 0) + 1
+            key = alias.lower()
+            c_names.setdefault(key, alias)
+            c_counts[key] = c_counts.get(key, 0) + 1
         for event in rep.get("events", []):
             if event.get("type") in hallazgos.VERDICTS:
                 who = str(event.get("by", "")).split(",")[0].strip()
                 if who:
-                    experts[who] = experts.get(who, 0) + 1
-    c_rows = sorted(citizens.items(), key=lambda x: (-x[1], x[0].lower()))[:5]
-    e_rows = sorted(experts.items(), key=lambda x: (-x[1], x[0].lower()))[:5]
+                    ekey = who.lower()
+                    e_names.setdefault(ekey, who)
+                    e_counts[ekey] = e_counts.get(ekey, 0) + 1
+    c_rows = [
+        (c_names[k], count, hallazgos.reputation_of(c_names[k], items)["sides"])
+        for k, count in sorted(c_counts.items(), key=lambda x: (-x[1], x[0]))[:5]
+    ]
+    e_rows = [
+        (e_names[k], count, min(5, 1 + count // 5))
+        for k, count in sorted(e_counts.items(), key=lambda x: (-x[1], x[0]))[:5]
+    ]
     sample_used = False
     if len(c_rows) < 3:
         sample_used = True
-        seen = {name.lower() for name, _ in c_rows}
+        seen = {row[0].lower() for row in c_rows}
         for name, count in tema.SAMPLE_CITIZENS:
             if name.lower() not in seen and len(c_rows) < 3:
-                c_rows.append((name, count))
+                c_rows.append((name, count, min(5, 1 + count // 5)))
         c_rows.sort(key=lambda x: (-x[1], x[0].lower()))
     if len(e_rows) < 3:
         sample_used = True
-        seen = {name.lower() for name, _ in e_rows}
+        seen = {row[0].lower() for row in e_rows}
         for name, count in tema.SAMPLE_EXPERTS:
             if name.lower() not in seen and len(e_rows) < 3:
-                e_rows.append((name, count))
+                e_rows.append((name, count, min(5, 1 + count // 5)))
         e_rows.sort(key=lambda x: (-x[1], x[0].lower()))
     tema.contribuciones(c_rows, e_rows, usar_ejemplo=sample_used)
 
@@ -104,37 +118,27 @@ def card(report):
 
 # ---------------------------------------------------------------- public board
 
-tema.seccion(1, "Findings board")
-start = "top" if params.get("space") == "top" else "board"
-if st.session_state.get("public_space") not in PUBLIC_SPACES:
-    st.session_state["public_space"] = start
-space = st.segmented_control(
-    "Public board view", list(PUBLIC_SPACES), format_func=PUBLIC_SPACES.get,
-    label_visibility="collapsed", key="public_space",
-) or "board"
-
 try:
     reports = hallazgos.list_reports()
 except Exception as error:
     st.error(f"The board could not be loaded right now. Detail: {error}")
     st.stop()
 
-with st.container(key="mine_cta"):
-    left, b1, b2 = st.columns([2.6, 1.2, 1.2], vertical_alignment="center")
-    left.markdown(
-        '<p class="dz-cta-title">Want to follow your own reports or vet candidates as an astronomer?</p>'
-        '<p class="dz-cta-line">Open “My reports &amp; Review” to see your 5-sided Star, check your '
-        '24h report window, or sign verdicts on the Review Desk.</p>',
-        unsafe_allow_html=True,
-    )
-    if b1.button("My reports (Amateur)", key="go_my_reports", type="primary", use_container_width=True):
-        st.session_state["role"] = "amateur"
-        st.session_state["review_space"] = "mine"
-        st.switch_page("pages/4_Review.py")
-    if b2.button("Review desk (Astronomer)", key="go_review_desk", use_container_width=True):
-        st.session_state["role"] = "expert"
-        st.session_state["review_space"] = "desk"
-        st.switch_page("pages/4_Review.py")
+# 1) First: Community contributions dual board (Citizen science & Professional astronomy)
+community_board(reports)
+
+# 2) Second: All reports / Confirmed candidates
+if params.get("space") in PUBLIC_SPACES and st.session_state.get("_last_pub_param") != params.get("space"):
+    st.session_state["_last_pub_param"] = params.get("space")
+    st.session_state["public_space"] = params.get("space")
+elif st.session_state.get("public_space") not in PUBLIC_SPACES:
+    st.session_state["public_space"] = "board"
+
+tema.seccion(1, "All reports")
+space = st.segmented_control(
+    "Public board view", list(PUBLIC_SPACES), format_func=PUBLIC_SPACES.get,
+    label_visibility="collapsed", key="public_space",
+) or "board"
 
 statuses = [hallazgos.STATUS_NEW, hallazgos.STATUS_OPENED] + hallazgos.VERDICTS
 
@@ -154,8 +158,6 @@ if space == "top":
     columns[0].metric("Candidates", len(winners))
     columns[1].metric("Reports reviewed", reviewed)
     columns[2].metric("Observers with a candidate", len({r["alias"] for r in winners}))
-    community_board(reports)
-    tema.seccion(2, "Confirmed candidates")
     if not winners:
         st.info("No candidates yet. When a reviewer marks a report as a candidate, it appears here.")
     else:
@@ -165,19 +167,15 @@ if space == "top":
 
 else:
     st.write(
-        "Things that visitors noticed in the SPHEREx sequences. Every report is public "
-        "from the moment it is sent, with a public date and time that shows when it was "
-        "reported. Reviewers must sign every step they take."
+        "Public observations reported in the SPHEREx infrared sky sequences, with their "
+        "timestamp, coordinates, SIMBAD cross-check link and signed expert verdicts."
     )
-    st.caption(
-        "This is a prototype. A verdict here is an opinion from a reviewer of our team's "
-        "choosing, not a confirmed discovery: a real confirmation needs more data and an "
-        "official report to the astronomical community."
-    )
-    tema.pasos(hallazgos.REPORT_FLOW)
-    community_board(reports)
-
-    tema.seccion(2, "Public reports")
+    counts = {status: sum(r["status"] == status for r in reports) for status in statuses}
+    columns = st.columns(4)
+    columns[0].metric("Reports", len(reports))
+    columns[1].metric("Waiting for review", counts[hallazgos.STATUS_NEW])
+    columns[2].metric("Reviewed", sum(counts[v] for v in hallazgos.VERDICTS))
+    columns[3].metric("Candidates", counts[hallazgos.VERDICTS[2]])
     left, right = st.columns([2, 1])
     chosen = left.multiselect("Status", statuses, default=statuses)
     mine = right.text_input("Only reports by this nickname", placeholder="a nickname")
@@ -185,12 +183,6 @@ else:
         r for r in reports
         if r["status"] in chosen and (not mine.strip() or r["alias"].lower() == mine.strip().lower())
     ]
-    counts = {status: sum(r["status"] == status for r in reports) for status in statuses}
-    columns = st.columns(4)
-    columns[0].metric("Reports", len(reports))
-    columns[1].metric("Waiting for review", counts[hallazgos.STATUS_NEW])
-    columns[2].metric("Reviewed", sum(counts[v] for v in hallazgos.VERDICTS))
-    columns[3].metric("Candidates", counts[hallazgos.VERDICTS[2]])
     if reports and not visible:
         st.info("No reports match these filters.")
     if not reports:

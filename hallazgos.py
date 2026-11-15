@@ -112,12 +112,51 @@ def token():
     return None
 
 
+TEAM_DECZERO_CODE = "DECZERO-2026"
+TEAM_DECZERO_NAME = "Team DecZero — Core Verification & Review"
+
+
 def reviewers():
-    """Dictionary code -> name. Empty if no reviewer has been set up."""
+    """Dictionary code -> name, including the Team DecZero special access code."""
+    base = {
+        TEAM_DECZERO_CODE: TEAM_DECZERO_NAME,
+        "DECZERO-TEAM-2026": TEAM_DECZERO_NAME,
+    }
     if _memory_mode():
-        return {"test-code": "Test Reviewer, astronomer"}
+        base["test-code"] = "Test Reviewer, astronomer"
+        return base
+    custom_team = _secret("DECZERO_CODE")
+    if custom_team:
+        base[str(custom_team).strip()] = TEAM_DECZERO_NAME
     table = _secret("REVIEWERS", {})
-    return {str(code): str(name) for code, name in dict(table).items()}
+    for code, name in dict(table).items():
+        base[str(code).strip()] = str(name)
+    return base
+
+
+def check_reviewer_code(raw_code):
+    """Return the canonical code if raw_code matches a reviewer or Team DecZero code, else None."""
+    cleaned = str(raw_code or "").strip()
+    if not cleaned:
+        return None
+    rev = reviewers()
+    if cleaned in rev:
+        return cleaned
+    for k in rev:
+        if k.upper() == cleaned.upper():
+            return k
+    return None
+
+
+def is_deczero_team(user=None, code=None):
+    """True if signed in with a Team DecZero email or with the Team DecZero special access code."""
+    if is_team_reviewer(user):
+        return True
+    active_code = str(code if code is not None else st.session_state.get("reviewer_code", "")).strip()
+    if not active_code:
+        return False
+    canonical = check_reviewer_code(active_code)
+    return bool(canonical and canonical in reviewers())
 
 
 def can_write():
@@ -182,7 +221,11 @@ def sign_in():
 
 
 def sign_out():
-    for key in ("test_user", "role", "returned", "return_cleared", "reviewer_code", "skip_cooldown"):
+    for key in (
+        "test_user", "role", "returned", "return_cleared", "reviewer_code",
+        "skip_cooldown", "reports_sent", "last_claim", "claim_in_dialog",
+        "space", "public_space", "review_space", "edit_accreditation",
+    ):
         st.session_state.pop(key, None)
     if _memory_mode():
         st.rerun()
@@ -240,21 +283,47 @@ def _accounts_issue():
     return number, merged
 
 
-def _save_accounts(number, table):
+def _save_accounts(number, table, comment=None):
     if _memory_mode():
         _memory()["accounts"] = table
     else:
-        body = (
+        apps = table.get("_applications", {}) if isinstance(table.get("_applications"), dict) else {}
+        summary_lines = [
             "Nicknames and reviewer accreditations of the HAWAPACHA app. Each entry is "
-            "an anonymous account identifier; no e-mail is stored.\n\n"
-            f"{ACCOUNTS_START}\n{json.dumps(table)}\n{ACCOUNTS_END}"
-        )
+            "an anonymous account identifier; no e-mail is stored.\n"
+        ]
+        if apps:
+            summary_lines.append("### Manual Reviewer Accreditation Applications\n")
+            summary_lines.append("| Nickname | Signature | Institution | ORCID iD | Publication (DOI/ADS) | Status |")
+            summary_lines.append("| :--- | :--- | :--- | :--- | :--- | :--- |")
+            for item in apps.values():
+                if isinstance(item, dict):
+                    s_nick = str(item.get("nick", "")).replace("|", "/")
+                    s_sig = str(item.get("signature", "")).replace("|", "/")
+                    s_inst = str(item.get("institution", "")).replace("|", "/")
+                    s_orcid = str(item.get("orcid", "")).replace("|", "/")
+                    s_pub = str(item.get("publication", "")).replace("|", "/")
+                    s_stat = str(item.get("status", "pending")).upper().replace("|", "/")
+                    summary_lines.append(
+                        f"| `{s_nick}` | **{s_sig}** | {s_inst} | "
+                        f"[{s_orcid}](https://orcid.org/{s_orcid}) | `{s_pub}` | **{s_stat}** |"
+                    )
+            summary_lines.append("\n")
+        body = "\n".join(summary_lines) + f"{ACCOUNTS_START}\n{json.dumps(table)}\n{ACCOUNTS_END}"
         if number is None:
-            _check(requests.post(f"{API}/issues", headers=_headers(), timeout=20,
-                                 json={"title": ACCOUNTS_TITLE, "body": body}))
+            resp = requests.post(f"{API}/issues", headers=_headers(), timeout=20,
+                                 json={"title": ACCOUNTS_TITLE, "body": body})
+            _check(resp)
+            number = resp.json().get("number")
         else:
             _check(requests.patch(f"{API}/issues/{number}", headers=_headers(), timeout=20,
                                   json={"body": body}))
+        if comment and number is not None:
+            try:
+                requests.post(f"{API}/issues/{number}/comments", headers=_headers(), timeout=20,
+                              json={"body": comment})
+            except Exception:
+                pass
     _fetch.clear()
 
 
@@ -300,9 +369,11 @@ def list_accreditations():
 
 def submit_accreditation(user, signature, institution, orcid, publication, specialty, note):
     """Submit a request for manual reviewer accreditation. Returns an error text, or None."""
+    if not user or not user.get("id"):
+        return "Please sign in with Google first."
     signature = clean(signature, 80)
     institution = clean(institution, 100)
-    orcid = orcid.strip().upper()
+    orcid = re.sub(r"^https?://(?:www\.)?orcid\.org/", "", str(orcid).strip(), flags=re.IGNORECASE).strip().upper()
     publication = clean(publication, 140)
     note = clean(note, 400)
     if len(signature) < 5 or len(institution) < 3:
@@ -329,7 +400,13 @@ def submit_accreditation(user, signature, institution, orcid, publication, speci
         "at": now_text(),
     }
     table["_applications"] = apps
-    _save_accounts(number, table)
+    notice = (
+        f"**[Accreditation request — PENDING]** {signature} ({institution}) · "
+        f"nickname `{apps[user['id']]['nick']}` · ORCID [{orcid}](https://orcid.org/{orcid}) · "
+        f"Publication `{publication}` · Specialty: {apps[user['id']]['specialty']}\n\n"
+        f"> {note}"
+    )
+    _save_accounts(number, table, comment=notice)
     return None
 
 
@@ -344,7 +421,12 @@ def decide_accreditation(applicant_id, status, reviewer):
     apps[applicant_id]["verified_by"] = clean(reviewer, 80)
     apps[applicant_id]["verified_at"] = now_text()
     table["_applications"] = apps
-    _save_accounts(number, table)
+    app = apps[applicant_id]
+    notice = (
+        f"**[Accreditation decision — {str(status).upper()}]** for **{app.get('signature', '')}** "
+        f"(`{app.get('nick', '')}`) by {apps[applicant_id]['verified_by']} at {apps[applicant_id]['verified_at']}"
+    )
+    _save_accounts(number, table, comment=notice)
 
 
 RETURN_COOKIE = "hawapacha_return"
@@ -383,7 +465,9 @@ def back_after_sign_in():
         st.session_state["space"] = where
         if where in ("mine", "desk"):
             st.session_state["review_space"] = where
+            st.session_state["role"] = "expert" if where == "desk" else "amateur"
             st.switch_page("pages/4_Review.py")
+        st.session_state["public_space"] = where
         st.switch_page("pages/3_Findings.py")
     if parts[0] == "viewer" and len(parts) == 4:
         try:
@@ -462,9 +546,22 @@ def account_box(place=None, key="account", back=""):
         star = ""
         star_label = ""
         expert_part = f" · reviewer: {clean(role, 80)}" if role else ""
+    wait_sec = cooldown_seconds_left(user)
+    if wait_sec > 0:
+        cd_strip = (
+            f'<div class="dz-user-cd"><span>24h report countdown</span>'
+            f'<b>Next report in {format_countdown(wait_sec)}</b>'
+            '<em>1 report every 24h per account to prevent spam</em></div>'
+        )
+    else:
+        cd_strip = (
+            '<div class="dz-user-cd"><span>24h report countdown</span>'
+            '<b>Ready to report (00h 00m 00s)</b>'
+            '<em>Window open · 1 report every 24h per account</em></div>'
+        )
     left.markdown(
         '<div class="dz-who"><span>Signed in as</span><b>'
-        + nick + "</b> " + star + star_label + expert_part + "</div>",
+        + clean(nick, 20) + "</b> " + star + star_label + expert_part + "</div>" + cd_strip,
         unsafe_allow_html=True,
     )
     if right.button("Sign out", key=key + "_out", use_container_width=True):
@@ -635,6 +732,7 @@ def reputation_of(user_or_alias, items=None):
     return {
         "total": total,
         "validated": validated,
+        "points": validated * 10,
         "sides": sides,
         "next_side_in": next_side_in,
         "behavior_level": behavior_level,
@@ -670,6 +768,7 @@ def expert_reputation_of(reviewer, items=None):
     return {
         "signed": signed,
         "opened": opened,
+        "points": signed * 10,
         "sides": sides,
         "next_side_in": next_side_in,
         "behavior_level": behavior_level,
@@ -715,6 +814,10 @@ def create_report(alias, ra, dec, band, kind, note, view, frame, owner=None):
     Publish a report. Returns (number, claim code); the code is shown only once.
     owner is the account identifier when the visitor is signed in.
     """
+    if owner:
+        wait = cooldown_seconds_left(owner)
+        if wait > 0:
+            raise ValueError(f"24h report cooldown active ({format_countdown(wait)} remaining).")
     code = new_claim_code()
     data = {
         "claim": claim_hash(code),
@@ -745,6 +848,9 @@ def create_report(alias, ra, dec, band, kind, note, view, frame, owner=None):
         number = response.json()["number"]
     _fetch.clear()
     return number, code
+
+
+create = create_report
 
 
 def add_event(report, kind, reviewer, text=""):
@@ -885,7 +991,13 @@ def _report_dialog(ra, dec, band, view, frame, picture, account=None):
 
 def can_report():
     """True if this visitor can still send a report."""
-    return can_write() and st.session_state.get("reports_sent", 0) < MAX_REPORTS_PER_VISIT
+    if not can_write() or st.session_state.get("reports_sent", 0) >= MAX_REPORTS_PER_VISIT:
+        return False
+    if accounts_enabled():
+        user = current_user()
+        if user and cooldown_seconds_left(user) > 0:
+            return False
+    return True
 
 
 def report_button(ra, dec, band, view, frame, picture=None, open_now=False):
@@ -925,9 +1037,10 @@ def report_button(ra, dec, band, view, frame, picture=None, open_now=False):
                     if is_team_reviewer(account):
                         if st.button("Reset 24h cooldown (team demo)", key="reset_cd_cta"):
                             st.session_state["skip_cooldown"] = True
+                            st.session_state.pop("reports_sent", None)
                             st.rerun()
                 else:
-                    clicked = st.button("Report a finding", type="primary", key="report_open")
+                    clicked = action.button("Report a finding", type="primary", key="report_open", use_container_width=True)
         else:
             clicked = action.button("Report a finding", type="primary", key="report_open", use_container_width=True)
     ready = (account is not None and wait_seconds == 0) or not accounts_enabled()

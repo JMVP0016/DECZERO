@@ -179,9 +179,11 @@ span[data-baseweb="tag"], span[data-baseweb="tag"] * { color: #0B1220 !important
 
 /* top menu */
 .dz-nav-gap { height: 0.2rem; }
-[data-testid="stPageLink"] a { border-radius: 999px; border: 1px solid rgba(232,236,244,0.16); padding: 0.3rem 1rem; width: fit-content; max-width: none; white-space: nowrap; }
+[data-testid="stPageLink"] a { border-radius: 999px; border: 1px solid rgba(232,236,244,0.16); padding: 0.3rem 1rem; width: fit-content; max-width: none; white-space: nowrap; transition: border-color 0.2s ease, background 0.2s ease; }
 [data-testid="stPageLink"] a * { white-space: nowrap; overflow: visible; text-overflow: clip; }
 [data-testid="stPageLink"] a:hover { border-color: #5EEAD4; }
+[data-testid="stPageLink"] a[aria-current="page"] { border-color: #5EEAD4; background: rgba(94,234,212,0.14); }
+[data-testid="stPageLink"] a[aria-current="page"] p { color: #5EEAD4 !important; }
 [data-testid="stPageLink"] p { font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 0.85rem; letter-spacing: 0.08em; text-transform: uppercase; }
 
 /* loading scene */
@@ -257,7 +259,9 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 /* report: the band with the button, the window, the position being reported, the claim code */
 .st-key-cta, .st-key-mine_cta { background: linear-gradient(90deg, rgba(94,234,212,0.10), rgba(23,34,52,0.9) 55%); border: 1px solid rgba(94,234,212,0.35);
   border-radius: 14px; padding: 1rem 1.2rem; margin: 0.6rem 0 0.4rem 0; }
-.st-key-accred_status, .st-key-accred_form_box, [class*="st-key-app_"] { background: #172234; border-color: rgba(94,234,212,0.28) !important; border-radius: 14px; }
+.st-key-go_review_desk button { border-color: rgba(167,139,250,0.55) !important; }
+.st-key-go_review_desk button:hover { background: rgba(167,139,250,0.15) !important; border-color: #A78BFA !important; }
+.st-key-accred_status, .st-key-accred_form_box, [class*="st-key-app_"] { background: #172234; border-color: rgba(167,139,250,0.35) !important; border-radius: 14px; }
 .st-key-accred_form_box [data-testid="stForm"] { border: 0 !important; padding: 0 !important; }
 .dz-cta-title { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.1rem; color: #F5F7FA; margin: 0; }
 .dz-cta-line { font-family: 'Inter', sans-serif; font-size: 0.92rem; color: #AEB8CC; margin: 0.15rem 0 0 0; }
@@ -300,6 +304,11 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 .stApp p.dz-cta-line { font-size: 0.92rem !important; margin-bottom: 0.3rem; }
 .stApp p.dz-rby { font-size: 0.85rem !important; }
 .stApp p.dz-claim-label { font-size: 0.72rem !important; }
+.stApp p.dz-loader-sub { font-size: 0.78rem !important; }
+.stApp p.dz-loader-note { font-size: 0.75rem !important; }
+.stApp .dz-card p { font-size: 0.92rem !important; }
+.stApp p.dz-tagline { font-size: clamp(1.05rem, 2.2vw, 1.5rem) !important; }
+.stApp p.dz-si { font-size: 0.7rem !important; }
 .st-key-cta { padding: 1.1rem 1.3rem 1.3rem 1.3rem; }
 /* filter chips: dark text on turquoise */
 [data-testid="stMultiSelect"] span[data-tag] { background: #5EEAD4 !important; }
@@ -356,17 +365,25 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 /* findings: the two ways to take part, and the ranking of observers */
 .st-key-role_amateur, .st-key-role_expert { background: #172234; border-color: rgba(232,236,244,0.10) !important; border-radius: 14px;
   transition: border-color 0.2s ease, transform 0.2s ease; }
-.st-key-role_amateur:hover, .st-key-role_expert:hover { border-color: rgba(94,234,212,0.55) !important; transform: translateY(-2px); }
+.st-key-role_amateur:hover { border-color: rgba(94,234,212,0.55) !important; transform: translateY(-2px); }
+.st-key-role_expert:hover { border-color: rgba(167,139,250,0.65) !important; transform: translateY(-2px); }
 .dz-role i { font-style: normal; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 2.4rem; line-height: 1;
   color: #172234; -webkit-text-stroke: 2px rgba(94,234,212,0.75); paint-order: stroke fill; }
+.st-key-role_expert .dz-role i { -webkit-text-stroke: 2px rgba(167,139,250,0.85); }
 .dz-role b { display: block; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.2rem; color: #F5F7FA; margin: 0.5rem 0 0.3rem 0; }
 .stApp .dz-role p { font-size: 0.93rem !important; line-height: 1.5; color: #C9D1E0; margin: 0 0 0.6rem 0; min-height: 5.6rem; }
 /* community contributions dual board (citizen science & professional astronomy) */
 .dz-contrib-wrap { margin: 1.4rem 0 2rem 0; }
+.dz-contrib-top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+.dz-contrib-px { display: flex; align-items: center; gap: 0.7rem; background: rgba(19,30,48,0.75); border: 1px solid rgba(94,234,212,0.28);
+  border-radius: 999px; padding: 0.32rem 0.9rem 0.32rem 0.45rem; }
+.dz-contrib-px span { font-family: 'Montserrat', sans-serif; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #5EEAD4; }
+.dz-px-orbit { transform-origin: 24px 24px; animation: dz-spin 16s linear infinite; }
+.dz-px-ring { transform-origin: 24px 24px; animation: dz-spin 26s linear infinite reverse; }
 .stApp p.dz-contrib-kicker { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.85rem !important;
   letter-spacing: 0.08em; text-transform: uppercase; color: #6C8CB0; margin: 0 0 0.2rem 0; }
 .stApp h2.dz-contrib-title { font-family: 'Montserrat', sans-serif !important; font-weight: 800;
-  font-size: clamp(1.65rem, 3.2vw, 2.5rem); color: #F5F7FA; margin: 0 0 1.25rem 0; letter-spacing: -0.02em; }
+  font-size: clamp(1.65rem, 3.2vw, 2.5rem); color: #F5F7FA; margin: 0; letter-spacing: -0.02em; }
 .dz-contrib-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; }
 @media (max-width: 720px) { .dz-contrib-grid { grid-template-columns: 1fr; } }
 .dz-contrib-card { background: #131E30; border: 1px solid rgba(148,175,210,0.18); border-radius: 14px; overflow: hidden; }
@@ -388,19 +405,33 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 .dz-contrib-list span { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.7rem; color: #4FD1C5; font-variant-numeric: tabular-nums; }
 .dz-contrib-list span.expert { color: #A78BFA; }
 .stApp p.dz-contrib-foot { text-align: center; font-size: 0.82rem !important; color: #5C708B; margin: 1rem 0 0.2rem 0; }
-/* top-right corner profile & star badge + inline nomination pill */
-.dz-corner-wrap { display: flex; justify-content: flex-end; align-items: center; width: 100%; }
+/* top-right corner profile & star badge + inline nomination pill + 24h countdown */
+.dz-corner-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 0.28rem; width: 100%; }
 .dz-corner-badge { display: inline-flex; align-items: center; gap: 0.6rem; background: linear-gradient(90deg, rgba(94,234,212,0.10), #131E30 65%);
   border: 1px solid rgba(94,234,212,0.40); border-radius: 999px; padding: 0.26rem 0.9rem 0.26rem 0.42rem; box-shadow: 0 4px 16px rgba(0,0,0,0.28); }
 .dz-corner-badge.expert { background: linear-gradient(90deg, rgba(167,139,250,0.16), #131E30 65%); border-color: rgba(167,139,250,0.52); }
 .dz-corner-badge svg { flex-shrink: 0; }
 .dz-corner-text { display: flex; flex-direction: column; line-height: 1.15; }
 .dz-corner-nick { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 0.84rem; color: #F5F7FA; display: flex; align-items: center; gap: 0.4rem; white-space: nowrap; }
-.dz-corner-role { font-family: 'Montserrat', sans-serif; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+.dz-corner-role { font-style: normal; font-family: 'Montserrat', sans-serif; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
   padding: 0.08rem 0.42rem; border-radius: 999px; background: rgba(94,234,212,0.16); color: #5EEAD4; }
 .dz-corner-badge.expert .dz-corner-role { background: rgba(167,139,250,0.22); color: #C4B5FD; }
 .dz-corner-nom { font-family: 'Inter', sans-serif; font-size: 0.73rem; font-weight: 600; color: #5EEAD4; white-space: nowrap; }
 .dz-corner-badge.expert .dz-corner-nom { color: #C4B5FD; }
+.dz-corner-cd { display: inline-flex; align-items: center; gap: 0.42rem; background: #0B1220; border: 1px solid rgba(94,234,212,0.34);
+  border-radius: 999px; padding: 0.14rem 0.72rem; font-family: 'Montserrat', sans-serif; font-size: 0.68rem; font-weight: 700;
+  letter-spacing: 0.05em; color: #F5F7FA; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dz-corner-cd i { width: 0.46rem; height: 0.46rem; border-radius: 50%; background: #5EEAD4; display: inline-block; box-shadow: 0 0 6px #5EEAD4; }
+.dz-corner-cd em { font-style: normal; color: #5EEAD4; text-transform: uppercase; font-size: 0.62rem; letter-spacing: 0.1em; }
+.dz-corner-cd.expert { border-color: rgba(167,139,250,0.42); }
+.dz-corner-cd.expert i { background: #A78BFA; box-shadow: 0 0 6px #A78BFA; }
+.dz-corner-cd.expert em { color: #C4B5FD; }
+.dz-user-cd { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem 1rem;
+  background: #131E30; border: 1px solid rgba(94,234,212,0.30); border-left: 2px solid #5EEAD4; border-radius: 0 10px 10px 0;
+  padding: 0.42rem 0.9rem; margin-top: 0.32rem; font-family: 'Inter', sans-serif; font-size: 0.82rem; color: #F5F7FA; }
+.dz-user-cd span { font-family: 'Montserrat', sans-serif; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #5EEAD4; }
+.dz-user-cd b { font-family: 'Montserrat', sans-serif; font-weight: 800; color: #F5F7FA; font-variant-numeric: tabular-nums; }
+.dz-user-cd em { font-style: normal; font-size: 0.78rem; color: #AEB8CC; }
 .dz-nom-pill { font-style: normal; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.72rem; letter-spacing: 0.05em;
   padding: 0.14rem 0.55rem; border-radius: 999px; background: rgba(94,234,212,0.14); border: 1px solid rgba(94,234,212,0.38); color: #5EEAD4; white-space: nowrap; }
 .dz-nom-pill.expert { background: rgba(167,139,250,0.16); border-color: rgba(167,139,250,0.45); color: #C4B5FD; }
@@ -415,16 +446,15 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 .stApp .dz-rep-card.expert p.dz-rep-kicker { color: #C4B5FD; }
 .stApp p.dz-rep-title { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.25rem !important; color: #F5F7FA; margin: 0.1rem 0 0.25rem 0; }
 .stApp p.dz-rep-sub { font-family: 'Inter', sans-serif; font-size: 0.88rem !important; color: #AEB8CC; margin: 0; line-height: 1.45; }
-.dz-cooldown-box { background: #172234; border: 1px solid rgba(232,236,244,0.12); border-left: 3px solid #5EEAD4; border-radius: 12px; padding: 0.9rem 1.1rem; }
-.dz-cooldown-box.wait { border-left-color: #FBBF24; }
-.dz-cooldown-box.expert { border-left-color: #A78BFA; }
+.dz-cooldown-box { background: #172234; border: 1px solid rgba(94,234,212,0.28); border-left: 3px solid #5EEAD4; border-radius: 12px; padding: 0.9rem 1.1rem; }
+.dz-cooldown-box.wait { border-left-color: #4FD1C5; background: linear-gradient(90deg, rgba(94,234,212,0.10), #172234 70%); }
+.dz-cooldown-box.expert { border-left-color: #A78BFA; border-color: rgba(167,139,250,0.30); }
 .dz-cooldown-box span { display: block; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: #5EEAD4; }
-.dz-cooldown-box.wait span { color: #FBBF24; }
+.dz-cooldown-box.wait span { color: #5EEAD4; }
 .dz-cooldown-box.expert span { color: #C4B5FD; }
 .dz-cooldown-box b { display: block; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.3rem; color: #F5F7FA; margin: 0.15rem 0; font-variant-numeric: tabular-nums; }
 .dz-cooldown-box em { display: block; font-style: normal; font-size: 0.8rem; color: #AEB8CC; }
 .dz-star-scale { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.6rem; margin-top: 1.1rem; padding-top: 1rem; border-top: 1px solid rgba(232,236,244,0.10); }
-@media (max-width: 640px) { .dz-star-scale { grid-template-columns: repeat(2, 1fr); } }
 .dz-star-step { display: flex; align-items: center; gap: 0.5rem; padding: 0.45rem 0.6rem; border-radius: 10px; background: rgba(11,18,32,0.55); border: 1px solid rgba(232,236,244,0.08); }
 .dz-star-step.active { border-color: rgba(94,234,212,0.65); background: rgba(94,234,212,0.08); }
 .dz-rep-card.expert .dz-star-step.active { border-color: rgba(167,139,250,0.70); background: rgba(167,139,250,0.12); }
@@ -435,14 +465,18 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 .dz-star-max { animation: dz-star-pulse 2.8s ease-in-out infinite; }
 .dz-star-max-expert { animation: dz-star-pulse-expert 2.8s ease-in-out infinite; }
 /* fullscreen image: leave breathing room around the image so tapping outside closes it */
-[data-testid="stFullScreenFrame"][style*="fixed"] { background: rgba(7,12,22,0.92) !important; backdrop-filter: blur(4px); cursor: zoom-out; }
-[data-testid="stFullScreenFrame"][style*="fixed"] img { max-height: 82vh !important; max-width: 92vw !important; width: auto !important; object-fit: contain; cursor: default; }
-.dz-rank { list-style: none; margin: 0 0 1rem 0; padding: 0; }
-.dz-rank li { display: flex; align-items: baseline; gap: 1rem; padding: 0.55rem 0.2rem; margin: 0; border-bottom: 1px solid rgba(232,236,244,0.12);
-  font-family: 'Inter', sans-serif; }
-.dz-rank i { font-style: normal; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 0.85rem; letter-spacing: 0.1em; color: #5EEAD4; min-width: 2rem; }
-.dz-rank b { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.05rem; color: #F5F7FA; flex: 1; }
-.dz-rank span { font-size: 0.9rem; color: #FBBF24; font-variant-numeric: tabular-nums; }
+[data-testid="stFullScreenFrame"][style*="fixed"],
+[data-testid="stFullScreenFrame"]:has(button[aria-label*="Exit"]),
+[data-testid="stFullScreenFrame"]:has(button[title*="Exit"]),
+[data-testid="stFullScreenFrame"]:has(button[aria-label*="Close"]) {
+  background: rgba(7,12,22,0.92) !important; backdrop-filter: blur(4px); cursor: zoom-out;
+}
+[data-testid="stFullScreenFrame"][style*="fixed"] img,
+[data-testid="stFullScreenFrame"]:has(button[aria-label*="Exit"]) img,
+[data-testid="stFullScreenFrame"]:has(button[title*="Exit"]) img,
+[data-testid="stFullScreenFrame"]:has(button[aria-label*="Close"]) img {
+  max-height: 82vh !important; max-width: 92vw !important; width: auto !important; object-fit: contain; cursor: default;
+}
 /* larger section titles */
 .dz-section { margin-top: 3.6rem; }
 .dz-section b { font-size: clamp(1.25rem, 2.2vw, 1.7rem); letter-spacing: 0.06em; }
@@ -457,10 +491,35 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
   .st-key-targets [data-testid="stImage"] img { aspect-ratio: 16 / 9; }
   .dz-state { float: none; }
   .stApp .dz-role p { min-height: 0; }
-  /* the two menu links side by side, and the four board numbers two by two */
-  [data-testid="stHorizontalBlock"]:has([data-testid="stPageLink"]) { flex-direction: row !important; flex-wrap: wrap !important; align-items: center; gap: 0.5rem; }
+  /* 3-tab top navigation bar + corner user badge on mobile (375px-safe) */
+  [data-testid="stHorizontalBlock"]:has([data-testid="stPageLink"]) { flex-direction: row !important; flex-wrap: wrap !important; align-items: center; gap: 0.38rem; }
   [data-testid="stHorizontalBlock"]:has([data-testid="stPageLink"]) > [data-testid="stColumn"] { width: auto !important; flex: 0 0 auto !important; min-width: 0 !important; }
-  [data-testid="stHorizontalBlock"]:has([data-testid="stPageLink"]) > [data-testid="stColumn"]:last-child { margin-left: auto !important; }
+  [data-testid="stHorizontalBlock"]:has([data-testid="stPageLink"]) > [data-testid="stColumn"]:last-child { flex: 1 1 100% !important; width: 100% !important; margin-left: 0 !important; margin-top: 0.15rem; }
+  [data-testid="stPageLink"] a { padding: 0.24rem 0.65rem; }
+  [data-testid="stPageLink"] p { font-size: 0.72rem; letter-spacing: 0.04em; }
+  .dz-corner-wrap { align-items: flex-start; }
+  .dz-corner-badge { max-width: 100%; box-sizing: border-box; padding: 0.24rem 0.7rem 0.24rem 0.38rem; }
+  .dz-corner-text { min-width: 0; }
+  .dz-corner-nick { white-space: normal; flex-wrap: wrap; row-gap: 0.15rem; font-size: 0.78rem; word-break: break-word; }
+  .dz-corner-nom { white-space: normal; font-size: 0.68rem; }
+  .dz-corner-cd { max-width: 100%; box-sizing: border-box; white-space: normal; flex-wrap: wrap; font-size: 0.64rem; padding: 0.14rem 0.6rem; }
+  /* reputation card, 5-sided star scale, community board & countdown strip on mobile */
+  .dz-rep-card { padding: 1rem; }
+  .dz-rep-main { flex-direction: column; align-items: flex-start; gap: 0.65rem; }
+  .stApp p.dz-rep-title { font-size: 1.08rem !important; }
+  .dz-cooldown-box { padding: 0.75rem 0.9rem; }
+  .dz-cooldown-box b { font-size: 1.1rem; }
+  .dz-star-scale { grid-template-columns: 1fr; gap: 0.45rem; }
+  .dz-contrib-head { padding: 0.85rem 1rem; }
+  .dz-contrib-list li { padding: 0.75rem 1rem; gap: 0.4rem; }
+  .dz-contrib-list i { width: 1.5rem; font-size: 0.95rem; }
+  .dz-contrib-list b { min-width: 0; font-size: 1rem; gap: 0.5rem; }
+  .dz-contrib-name { min-width: 0; overflow-wrap: anywhere; }
+  .dz-contrib-list span { font-size: 1.35rem; margin-left: 0.4rem; }
+  .dz-who { word-break: break-word; }
+  .dz-user-cd { padding: 0.4rem 0.7rem; gap: 0.25rem 0.7rem; }
+  [data-testid="stFullScreenFrame"] img { max-width: 86vw !important; max-height: 78vh !important; }
+  /* four board metric numbers two by two */
   [data-testid="stHorizontalBlock"]:has([data-testid="stMetric"]) { flex-wrap: wrap; }
   [data-testid="stHorizontalBlock"]:has([data-testid="stMetric"]) > [data-testid="stColumn"] { width: calc(50% - 0.5rem) !important; flex: 0 0 calc(50% - 0.5rem) !important; min-width: 0 !important; }
 }
@@ -577,7 +636,7 @@ def tarjetas(objetivos, compactas=False):
 
 
 def _insignia_esquina_html():
-    """Top-right corner badge showing the user's nickname, 5-sided star and nomination."""
+    """Top-right corner badge showing the user's nickname, 5-sided star, nomination, and 24h countdown below."""
     import html as _html
     try:
         import hallazgos
@@ -586,6 +645,8 @@ def _insignia_esquina_html():
         rev_email = hallazgos.reviewer_name(user) if user else None
         rev_code = hallazgos.reviewers().get(st.session_state.get("reviewer_code", ""))
         reviewer = rev_email or rev_code
+        wait = hallazgos.cooldown_seconds_left(user) if user else 0
+        cd_text = f"Next report: {hallazgos.format_countdown(wait)}" if wait > 0 else "24h window: Ready (00h 00m)"
         in_expert_view = (
             st.session_state.get("role") == "expert"
             or st.session_state.get("space") == "desk"
@@ -596,7 +657,7 @@ def _insignia_esquina_html():
             erep = hallazgos.expert_reputation_of(reviewer)
             sides = erep["sides"]
             nom = nombramiento_estrella(sides, kind="expert")
-            display = nick or reviewer.split(",")[0].strip()
+            display = nick or reviewer.split(",")[0].split("—")[0].strip()
             return (
                 '<div class="dz-corner-wrap">'
                 '<div class="dz-corner-badge expert">'
@@ -605,7 +666,9 @@ def _insignia_esquina_html():
                 f'<span class="dz-corner-nick">{_html.escape(str(display))}'
                 '<i class="dz-corner-role">Astronomer</i></span>'
                 f'<span class="dz-corner-nom">{nom} · {sides}/5 star</span>'
-                '</div></div></div>'
+                '</div></div>'
+                f'<div class="dz-corner-cd expert"><i></i><em>24h countdown</em><span>{_html.escape(cd_text)}</span></div>'
+                '</div>'
             )
         if nick:
             crep = hallazgos.reputation_of({**(user or {}), "nick": nick})
@@ -620,7 +683,9 @@ def _insignia_esquina_html():
                 f'<span class="dz-corner-nick">{_html.escape(str(nick))}'
                 f'<i class="dz-corner-role">{role_tag}</i></span>'
                 f'<span class="dz-corner-nom">{nom} · {sides}/5 star</span>'
-                '</div></div></div>'
+                '</div></div>'
+                f'<div class="dz-corner-cd"><i></i><em>24h countdown</em><span>{_html.escape(cd_text)}</span></div>'
+                '</div>'
             )
     except Exception:
         pass
@@ -631,7 +696,9 @@ def _insignia_esquina_html():
         '<div class="dz-corner-text">'
         '<span class="dz-corner-nick">Guest Observer<i class="dz-corner-role">Start 1/5</i></span>'
         '<span class="dz-corner-nom">First Light · Sign in to rank</span>'
-        '</div></div></div>'
+        '</div></div>'
+        '<div class="dz-corner-cd"><i></i><em>24h countdown</em><span>1 report / 24h per account</span></div>'
+        '</div>'
     )
 
 
@@ -664,9 +731,10 @@ def aplicar_tema():
             "    const fs = e.target.closest('[data-testid=\"stFullScreenFrame\"]');"
             "    if (!fs || window.parent.getComputedStyle(fs).position !== 'fixed') return;"
             "    if (e.target.closest('img, button, a, input')) return;"
-            "    const exitBtn = fs.querySelector('button[aria-label*=\"Exit\"], button[title*=\"Exit\"], button[aria-label*=\"Close\"]');"
+            "    const exitBtn = fs.querySelector('button[aria-label*=\"Exit\"], button[title*=\"Exit\"], button[aria-label*=\"Close\"], [data-testid=\"stElementToolbar\"] button:last-child');"
             "    if (exitBtn) { exitBtn.click(); } else {"
-            "      d.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true}));"
+            "      const ev = new KeyboardEvent('keydown', {key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true});"
+            "      d.dispatchEvent(ev); window.parent.dispatchEvent(ev);"
             "    }"
             "  }, true);"
             "}"
@@ -1110,11 +1178,11 @@ def tarjeta_reputacion(nick, rep, cooldown_text=None):
         '<div class="dz-rep-main">'
         f'{estrella_svg(sides, 74, kind="citizen")}'
         '<div>'
-        f'<p class="dz-rep-kicker">Observer Star · {sides}/5 sides illuminated · Reputation tier {rep["behavior_level"]}</p>'
+        f'<p class="dz-rep-kicker">Observer Star · {sides}/5 sides illuminated · Reputation tier {rep["behavior_level"]} · {rep.get("points", rep["validated"] * 10)} pts</p>'
         f'<p class="dz-rep-title">{_html.escape(str(nick))} — {title}</p>'
         f'<p class="dz-rep-sub">'
         f'<b>{rep["validated"]}</b> expert-validated report{"s" if rep["validated"] != 1 else ""} '
-        f'(+1 star side every 5 validated) · <b>{rep["total"]}</b> total report{"s" if rep["total"] != 1 else ""} sent '
+        f'(+1 star side every 5 validated · +10 pts/report) · <b>{rep["total"]}</b> total report{"s" if rep["total"] != 1 else ""} sent '
         f'(+1 reputation tier every 10 reports, {rep["next_rep_in"]} to next tier). {next_line}'
         '</p>'
         '</div>'
@@ -1159,11 +1227,11 @@ def tarjeta_reputacion_experto(reviewer, rep):
         '<div class="dz-rep-main">'
         f'{estrella_svg(sides, 74, kind="expert")}'
         '<div>'
-        f'<p class="dz-rep-kicker">Astronomer Star · {sides}/5 sides illuminated · Review tier {rep["behavior_level"]}</p>'
+        f'<p class="dz-rep-kicker">Astronomer Star · {sides}/5 sides illuminated · Review tier {rep["behavior_level"]} · {rep.get("points", rep["signed"] * 10)} pts</p>'
         f'<p class="dz-rep-title">{_html.escape(short_name)} — {title}</p>'
         f'<p class="dz-rep-sub">'
         f'<b>{rep["signed"]}</b> signed verdict{"s" if rep["signed"] != 1 else ""} '
-        f'(+1 star side every 5 verdicts) · <b>{rep["opened"]}</b> report{"s" if rep["opened"] != 1 else ""} opened '
+        f'(+1 star side every 5 verdicts · +10 pts/verdict) · <b>{rep["opened"]}</b> report{"s" if rep["opened"] != 1 else ""} opened '
         f'(+1 review tier every 10 verdicts, {rep["next_rep_in"]} to next tier). {next_line}'
         '</p>'
         '</div>'
@@ -1173,6 +1241,28 @@ def tarjeta_reputacion_experto(reviewer, rep):
         f'<div class="dz-star-scale">{steps_html}</div>'
         '</div>',
         unsafe_allow_html=True,
+    )
+
+
+def _planeta_x_animado_svg(size=42):
+    """Animated orbital Planet X & SPHEREx badge for the Community contributions header."""
+    return (
+        f'<svg width="{size}" height="{size}" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" '
+        'role="img" aria-label="Animated Planet X orbital badge">'
+        '<circle cx="24" cy="24" r="21" fill="#0B1220" stroke="#1E2C42" stroke-width="1"/>'
+        '<g class="dz-px-ring">'
+        '<ellipse cx="24" cy="24" rx="18" ry="8" transform="rotate(-24 24 24)" '
+        'fill="none" stroke="#A78BFA" stroke-opacity="0.45" stroke-width="1.1" stroke-dasharray="2 3"/>'
+        '</g>'
+        '<circle cx="24" cy="24" r="9.5" fill="#172844" stroke="#5EEAD4" stroke-width="1.3"/>'
+        '<path d="M15.2 21.5 Q24 25.5 32.8 21.5" fill="none" stroke="#5EEAD4" stroke-opacity="0.55" stroke-width="1"/>'
+        '<path d="M15.8 26.8 Q24 30.2 32.2 26.8" fill="none" stroke="#A78BFA" stroke-opacity="0.55" stroke-width="1"/>'
+        '<g class="dz-px-orbit">'
+        '<circle cx="24" cy="24" r="16.5" fill="none" stroke="#5EEAD4" stroke-opacity="0.32" stroke-width="1" stroke-dasharray="3 4"/>'
+        '<circle cx="40.5" cy="24" r="2.8" fill="#5EEAD4"/>'
+        '<circle cx="7.5" cy="24" r="2.1" fill="#A78BFA"/>'
+        '</g>'
+        '</svg>'
     )
 
 
@@ -1186,27 +1276,29 @@ def contribuciones(citizen_rows, expert_rows, usar_ejemplo=False):
 
     def _citizen_items(rows):
         out = []
-        for idx, (name, count) in enumerate(rows, start=1):
-            sides = min(5, 1 + int(count) // 5)
+        for idx, item in enumerate(rows, start=1):
+            name, count = item[0], int(item[1])
+            sides = int(item[2]) if len(item) >= 3 else min(5, 1 + count // 5)
             nom = nombramiento_estrella(sides, kind="citizen")
             out.append(
                 f'<li><i>{idx}</i><b>{estrella_svg(sides, 28, kind="citizen")}'
                 f'<div class="dz-contrib-name">{_html.escape(str(name))}'
                 f'<em class="dz-contrib-nom">{nom} · {sides}/5</em></div></b>'
-                f'<span>{int(count)}</span></li>'
+                f'<span>{count}</span></li>'
             )
         return "".join(out)
 
     def _expert_items(rows):
         out = []
-        for idx, (name, count) in enumerate(rows, start=1):
-            sides = min(5, 1 + int(count) // 5)
+        for idx, item in enumerate(rows, start=1):
+            name, count = item[0], int(item[1])
+            sides = int(item[2]) if len(item) >= 3 else min(5, 1 + count // 5)
             nom = nombramiento_estrella(sides, kind="expert")
             out.append(
                 f'<li><i>{idx}</i><b>{estrella_svg(sides, 28, kind="expert")}'
                 f'<div class="dz-contrib-name">{_html.escape(str(name))}'
                 f'<em class="dz-contrib-nom expert">{nom} · {sides}/5</em></div></b>'
-                f'<span class="expert">{int(count)}</span></li>'
+                f'<span class="expert">{count}</span></li>'
             )
         return "".join(out)
 
@@ -1216,8 +1308,13 @@ def contribuciones(citizen_rows, expert_rows, usar_ejemplo=False):
     )
     st.markdown(
         '<div class="dz-contrib-wrap">'
+        '<div class="dz-contrib-top">'
+        '<div>'
         '<p class="dz-contrib-kicker">HAWAPACHA</p>'
         '<h2 class="dz-contrib-title">Community contributions</h2>'
+        '</div>'
+        f'<div class="dz-contrib-px">{_planeta_x_animado_svg(40)}<span>Planet X &amp; SPHEREx sky watch</span></div>'
+        '</div>'
         '<div class="dz-contrib-grid">'
         '<div class="dz-contrib-card">'
         '<div class="dz-contrib-head"><b>Citizen science</b><span>Reports sent for review · Turquoise 5-sided star</span></div>'

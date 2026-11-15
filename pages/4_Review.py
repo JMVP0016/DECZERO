@@ -12,6 +12,7 @@ My reports & Review desk (Tab 3):
 """
 
 import html
+from pathlib import Path
 import re
 
 import streamlit as st
@@ -105,11 +106,18 @@ def card(report, reviewer=None, track=False):
 # ---------------------------------------------------------------- which workspace
 
 params = st.query_params
-default_space = "desk" if params.get("space") == "desk" else "mine"
-if st.session_state.get("space") in SPACES and st.session_state.get("review_space") not in SPACES:
+raw_space = params.get("space") or params.get("view")
+if "claim" in params or raw_space in SPACES:
+    param_target = "desk" if raw_space == "desk" else "mine"
+    if st.session_state.get("_last_rev_param") != (raw_space, params.get("claim")):
+        st.session_state["_last_rev_param"] = (raw_space, params.get("claim"))
+        st.session_state["review_space"] = param_target
+        st.session_state["space"] = param_target
+        st.session_state["role"] = "expert" if param_target == "desk" else "amateur"
+elif st.session_state.get("space") in SPACES and st.session_state.get("review_space") not in SPACES:
     st.session_state["review_space"] = st.session_state["space"]
-if st.session_state.get("review_space") not in SPACES:
-    st.session_state["review_space"] = default_space
+elif st.session_state.get("review_space") not in SPACES:
+    st.session_state["review_space"] = "mine"
 
 tema.seccion(1, "My reports & Review")
 
@@ -117,8 +125,7 @@ tema.seccion(1, "My reports & Review")
 def _on_workspace_change():
     chosen = st.session_state.get("review_space", "mine")
     st.session_state["space"] = chosen
-    if hallazgos.nickname_of(hallazgos.current_user()):
-        st.session_state["role"] = "expert" if chosen == "desk" else "amateur"
+    st.session_state["role"] = "expert" if chosen == "desk" else "amateur"
 
 
 space = st.segmented_control(
@@ -181,13 +188,14 @@ if space == "mine" and hallazgos.accounts_enabled():
     tema.pasos(hallazgos.AMATEUR_FLOW)
     if account:
         found = hallazgos.reports_of(account)
-        rep = hallazgos.reputation_of(account, found)
+        rep = hallazgos.reputation_of(account, reports)
         wait_seconds = hallazgos.cooldown_seconds_left(account, found)
         cd_text = f"Next report in {hallazgos.format_countdown(wait_seconds)}" if wait_seconds > 0 else None
         tema.tarjeta_reputacion(account["nick"], rep, cooldown_text=cd_text)
         if wait_seconds > 0 and hallazgos.is_team_reviewer(account):
             if st.button("Reset 24h cooldown (team demo)", key="reset_cd_mine"):
                 st.session_state["skip_cooldown"] = True
+                st.session_state.pop("reports_sent", None)
                 st.rerun()
         waiting = sum(r["status"] == hallazgos.STATUS_NEW for r in found)
         opened = sum(r["status"] == hallazgos.STATUS_OPENED for r in found)
@@ -349,7 +357,7 @@ else:
                         orcid = col3.text_input(
                             "ORCID iD (16-digit researcher identifier)",
                             value=defaults.get("orcid", ""),
-                            max_chars=19,
+                            max_chars=45,
                             placeholder="0000-0002-1825-0097",
                         )
                         publication = col4.text_input(
@@ -384,44 +392,53 @@ else:
                         else:
                             st.session_state.pop("edit_accreditation", None)
                             st.rerun()
-            if reviewers:
-                with st.expander("Already have a reviewer code from the team?"):
-                    with st.form("signin_code"):
-                        code = st.text_input("Reviewer code", type="password")
-                        if st.form_submit_button("Open review desk", type="primary"):
-                            if code in reviewers:
-                                st.session_state["reviewer_code"] = code
-                                st.rerun()
-                            else:
-                                st.error("Unknown code.")
+            with st.expander("Team DecZero & Reviewer special access code", expanded=False):
+                st.caption(
+                    "Members of Team DecZero or invited guest reviewers can enter their special "
+                    "access code here to unlock the manual accreditation verification panel and the Review Desk."
+                )
+                with st.form("signin_code"):
+                    code = st.text_input("Special access / Reviewer code", type="password", placeholder="DECZERO-2026")
+                    if st.form_submit_button("Unlock Team DecZero / Review Desk", type="primary"):
+                        canonical = hallazgos.check_reviewer_code(code)
+                        if canonical:
+                            st.session_state["reviewer_code"] = canonical
+                            st.rerun()
+                        else:
+                            st.error("Unknown access code.")
         elif not account and not reviewer:
-            st.info("Sign in with Google above to open the Review Desk or to apply for reviewer accreditation.")
-            if reviewers:
-                with st.expander("Already have a reviewer code from the team?"):
-                    with st.form("signin_code_anon"):
-                        code = st.text_input("Reviewer code", type="password")
-                        if st.form_submit_button("Open review desk", type="primary"):
-                            if code in reviewers:
-                                st.session_state["reviewer_code"] = code
-                                st.rerun()
-                            else:
-                                st.error("Unknown code.")
+            st.info("Sign in with Google above to open the Review Desk or to apply for reviewer accreditation, or use a Team DecZero special access code below.")
+            with st.expander("Team DecZero & Reviewer special access code", expanded=True):
+                st.caption(
+                    "Members of Team DecZero or invited guest reviewers can enter their special "
+                    "access code here to unlock the manual accreditation verification panel and the Review Desk."
+                )
+                with st.form("signin_code_anon"):
+                    code = st.text_input("Special access / Reviewer code", type="password", placeholder="DECZERO-2026")
+                    if st.form_submit_button("Unlock Team DecZero / Review Desk", type="primary"):
+                        canonical = hallazgos.check_reviewer_code(code)
+                        if canonical:
+                            st.session_state["reviewer_code"] = canonical
+                            st.rerun()
+                        else:
+                            st.error("Unknown access code.")
     if by_account and not reviewer:
         pass
     elif not reviewer:
         st.write(
-            "For the astronomers who review the reports. The team gives each reviewer a "
-            "personal code; every step you take is published with your name."
+            "For the astronomers and Team DecZero members who review the reports. Enter your "
+            "special access code below; every step you take is published with your credential."
         )
         tema.pasos(hallazgos.EXPERT_FLOW)
         with st.form("signin"):
-            code = st.text_input("Reviewer code", type="password")
-            if st.form_submit_button("Sign in", type="primary"):
-                if code in reviewers:
-                    st.session_state["reviewer_code"] = code
+            code = st.text_input("Special access / Reviewer code", type="password", placeholder="DECZERO-2026")
+            if st.form_submit_button("Unlock Review Desk", type="primary"):
+                canonical = hallazgos.check_reviewer_code(code)
+                if canonical:
+                    st.session_state["reviewer_code"] = canonical
                     st.rerun()
                 else:
-                    st.error("Unknown code.")
+                    st.error("Unknown access code.")
         st.caption(
             "You stay signed in while this browser tab is open, also if you go to the viewer "
             "and come back. Nothing is stored on your device. If you are an astronomer and "
@@ -429,14 +446,16 @@ else:
         )
     else:
         erep = hallazgos.expert_reputation_of(reviewer, reports)
+        is_team_admin = hallazgos.is_deczero_team(account)
         if not by_email:
             who, out = st.columns([4, 1], vertical_alignment="center")
             e_title = tema.nombramiento_estrella(erep["sides"], kind="expert")
+            admin_pill = ' <em class="dz-nom-pill">TEAM DECZERO ADMIN</em>' if is_team_admin else ""
             who.markdown(
                 f'<div class="dz-who"><span>Signed in as</span>'
                 f'<b>{html.escape(reviewer)}</b> '
                 f'{tema.estrella_svg(erep["sides"], 24, kind="expert")} '
-                f'<em class="dz-nom-pill expert">{e_title} · {erep["sides"]}/5</em></div>',
+                f'<em class="dz-nom-pill expert">{e_title} · {erep["sides"]}/5</em>{admin_pill}</div>',
                 unsafe_allow_html=True,
             )
             if out.button("Leave review desk" if by_account else "Sign out", use_container_width=True):
@@ -444,59 +463,112 @@ else:
                 st.rerun()
         tema.tarjeta_reputacion_experto(reviewer, erep)
 
+        # Team DecZero Manual Accreditation Verification Panel
+        if is_team_admin:
+            all_apps = hallazgos.list_accreditations()
+            pending_apps = [a for a in all_apps if a.get("status") == "pending"]
+            approved_apps = [a for a in all_apps if a.get("status") == "approved"]
+            decided_apps = [a for a in all_apps if a.get("status") != "pending"]
+
+            tema.seccion(2, "Team DecZero: manual accreditation verification")
+            st.write(
+                "Special access panel for **Team DecZero**. Verify astronomer accreditation "
+                "requests by checking their **ORCID iD** and **DOI / NASA ADS publication**, "
+                "then approve or dismiss them with one click."
+            )
+            ac_cols = st.columns(3)
+            ac_cols[0].metric("Pending verification", len(pending_apps))
+            ac_cols[1].metric("Approved astronomers", len(approved_apps))
+            ac_cols[2].metric("Total applications", len(all_apps))
+
+            def _render_app_card(app, section_prefix="pend"):
+                pub_raw = str(app.get("publication", "")).strip()
+                if pub_raw.startswith("10."):
+                    pub_url = f"https://doi.org/{html.escape(pub_raw)}"
+                else:
+                    pub_url = f"https://ui.adsabs.harvard.edu/abs/{html.escape(pub_raw)}/abstract"
+                stat = str(app.get("status", "pending")).lower()
+                stat_label = (
+                    "Approved reviewer" if stat == "approved"
+                    else ("Dismissed" if stat == "rejected" else "Pending manual verification")
+                )
+                with st.container(border=True, key=f"app_{section_prefix}_{app['id'][:10]}"):
+                    h_col, s_col = st.columns([3, 1])
+                    h_col.markdown(
+                        f"**{html.escape(app['signature'])}** — {html.escape(app['institution'])}  \n"
+                        f"Account nickname: `{html.escape(str(app.get('nick', '')))}` · Submitted {html.escape(app['at'])}"
+                    )
+                    s_col.markdown(tema.estado(stat_label, stat == "approved"), unsafe_allow_html=True)
+                    st.markdown(
+                        f"**ORCID iD:** [{html.escape(app['orcid'])}](https://orcid.org/{html.escape(app['orcid'])}) · "
+                        f"**Publication (DOI / ADS):** [{html.escape(pub_raw)}]({pub_url}) · "
+                        f"**Specialty:** {html.escape(app['specialty'])}"
+                    )
+                    st.caption(f"Declared catalogues & checks: {app['note']}")
+                    b_ok, b_no, _ = st.columns([1.8, 1.4, 2.4])
+                    if stat != "approved":
+                        if b_ok.button("Approve as reviewer", key=f"ok_{section_prefix}_{app['id'][:10]}", type="primary", use_container_width=True):
+                            try:
+                                hallazgos.decide_accreditation(app["id"], "approved", reviewer)
+                            except Exception as error:
+                                st.error(f"Could not approve accreditation. Detail: {error}")
+                            else:
+                                st.rerun()
+                    if stat != "rejected":
+                        btn_lbl = "Revoke accreditation" if stat == "approved" else "Dismiss"
+                        if b_no.button(btn_lbl, key=f"no_{section_prefix}_{app['id'][:10]}", use_container_width=True):
+                            try:
+                                hallazgos.decide_accreditation(app["id"], "rejected", reviewer)
+                            except Exception as error:
+                                st.error(f"Could not update accreditation. Detail: {error}")
+                            else:
+                                st.rerun()
+
+            if pending_apps:
+                for app in pending_apps:
+                    _render_app_card(app, "pend")
+            else:
+                st.info(
+                    "No accreditation requests are currently waiting for manual verification. "
+                    "When a researcher submits the accreditation form on the Review Desk, their "
+                    "ORCID link, DOI/ADS citation and 1-click approval buttons appear right here."
+                )
+            if decided_apps:
+                with st.expander(f"Previously reviewed accreditation applications ({len(decided_apps)})"):
+                    for app in decided_apps:
+                        _render_app_card(app, "hist")
+
         def by_me(report, kinds):
-            return any(e["by"] == reviewer and e["type"] in kinds for e in report.get("events", []))
+            full_r = str(reviewer or "").strip().lower()
+            short_r = full_r.split(",")[0].strip()
+            for e in report.get("events", []):
+                if e.get("type") in kinds:
+                    by = str(e.get("by", "")).strip().lower()
+                    by_s = by.split(",")[0].strip()
+                    if full_r and (by == full_r or (short_r and by_s == short_r)):
+                        return True
+            return False
 
         queue = sorted((r for r in reports if r["status"] == hallazgos.STATUS_NEW), key=lambda r: r["number"])
         in_progress = [r for r in reports if r["status"] == hallazgos.STATUS_OPENED]
         mine_open = [r for r in in_progress if by_me(r, [hallazgos.STATUS_OPENED])]
         others_open = [r for r in in_progress if r not in mine_open]
         signed = [r for r in reports if r["status"] in hallazgos.VERDICTS and by_me(r, hallazgos.VERDICTS)]
+
+        sec_base = 3 if is_team_admin else 2
+        tema.seccion(sec_base, "Citizen report review queue")
         columns = st.columns(3)
         columns[0].metric("Waiting for a reviewer", len(queue))
         columns[1].metric("Opened by me", len(mine_open))
         columns[2].metric("Verdicts I signed", len(signed))
 
-        # Team reviewers can verify and approve pending accreditation requests right here
-        if hallazgos.is_team_reviewer(account) or st.session_state.get("reviewer_code") in reviewers:
-            pending_apps = [a for a in hallazgos.list_accreditations() if a.get("status") == "pending"]
-            if pending_apps:
-                with st.expander(f"Reviewer accreditation requests waiting for manual verification ({len(pending_apps)})", expanded=True):
-                    for app in pending_apps:
-                        with st.container(border=True, key=f"app_{app['id'][:10]}"):
-                            st.markdown(
-                                f"**{html.escape(app['signature'])}** — {html.escape(app['institution'])} "
-                                f"(nickname `{html.escape(str(app.get('nick', '')))}`, {html.escape(app['at'])})"
-                            )
-                            st.markdown(
-                                f"ORCID: [{html.escape(app['orcid'])}](https://orcid.org/{html.escape(app['orcid'])}) · "
-                                f"Publication (DOI / ADS): `{html.escape(app['publication'])}` · "
-                                f"Specialty: {html.escape(app['specialty'])}"
-                            )
-                            st.caption(f"Catalogues & checks: {app['note']}")
-                            b_ok, b_no, _ = st.columns([1.8, 1.2, 2.6])
-                            if b_ok.button("Approve as reviewer", key=f"ok_{app['id'][:10]}", type="primary", use_container_width=True):
-                                try:
-                                    hallazgos.decide_accreditation(app["id"], "approved", reviewer)
-                                except Exception as error:
-                                    st.error(f"Could not approve accreditation. Detail: {error}")
-                                else:
-                                    st.rerun()
-                            if b_no.button("Dismiss", key=f"no_{app['id'][:10]}", use_container_width=True):
-                                try:
-                                    hallazgos.decide_accreditation(app["id"], "rejected", reviewer)
-                                except Exception as error:
-                                    st.error(f"Could not update accreditation. Detail: {error}")
-                                else:
-                                    st.rerun()
-
         with st.container(key="board"):
-            tema.seccion(2, "Opened by me: verdict pending")
+            tema.seccion(sec_base + 1, "Opened by me: verdict pending")
             if not mine_open:
                 st.caption("Nothing here. Open a report from the queue below.")
             for report in mine_open:
                 card(report, reviewer)
-            tema.seccion(3, "Queue: oldest first")
+            tema.seccion(sec_base + 2, "Queue: oldest first")
             if not queue:
                 st.caption("The queue is empty.")
             for report in queue:
@@ -509,5 +581,29 @@ else:
                 with st.expander(f"Verdicts I signed ({len(signed)})"):
                     for report in signed:
                         card(report)
+
+    with st.expander("Where do reports & manual accreditation requests go? (Team DecZero & GitHub architecture)"):
+        st.markdown(
+            "- **Citizen finding reports (`[Finding]`):** Every report submitted from the Viewer creates an immutable "
+            "GitHub Issue in [`JMVP0016/DECZERO/issues`](https://github.com/JMVP0016/DECZERO/issues) with a readable "
+            "summary, SIMBAD coordinates, and a hidden JSON block (`<!-- hawapacha-data ... -->`). When an astronomer "
+            "opens a report or signs a verdict, a signed GitHub Issue comment is appended to that exact issue.\n"
+            "- **Manual astronomer accreditation requests (`[Accounts]`):** Every request submitted via the accreditation "
+            "form is stored in the master `[Accounts] HAWAPACHA nicknames` GitHub Issue with a live Markdown table "
+            "(Nickname, Signature, Institution, ORCID iD, DOI/ADS publication, Status) and posts a notification comment "
+            "so Team DecZero receives an instant GitHub alert.\n"
+            "- **Team DecZero special access:** Core team members (`[REVIEWER_EMAILS]` via Google OAuth or `[REVIEWERS]` "
+            "codes) see pending accreditation requests right above the review queue and can approve or dismiss them with "
+            "one click."
+        )
+        pdf_guide = Path(__file__).resolve().parent.parent / "GUIA_REVISION_MANUAL_Y_REPOSITORIO_DECZERO.pdf"
+        if pdf_guide.is_file():
+            st.download_button(
+                "Download Team DecZero Manual Review & Repository Guide (PDF)",
+                data=pdf_guide.read_bytes(),
+                file_name="GUIA_REVISION_MANUAL_Y_REPOSITORIO_DECZERO.pdf",
+                mime="application/pdf",
+                key="dl_deczero_guide_pdf",
+            )
 
 tema.pie()
