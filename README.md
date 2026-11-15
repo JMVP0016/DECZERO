@@ -1,4 +1,4 @@
-# DecZero · SPHEREx viewer
+# HAWAPACHA · SPHEREx sky viewer (team DecZero)
 
 NASA Space Apps Challenge 2026 · Challenge: **Planet X and SPHEREx** · Team DecZero (Ecuador).
 

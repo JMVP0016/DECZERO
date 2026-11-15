@@ -135,7 +135,7 @@ def _consulta_sia(coord, coleccion):
             ultimo_error = error
             if espera is not None:
                 time.sleep(espera)
-    raise RuntimeError(f"IRSA (SIA) no respondió tras {len(ESPERAS_SIA) + 1} intentos: {ultimo_error}")
+    raise RuntimeError(f"IRSA (SIA) did not answer after {len(ESPERAS_SIA) + 1} attempts: {ultimo_error}")
 
 
 def _buscar_sia(ra: float, dec: float, banda: str = None) -> list:

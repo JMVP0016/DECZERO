@@ -11,7 +11,7 @@ import streamlit as st
 ICON = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "icon.png")
 
 PROJECT_NAME = "HAWAPACHA"
-TAGLINE = "Type a spot in the sky. Watch it change."      # to be confirmed by the team
+TAGLINE = "Find the change in the sky."
 
 CSS = """
 <style>
@@ -95,6 +95,16 @@ h1, h2, h3, .dz-title { font-family: 'Montserrat', sans-serif; letter-spacing: -
   .dz-stars, .dz-stars::before, .dz-planet, .dz-hero-inner { animation: none; }
 }
 
+/* small note inside the hero: the scene was drawn with SI assistance */
+.dz-si { position: absolute; z-index: 2; right: 0.9rem; bottom: 0.35rem; font-size: 0.62rem; color: #9AA7BD; margin: 0; }
+
+/* review states: amber ring while waiting, turquoise dot once there is a verdict */
+.dz-state { display: inline-flex; align-items: center; gap: 0.45rem; font-weight: 600; font-size: 0.9rem; }
+.dz-state i { width: 0.7rem; height: 0.7rem; border-radius: 50%; display: inline-block; box-sizing: border-box; }
+.dz-state.waiting { color: #FBBF24; } .dz-state.waiting i { border: 2px solid #FBBF24; }
+.dz-state.done { color: #48E0CB; } .dz-state.done i { background: #48E0CB; }
+[data-testid="stMetricValue"], [data-testid="stCaptionContainer"] { font-variant-numeric: tabular-nums; }
+
 /* numbered section labels, as in the brand sheet */
 .dz-section { display: flex; align-items: baseline; gap: 0.7rem; margin: 1.6rem 0 0.6rem 0; }
 .dz-section i { font-style: normal; color: #48E0CB; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 0.85rem; letter-spacing: 0.1em; }
@@ -136,7 +146,7 @@ h1, h2, h3, .dz-title { font-family: 'Montserrat', sans-serif; letter-spacing: -
 .dz-loader .dz-dot { animation: dz-twinkle 2.8s ease-in-out infinite alternate; }
 .dz-loader-text { font-family: 'Montserrat', sans-serif; font-weight: 600; color: #F5F6F8; margin: 0.4rem 0 0.15rem 0; text-align: center; }
 .dz-loader-sub { color: #8FD9CE; font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; margin: 0; text-align: center; }
-.dz-loader-note { color: #6F7C93; font-size: 0.68rem; margin: 0.6rem 0 0 0; }
+.dz-loader-note { color: #9AA7BD; font-size: 0.75rem; margin: 0.6rem 0 0 0; }
 @keyframes dz-spin { to { transform: rotate(360deg); } }
 @keyframes dz-sway { from { transform: rotate(-24deg); } to { transform: rotate(-14deg); } }
 @keyframes dz-band { 0%, 100% { opacity: 0.10; } 50% { opacity: 0.95; } }
@@ -157,7 +167,7 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0C1421 !i
 
 # The Hawapacha mark: a sky circle crossed by the equator line, with two objects.
 LOGO_SVG = """
-<svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Hawapacha logo">
+<svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="HAWAPACHA logo">
   <circle cx="60" cy="50" r="40" fill="none" stroke="#F5F6F8" stroke-width="6"/>
   <circle cx="44" cy="32" r="6" fill="#48E0CB"/>
   <circle cx="76" cy="68" r="6" fill="#48E0CB"/>
@@ -224,6 +234,12 @@ def cargando(mensaje, detalle=""):
         lugar.empty()
 
 
+def estado(texto, revisado):
+    """Review state as a label with a shape, not colour alone."""
+    clase = "done" if revisado else "waiting"
+    return f'<span class="dz-state {clase}"><i></i>{texto}</span>'
+
+
 def navegacion():
     """Top menu with only the pages meant for visitors. Internal pages stay reachable by URL."""
     try:
@@ -281,6 +297,7 @@ __CSS__
     for any position in the sky, in time order.</p>
   </div>
   <div class="dz-facts">__FACTS__</div>
+  <p class="dz-si">Planet and SPHEREx illustration made by the team with SI assistance; not an official image</p>
 </div>
 <script type="module">
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
@@ -479,6 +496,7 @@ def portada():
             for any position in the sky, in time order.</p>
           </div>
           <div class="dz-facts">{facts}</div>
+          <p class="dz-si">Planet illustration made by the team with SI assistance; not an official image</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -498,8 +516,8 @@ HELP = [
      "Real pictures of the same small patch of sky, taken on different dates by "
      "NASA's SPHEREx space telescope in infrared light."),
     ("What should I look for?",
-     "A dot that changes place between dates is something nearby moving across the sky. "
-     "A dot that gets brighter or fainter may be a variable star."),
+     "In the aligned view, a dot that changes place between dates may be something nearby "
+     "moving across the sky. A dot that gets brighter or fainter may be a variable star."),
     ("What can fool me?",
      "A dot that shows up in only one picture is usually a cosmic ray or a bad pixel. "
      "Each picture is also taken in a slightly different infrared colour, so brightness "
@@ -521,6 +539,7 @@ def pie():
     st.markdown(
         """
         <div class="dz-footer">
+          HAWAPACHA, by team DecZero (Ecuador).
           Data: SPHEREx spectral images, NASA/IPAC Infrared Science Archive (IRSA),
           read from the public IRSA copy on AWS Open Data.
           Mission facts: <a href="https://science.nasa.gov/mission/spherex/">science.nasa.gov/mission/spherex</a>.

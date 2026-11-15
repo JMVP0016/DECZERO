@@ -8,7 +8,7 @@ import streamlit as st
 import hallazgos
 import tema
 
-st.set_page_config(page_title="Findings · Hawapacha", page_icon=tema.ICON, layout="wide")
+st.set_page_config(page_title="Findings · HAWAPACHA", page_icon=tema.ICON, layout="wide")
 tema.aplicar_tema()
 tema.navegacion()
 
@@ -28,8 +28,7 @@ st.caption(
 
 reviewers = hallazgos.reviewers()
 reviewer = None
-with st.sidebar:
-    st.subheader("Reviewer access")
+with st.expander("Reviewer access"):
     code = st.text_input("Reviewer code", type="password")
     if code:
         reviewer = reviewers.get(code)
@@ -95,7 +94,8 @@ for report in visible:
             f"**#{report['number']} · {report['kind']}**  \n"
             f"Reported by **{report['alias']}** on {report['reported']}"
         )
-        status.markdown(f"**{report['status']}**")
+        status.markdown(tema.estado(report["status"], report["status"] in hallazgos.VERDICTS),
+                        unsafe_allow_html=True)
 
         st.write(report["note"])
         link = f"/?ra={report['ra']:.5f}&dec={report['dec']:.5f}&band={report['band']}"

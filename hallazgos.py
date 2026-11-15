@@ -38,11 +38,12 @@ MAX_REPORTS_PER_HOUR = 15      # for the whole app: a simple brake against spam
 TRUSTED_AUTHORS = {REPO.split("/")[0]}
 
 KINDS = [
-    "Something moves between dates",
-    "Something changes brightness",
+    "Possible movement",
+    "Possible change in brightness",
     "Something appears or disappears",
-    "Other",
+    "Not sure",
 ]
+PLACES = ["Inside the amber ring", "Centre", "Top left", "Top right", "Bottom left", "Bottom right"]
 
 STATUS_NEW = "Waiting for review"
 STATUS_OPENED = "Opened by a reviewer"
@@ -50,6 +51,7 @@ VERDICTS = [
     "Known object",
     "Image artifact",
     "Candidate: worth a follow-up",
+    "Inconclusive",
 ]
 
 
@@ -132,7 +134,7 @@ def _body(data):
         f"**What they noticed:** {data['kind']}\n\n"
         f"**Note:** {data['note']}\n\n"
         f"**Status:** {data['status']}\n\n"
-        "_Report created from the Hawapacha app. The creation time of this issue "
+        "_Report created from the HAWAPACHA app. The creation time of this issue "
         "is the record of when it was reported._\n\n"
     )
     return summary + f"{MARK_START}\n{json.dumps(data)}\n{MARK_END}"
@@ -217,7 +219,7 @@ def create_report(alias, ra, dec, band, kind, note, view, frame):
         "claim": claim_hash(code),
         "alias": clean(alias, 40) or "Anonymous",
         "ra": float(ra), "dec": float(dec), "band": clean(band, 4),
-        "kind": kind if kind in KINDS else "Other",
+        "kind": kind if kind in KINDS else "Not sure",
         "note": clean(note, 600),
         "view": clean(view, 40), "frame": clean(frame, 60),
         "status": STATUS_NEW, "events": [],
@@ -270,13 +272,14 @@ def add_event(report, kind, reviewer, text=""):
 
 def report_form(ra, dec, band, view, frame):
     """Small form shown under a sequence in the main page."""
-    with st.expander("Did you notice something? Report it"):
+    with st.container(border=True):
+        st.markdown("**Did you notice something? Report it**")
         if not can_write():
             st.info("Reporting is not set up on this copy of the app yet.")
             return
         st.write(
             "Your report is published on the public findings board with the current "
-            "time, so there is a record that you saw it first. A reviewer will then "
+            "time, so there is a record that you saw it first. A reviewer may then "
             "check it. Use a nickname; do not write personal data."
         )
         sent = st.session_state.get("reports_sent", 0)
@@ -289,17 +292,19 @@ def report_form(ra, dec, band, view, frame):
                 f"Published as report #{number}. You can follow it on the Findings page."
             )
             st.warning(
-                f"Your claim code is **{code}**. Write it down now: it is shown only once, "
-                "and it is the only way to prove later that this report is yours."
+                "Write down this claim code now: it is shown only once, and it is the "
+                "only way to prove later that this report is yours."
             )
+            st.code(code, language=None)
         with st.form("report"):
             alias = st.text_input("Your nickname", max_chars=40)
             kind = st.selectbox("What did you notice?", KINDS)
+            place = st.selectbox("Where in the picture?", PLACES)
             note = st.text_area(
-                "Describe it: where in the picture, and between which dates",
+                "Describe it: what changes, and between which dates",
                 max_chars=600,
             )
-            submitted = st.form_submit_button("Publish report")
+            submitted = st.form_submit_button("Report what I noticed", type="primary")
         if submitted:
             if not alias.strip() or len(note.strip()) < 15 or len(note.split()) < 4:
                 st.error(
@@ -313,12 +318,14 @@ def report_form(ra, dec, band, view, frame):
                     return
                 same = [
                     r for r in list_reports()
-                    if r["alias"] == clean(alias, 40) and r["note"] == clean(note, 600)
+                    if r["alias"] == clean(alias, 40) and r["note"] == clean(f"[{place}] {note}", 600)
                 ]
                 if same:
                     st.error(f"This report was already published as #{same[0]['number']}.")
                     return
-                number, code = create_report(alias, ra, dec, band, kind, note, view, frame)
+                number, code = create_report(
+                    alias, ra, dec, band, kind, f"[{place}] {note}", view, frame
+                )
             except Exception as error:
                 st.error(f"The report could not be published. Please try again. Detail: {error}")
                 return
