@@ -37,7 +37,7 @@ if legacy_space in ("mine", "desk") or "claim" in params:
 
 tema.aplicar_tema()
 tema.navegacion()
-tema.portada()
+tema.portada(movil_compacta=True)
 
 PUBLIC_SPACES = {"top": "Top findings", "board": "All reports"}
 

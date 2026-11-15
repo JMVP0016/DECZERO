@@ -180,6 +180,25 @@ span[data-baseweb="tag"], span[data-baseweb="tag"] * { color: #0B1220 !important
 [data-testid="stMetricLabel"] p { color: #5EEAD4; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; }
 [data-testid="stMetricValue"] { font-family: 'Montserrat', sans-serif; font-weight: 800; }
 [data-testid="stButtonGroup"] > div { flex-wrap: wrap !important; overflow: visible !important; row-gap: 0.35rem; }
+.st-key-hero_phone, .stApp a.dz-jump { display: none; }
+@media (min-width: 641px) { [data-testid="stElementContainer"]:has(a.dz-jump) { display: none; } }
+@media (max-width: 640px) {
+  .st-key-hero_phone { display: block; }
+  .st-key-hero_wide { display: none; }
+  /* finger-sized rows for checkboxes, radios and help icons */
+  [data-testid="stCheckbox"] label, [data-testid="stRadio"] [role="radiogroup"] label { min-height: 2.6rem; align-items: center; }
+  [data-testid="stTooltipHoverTarget"] { min-width: 2rem; min-height: 2rem; display: inline-flex; align-items: center; justify-content: center; }
+  .stApp a.dz-jump { display: block; text-align: center; font-weight: 600; font-size: 0.9rem; color: #0B1220 !important; background: #5EEAD4;
+    border-radius: 0.5rem; padding: 0.6rem 1rem; text-decoration: none !important; margin: 0.2rem 0 0.4rem 0; }
+  /* the five-level scale is reference material: keep the card short before the queue */
+  .dz-star-scale { display: none; }
+  .stApp p.dz-rep-sub { display: none; }
+}
+@media (max-width: 400px) {
+  [data-testid="stHorizontalBlock"]:has([data-testid="stPageLink"]) { gap: 0.2rem !important; }
+  [data-testid="stPageLink"] a { padding: 0.24rem 0.4rem !important; }
+  .stApp [data-testid="stPageLink"] p { font-size: 0.62rem !important; letter-spacing: 0.01em !important; }
+}
 @media (max-width: 640px) {
   [data-testid="stMetricLabel"], [data-testid="stMetricLabel"] * { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
 }
@@ -466,7 +485,7 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 .dz-corner-cd { display: inline-flex; align-items: center; gap: 0.36rem; background: #0B1220; border: 1px solid rgba(94,234,212,0.30);
   border-radius: 999px; padding: 0.12rem 0.62rem; font-family: 'Montserrat', sans-serif; font-size: 0.64rem; font-weight: 700;
   letter-spacing: 0.04em; color: #F5F7FA; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.stApp a.dz-corner-guest { display: inline-block; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: #5EEAD4 !important; text-decoration: none !important; border: 1px solid rgba(94,234,212,0.55); border-radius: 999px; padding: 0.5rem 1.1rem; background: rgba(94,234,212,0.08); }
+.stApp a.dz-corner-guest, .stApp span.dz-corner-guest { display: inline-block; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: #5EEAD4 !important; text-decoration: none !important; border: 1px solid rgba(94,234,212,0.55); border-radius: 999px; padding: 0.5rem 1.1rem; background: rgba(94,234,212,0.08); }
 .stApp a.dz-corner-guest:hover { background: rgba(94,234,212,0.18); border-color: #5EEAD4; }
 .dz-corner-cd i { width: 0.4rem; height: 0.4rem; border-radius: 50%; background: #5EEAD4; display: inline-block; box-shadow: 0 0 5px #5EEAD4; flex-shrink: 0; }
 .dz-corner-cd em { font-style: normal; color: #5EEAD4; text-transform: uppercase; font-size: 0.6rem; letter-spacing: 0.08em; }
@@ -765,7 +784,13 @@ def _insignia_esquina_html():
         )
     try:
         import hallazgos
-        if hallazgos.accounts_enabled() and not hallazgos.current_user():
+        if hallazgos.accounts_enabled() and hallazgos.current_user():
+            return (
+                '<div class="dz-corner-wrap">'
+                '<span class="dz-corner-guest">Signed in · choose a nickname</span>'
+                '</div>'
+            )
+        if hallazgos.accounts_enabled():
             return (
                 '<div class="dz-corner-wrap">'
                 '<a class="dz-corner-guest" href="/Review" target="_self" '
@@ -1170,11 +1195,18 @@ def _facts_html():
     )
 
 
-def portada(compacta=False):
+def portada(compacta=False, movil_compacta=False):
     """
     Hero: who we are, the name of the project and one line that says what it does.
     With compacta=True it is a slim bar, so the sequence is visible without scrolling.
+    With movil_compacta=True phones get the slim bar and wide screens the full hero.
     """
+    if movil_compacta and not compacta:
+        with st.container(key="hero_phone"):
+            portada(compacta=True)
+        with st.container(key="hero_wide"):
+            portada()
+        return
     if compacta:
         st.markdown(
             # with a sequence on screen the sections sit closer, so the pictures need less scrolling

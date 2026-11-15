@@ -1051,7 +1051,7 @@ def report_button(ra, dec, band, view, frame, picture=None, open_now=False):
     with st.container(key="cta"):
         text, action = st.columns([3, 1], vertical_alignment="center")
         text.markdown(
-            '<p class="dz-cta-title">Noticed something in these images?</p>'
+            '<p class="dz-cta-title" id="report-here">Noticed something in these images?</p>'
             '<p class="dz-cta-line">Report it. It goes on the public Findings board with the '
             "time you reported it, and a reviewer checks it.</p>",
             unsafe_allow_html=True,

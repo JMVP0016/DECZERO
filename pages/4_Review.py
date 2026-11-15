@@ -45,7 +45,7 @@ elif st.session_state.get("review_space") not in SPACES:
 
 tema.aplicar_tema()
 tema.navegacion()
-tema.portada()
+tema.portada(movil_compacta=True)
 
 
 def progress(report):

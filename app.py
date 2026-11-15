@@ -257,6 +257,7 @@ if result:
 
     hint_column, help_column = st.columns([3.6, 1.4], vertical_alignment="center")
     tema.ayuda_boton(help_column)
+    st.markdown('<a class="dz-jump" href="#report-here" target="_self">Report a finding ↓</a>', unsafe_allow_html=True)
     hint_column.caption(
         "Look for a dot that changes place between observing periods while the stars around it "
         "stay put. Amber ring: centre of the view. Purple: no data."
