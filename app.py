@@ -9,6 +9,10 @@ import astropy.units as u
 import streamlit as st
 from astropy.coordinates import SkyCoord
 
+import fresco
+
+fresco.actualizar()   # after an upload, do not mix the new app.py with old modules in memory
+
 import cache_local
 import datos
 import hallazgos

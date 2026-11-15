@@ -7,6 +7,10 @@ import html
 
 import streamlit as st
 
+import fresco
+
+fresco.actualizar()   # after an upload, do not mix new pages with old modules in memory
+
 import hallazgos
 import tema
 
