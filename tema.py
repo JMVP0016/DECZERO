@@ -314,6 +314,16 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 [data-testid="stToolbar"] { display: none !important; }
 [data-testid="stHeader"] { background: transparent !important; }
 .stApp .block-container { padding-bottom: 3rem; }
+/* slim header with a sequence on screen: keeps the moving sky of the hero */
+.dz-bar-live { position: relative; overflow: hidden; border-radius: 16px; padding: 1.1rem 1.4rem 1.5rem 1.4rem;
+  border: 1px solid rgba(94,234,212,0.14); border-bottom: 1px solid rgba(94,234,212,0.14);
+  background: radial-gradient(120% 160% at 50% -40%, #16335c 0%, #0d1d38 45%, #070c16 85%); animation: dz-rise 0.7s ease-out both; }
+.dz-bar-live > svg, .dz-bar-live > b, .dz-bar-live > span { position: relative; z-index: 2; }
+.dz-bar-live .dz-planet { top: calc(100% - 1.1rem); }
+.stApp .dz-bar-live { margin-bottom: 0.9rem !important; }
+/* the sequence comes in gently instead of popping up */
+[data-testid="stImage"] img { animation: dz-rise 0.6s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .dz-bar-live, [data-testid="stImage"] img { animation: none; } }
 /* larger section titles */
 .dz-section { margin-top: 3.6rem; }
 .dz-section b { font-size: clamp(1.25rem, 2.2vw, 1.7rem); letter-spacing: 0.06em; }
@@ -696,7 +706,9 @@ def portada(compacta=False):
         st.markdown(
             # with a sequence on screen the sections sit closer, so the pictures need less scrolling
             "<style>.dz-section { margin: 1.5rem 0 0.7rem 0; } .dz-bar { margin-bottom: 0.2rem; }</style>"
-            f'<div class="dz-bar">{LOGO_SVG}<b>{PROJECT_NAME}</b><span>{TAGLINE} '
+            # a slim strip of the hero: the same stars and lit horizon, still moving
+            '<div class="dz-bar dz-bar-live"><div class="dz-stars"></div><div class="dz-planet"></div>'
+            f'{LOGO_SVG}<b>{PROJECT_NAME}</b><span>{TAGLINE} '
             "Real SPHEREx images of any position, in time order.</span></div>",
             unsafe_allow_html=True,
         )
