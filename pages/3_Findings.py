@@ -45,6 +45,8 @@ PUBLIC_SPACES = {"board": "All reports", "top": "Confirmed candidates"}
 def community_board(items):
     """Build and draw the two-column Community contributions leaderboard."""
     c_counts, c_names, e_counts, e_names = {}, {}, {}, {}
+    preset_c = {item[0].lower(): (item[2] if len(item) >= 3 else 1) for item in tema.SAMPLE_CITIZENS}
+    preset_e = {item[0].lower(): (item[2] if len(item) >= 3 else 1) for item in tema.SAMPLE_EXPERTS}
     for rep in items:
         alias = str(rep.get("alias", "")).strip()
         if alias:
@@ -59,27 +61,39 @@ def community_board(items):
                     e_names.setdefault(ekey, who)
                     e_counts[ekey] = e_counts.get(ekey, 0) + 1
     c_rows = [
-        (c_names[k], count, hallazgos.reputation_of(c_names[k], items)["sides"])
+        (
+            c_names[k],
+            count,
+            max(hallazgos.reputation_of(c_names[k], items)["sides"], preset_c.get(k, 1)),
+        )
         for k, count in sorted(c_counts.items(), key=lambda x: (-x[1], x[0]))[:5]
     ]
     e_rows = [
-        (e_names[k], count, min(5, 1 + count // 5))
+        (
+            e_names[k],
+            count,
+            max(min(5, 1 + count // 5), preset_e.get(k, 1)),
+        )
         for k, count in sorted(e_counts.items(), key=lambda x: (-x[1], x[0]))[:5]
     ]
     sample_used = False
     if len(c_rows) < 3:
         sample_used = True
         seen = {row[0].lower() for row in c_rows}
-        for name, count in tema.SAMPLE_CITIZENS:
+        for item in tema.SAMPLE_CITIZENS:
+            name, count = item[0], item[1]
+            sides = item[2] if len(item) >= 3 else min(5, 1 + count // 5)
             if name.lower() not in seen and len(c_rows) < 3:
-                c_rows.append((name, count, min(5, 1 + count // 5)))
+                c_rows.append((name, count, sides))
         c_rows.sort(key=lambda x: -x[1])
     if len(e_rows) < 3:
         sample_used = True
         seen = {row[0].lower() for row in e_rows}
-        for name, count in tema.SAMPLE_EXPERTS:
+        for item in tema.SAMPLE_EXPERTS:
+            name, count = item[0], item[1]
+            sides = item[2] if len(item) >= 3 else min(5, 1 + count // 5)
             if name.lower() not in seen and len(e_rows) < 3:
-                e_rows.append((name, count, min(5, 1 + count // 5)))
+                e_rows.append((name, count, sides))
         e_rows.sort(key=lambda x: -x[1])
     tema.contribuciones(c_rows, e_rows, usar_ejemplo=sample_used)
 

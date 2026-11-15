@@ -549,15 +549,15 @@ def account_box(place=None, key="account", back=""):
     wait_sec = cooldown_seconds_left(user)
     if wait_sec > 0:
         cd_strip = (
-            f'<div class="dz-user-cd"><span>24h report countdown</span>'
-            f'<b>Next report in {format_countdown(wait_sec)}</b>'
-            '<em>1 report every 24h per account to prevent spam</em></div>'
+            f'<div class="dz-user-cd"><i></i><span>Cooldown</span>'
+            f'<b>· {format_countdown(wait_sec)}</b>'
+            '<em>(1 / 24h)</em></div>'
         )
     else:
         cd_strip = (
-            '<div class="dz-user-cd"><span>24h report countdown</span>'
-            '<b>Ready to report (00h 00m 00s)</b>'
-            '<em>Window open · 1 report every 24h per account</em></div>'
+            '<div class="dz-user-cd"><i></i><span>Report ready</span>'
+            '<b>· 00h 00m</b>'
+            '<em>(1 / 24h)</em></div>'
         )
     left.markdown(
         '<div class="dz-who"><span>Signed in as</span><b>'
@@ -634,6 +634,8 @@ def _parse(issue):
         data = json.loads(raw)
     except Exception:
         return None
+    if str(data.get("alias", "")).strip().lower() in ("ljeqoefjpoqwjepgof2w", "prueba deczero"):
+        data["alias"] = "Team DecZero"
     data["number"] = issue["number"]
     data["created_at"] = issue["created_at"]
     data["reported"] = issue["created_at"].replace("T", " ").replace("Z", " UTC")[:16] + " UTC"

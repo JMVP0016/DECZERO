@@ -433,20 +433,22 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 .dz-corner-badge.expert .dz-corner-role { background: rgba(167,139,250,0.22); color: #C4B5FD; }
 .dz-corner-nom { font-family: 'Inter', sans-serif; font-size: 0.73rem; font-weight: 600; color: #5EEAD4; white-space: nowrap; }
 .dz-corner-badge.expert .dz-corner-nom { color: #C4B5FD; }
-.dz-corner-cd { display: inline-flex; align-items: center; gap: 0.42rem; background: #0B1220; border: 1px solid rgba(94,234,212,0.34);
-  border-radius: 999px; padding: 0.14rem 0.72rem; font-family: 'Montserrat', sans-serif; font-size: 0.68rem; font-weight: 700;
-  letter-spacing: 0.05em; color: #F5F7FA; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.dz-corner-cd i { width: 0.46rem; height: 0.46rem; border-radius: 50%; background: #5EEAD4; display: inline-block; box-shadow: 0 0 6px #5EEAD4; }
-.dz-corner-cd em { font-style: normal; color: #5EEAD4; text-transform: uppercase; font-size: 0.62rem; letter-spacing: 0.1em; }
-.dz-corner-cd.expert { border-color: rgba(167,139,250,0.42); }
-.dz-corner-cd.expert i { background: #A78BFA; box-shadow: 0 0 6px #A78BFA; }
+.dz-corner-cd { display: inline-flex; align-items: center; gap: 0.36rem; background: #0B1220; border: 1px solid rgba(94,234,212,0.30);
+  border-radius: 999px; padding: 0.12rem 0.62rem; font-family: 'Montserrat', sans-serif; font-size: 0.64rem; font-weight: 700;
+  letter-spacing: 0.04em; color: #F5F7FA; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dz-corner-cd i { width: 0.4rem; height: 0.4rem; border-radius: 50%; background: #5EEAD4; display: inline-block; box-shadow: 0 0 5px #5EEAD4; flex-shrink: 0; }
+.dz-corner-cd em { font-style: normal; color: #5EEAD4; text-transform: uppercase; font-size: 0.6rem; letter-spacing: 0.08em; }
+.dz-corner-cd span { color: #AEB8CC; font-weight: 600; }
+.dz-corner-cd.expert { border-color: rgba(167,139,250,0.38); }
+.dz-corner-cd.expert i { background: #A78BFA; box-shadow: 0 0 5px #A78BFA; }
 .dz-corner-cd.expert em { color: #C4B5FD; }
-.dz-user-cd { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem 1rem;
-  background: #131E30; border: 1px solid rgba(94,234,212,0.30); border-left: 2px solid #5EEAD4; border-radius: 0 10px 10px 0;
-  padding: 0.42rem 0.9rem; margin-top: 0.32rem; font-family: 'Inter', sans-serif; font-size: 0.82rem; color: #F5F7FA; }
-.dz-user-cd span { font-family: 'Montserrat', sans-serif; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #5EEAD4; }
-.dz-user-cd b { font-family: 'Montserrat', sans-serif; font-weight: 800; color: #F5F7FA; font-variant-numeric: tabular-nums; }
-.dz-user-cd em { font-style: normal; font-size: 0.78rem; color: #AEB8CC; }
+.dz-user-cd { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 0.4rem;
+  background: #0B1220; border: 1px solid rgba(94,234,212,0.30); border-radius: 999px;
+  padding: 0.2rem 0.72rem; margin-top: 0.32rem; font-family: 'Montserrat', sans-serif; font-size: 0.68rem; color: #F5F7FA; }
+.dz-user-cd i { width: 0.42rem; height: 0.42rem; border-radius: 50%; background: #5EEAD4; display: inline-block; box-shadow: 0 0 5px #5EEAD4; }
+.dz-user-cd span { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #5EEAD4; }
+.dz-user-cd b { font-weight: 700; color: #F5F7FA; font-variant-numeric: tabular-nums; }
+.dz-user-cd em { font-style: normal; font-family: 'Inter', sans-serif; font-size: 0.68rem; color: #8792A8; }
 .dz-nom-pill { font-style: normal; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.72rem; letter-spacing: 0.05em;
   padding: 0.14rem 0.55rem; border-radius: 999px; background: rgba(94,234,212,0.14); border: 1px solid rgba(94,234,212,0.38); color: #5EEAD4; white-space: nowrap; }
 .dz-nom-pill.expert { background: rgba(167,139,250,0.16); border-color: rgba(167,139,250,0.45); color: #C4B5FD; }
@@ -512,12 +514,15 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
   [data-testid="stHorizontalBlock"]:has([data-testid="stPageLink"]) > [data-testid="stColumn"]:last-child { flex: 1 1 100% !important; width: 100% !important; margin-left: 0 !important; margin-top: 0.15rem; }
   [data-testid="stPageLink"] a { padding: 0.24rem 0.65rem; }
   [data-testid="stPageLink"] p { font-size: 0.72rem; letter-spacing: 0.04em; }
-  .dz-corner-wrap { align-items: flex-start; }
-  .dz-corner-badge { max-width: 100%; box-sizing: border-box; padding: 0.24rem 0.7rem 0.24rem 0.38rem; }
+  .dz-corner-wrap { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 0.32rem 0.45rem; }
+  .dz-corner-badge { max-width: 100%; box-sizing: border-box; padding: 0.2rem 0.62rem 0.2rem 0.34rem; gap: 0.45rem; }
+  .dz-corner-badge svg { width: 24px; height: 24px; }
   .dz-corner-text { min-width: 0; }
-  .dz-corner-nick { white-space: normal; flex-wrap: wrap; row-gap: 0.15rem; font-size: 0.78rem; word-break: break-word; }
-  .dz-corner-nom { white-space: normal; font-size: 0.68rem; }
-  .dz-corner-cd { max-width: 100%; box-sizing: border-box; white-space: normal; flex-wrap: wrap; font-size: 0.64rem; padding: 0.14rem 0.6rem; }
+  .dz-corner-nick { white-space: normal; flex-wrap: wrap; row-gap: 0.12rem; gap: 0.3rem; font-size: 0.76rem; word-break: break-word; }
+  .dz-corner-role { font-size: 0.56rem; padding: 0.06rem 0.36rem; }
+  .dz-corner-nom { white-space: normal; font-size: 0.66rem; }
+  .dz-corner-menu { left: 0; right: auto; top: calc(100% + 0.3rem); min-width: 8.8rem; }
+  .dz-corner-cd { max-width: 100%; box-sizing: border-box; white-space: normal; flex-wrap: wrap; font-size: 0.62rem; padding: 0.14rem 0.55rem; gap: 0.32rem; }
   /* reputation card, 5-sided star scale, community board & countdown strip on mobile */
   .dz-rep-card { padding: 1rem; }
   .dz-rep-main { flex-direction: column; align-items: flex-start; gap: 0.65rem; }
@@ -531,8 +536,11 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
   .dz-contrib-list b { min-width: 0; font-size: 1rem; gap: 0.5rem; }
   .dz-contrib-name { min-width: 0; overflow-wrap: anywhere; }
   .dz-contrib-list span { font-size: 1.35rem; margin-left: 0.4rem; }
-  .dz-who { word-break: break-word; }
-  .dz-user-cd { padding: 0.4rem 0.7rem; gap: 0.25rem 0.7rem; }
+  .dz-who { padding: 0.45rem 0.7rem; gap: 0.35rem 0.5rem; font-size: 0.84rem; word-break: break-word; }
+  .dz-nom-pill { font-size: 0.66rem; padding: 0.1rem 0.45rem; }
+  .dz-user-cd { justify-content: flex-start; padding: 0.24rem 0.62rem; gap: 0.2rem 0.45rem; font-size: 0.66rem; }
+  .dz-user-cd span { font-size: 0.6rem; letter-spacing: 0.08em; }
+  .dz-user-cd em { font-size: 0.64rem; }
   [data-testid="stFullScreenFrame"] img { max-width: 86vw !important; max-height: 78vh !important; }
   /* four board metric numbers two by two */
   [data-testid="stHorizontalBlock"]:has([data-testid="stMetric"]) { flex-wrap: wrap; }
@@ -661,7 +669,8 @@ def _insignia_esquina_html():
         rev_code = hallazgos.reviewers().get(st.session_state.get("reviewer_code", ""))
         reviewer = rev_email or rev_code
         wait = hallazgos.cooldown_seconds_left(user) if user else 0
-        cd_text = f"Next report: {hallazgos.format_countdown(wait)}" if wait > 0 else "24h window: Ready (00h 00m)"
+        cd_label = "Cooldown" if wait > 0 else "Report ready"
+        cd_val = hallazgos.format_countdown(wait) if wait > 0 else "00h 00m"
         in_expert_view = (
             st.session_state.get("role") == "expert"
             or st.session_state.get("space") == "desk"
@@ -685,7 +694,7 @@ def _insignia_esquina_html():
                 '<div class="dz-corner-menu">'
                 '<button type="button" class="dz-corner-signout-item"><span>Sign out</span><span>↪</span></button>'
                 '</div>'
-                f'<div class="dz-corner-cd expert"><i></i><em>24h countdown</em><span>{_html.escape(cd_text)}</span></div>'
+                f'<div class="dz-corner-cd expert"><i></i><em>{cd_label}</em><span>· {_html.escape(cd_val)}</span></div>'
                 '</div>'
             )
         if nick:
@@ -705,7 +714,7 @@ def _insignia_esquina_html():
                 '<div class="dz-corner-menu">'
                 '<button type="button" class="dz-corner-signout-item"><span>Sign out</span><span>↪</span></button>'
                 '</div>'
-                f'<div class="dz-corner-cd"><i></i><em>24h countdown</em><span>{_html.escape(cd_text)}</span></div>'
+                f'<div class="dz-corner-cd"><i></i><em>{cd_label}</em><span>· {_html.escape(cd_val)}</span></div>'
                 '</div>'
             )
     except Exception:
@@ -718,7 +727,7 @@ def _insignia_esquina_html():
         '<span class="dz-corner-nick">Guest Observer<i class="dz-corner-role">Start 1/5</i></span>'
         '<span class="dz-corner-nom">First Light · Sign in to rank</span>'
         '</div></div>'
-        '<div class="dz-corner-cd"><i></i><em>24h countdown</em><span>1 report / 24h per account</span></div>'
+        '<div class="dz-corner-cd"><i></i><em>Limit</em><span>· 1 / 24h</span></div>'
         '</div>'
     )
 
@@ -1145,8 +1154,8 @@ def seccion(numero, titulo):
     )
 
 
-SAMPLE_CITIZENS = [("Kevin", 0), ("Darwin", 0), ("Prueba DecZero", 0)]
-SAMPLE_EXPERTS = [("David", 0), ("Geo", 0), ("Jonnathan", 0)]
+SAMPLE_CITIZENS = [("Team DecZero", 0, 1), ("Kevin", 0, 4), ("Darwin", 0, 2)]
+SAMPLE_EXPERTS = [("David", 0, 5), ("Geo", 0, 4), ("Jonnathan", 0, 3)]
 
 # The 5 kite facets of a 5-pointed star centered at (50, 50), matching the HAWAPACHA logo palette.
 STAR_FACETS = [
