@@ -420,8 +420,12 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 .dz-corner-wrap.menu-open .dz-corner-caret { transform: rotate(180deg); color: #5EEAD4; }
 .dz-corner-menu { display: none; position: absolute; top: calc(100% + 0.35rem); right: 0; z-index: 999;
   background: #131E30; border: 1px solid rgba(94,234,212,0.45); border-radius: 12px; padding: 0.35rem;
-  box-shadow: 0 10px 28px rgba(0,0,0,0.55); min-width: 9.5rem; }
-.dz-corner-wrap.menu-open .dz-corner-menu { display: flex; flex-direction: column; gap: 0.2rem; }
+  box-shadow: 0 10px 28px rgba(0,0,0,0.55); min-width: 12.5rem; }
+.dz-corner-wrap.menu-open .dz-corner-menu { display: flex; flex-direction: column; gap: 0.25rem; }
+.dz-corner-switch-item { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+  width: 100%; padding: 0.45rem 0.75rem; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-weight: 700;
+  font-size: 0.74rem; letter-spacing: 0.03em; color: #F5F7FA; background: rgba(94,234,212,0.12); border: 1px solid rgba(94,234,212,0.35); }
+.dz-corner-switch-item:hover { background: rgba(94,234,212,0.22); border-color: #5EEAD4; color: #FFFFFF; }
 .dz-corner-signout-item { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; justify-content: space-between;
   width: 100%; padding: 0.45rem 0.75rem; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-weight: 700;
   font-size: 0.78rem; letter-spacing: 0.04em; color: #F5F7FA; background: rgba(248,113,113,0.12); border: 1px solid rgba(248,113,113,0.35); }
@@ -673,20 +677,15 @@ def _insignia_esquina_html():
         wait = hallazgos.cooldown_seconds_left(user) if user else 0
         cd_label = "Cooldown" if wait > 0 else "Report ready"
         cd_val = hallazgos.format_countdown(wait) if wait > 0 else "00h 00m"
-        in_expert_view = (
-            st.session_state.get("role") == "expert"
-            or st.session_state.get("space") == "desk"
-            or st.session_state.get("review_space") == "desk"
-            or (reviewer and not nick)
-        )
-        if reviewer and in_expert_view:
-            erep = hallazgos.expert_reputation_of(reviewer)
+        in_expert_view = _es_modo_experto()
+        if (reviewer or nick) and in_expert_view:
+            erep = hallazgos.expert_reputation_of(reviewer or nick)
             sides = erep["sides"]
             nom = nombramiento_estrella(sides, kind="expert")
-            display = nick or reviewer.split(",")[0].split("—")[0].strip()
+            display = nick or (reviewer.split(",")[0].split("—")[0].strip() if reviewer else "Astronomer")
             return (
                 '<div class="dz-corner-wrap">'
-                '<div class="dz-corner-badge expert" data-signed-in="1" title="Click to sign out">'
+                '<div class="dz-corner-badge expert" data-signed-in="1" title="Click to switch role or sign out">'
                 f'{estrella_svg(sides, 30, kind="expert")}'
                 '<div class="dz-corner-text">'
                 f'<span class="dz-corner-nick">{_html.escape(str(display))}'
@@ -694,6 +693,7 @@ def _insignia_esquina_html():
                 f'<span class="dz-corner-nom">{nom} · {sides}/5 star</span>'
                 '</div></div>'
                 '<div class="dz-corner-menu">'
+                '<button type="button" class="dz-corner-switch-item"><span>Switch to My reports</span><span>⇄</span></button>'
                 '<button type="button" class="dz-corner-signout-item"><span>Sign out</span><span>↪</span></button>'
                 '</div>'
                 f'<div class="dz-corner-cd expert"><i></i><em>{cd_label}</em><span>· {_html.escape(cd_val)}</span></div>'
@@ -706,7 +706,7 @@ def _insignia_esquina_html():
             role_tag = "Astronomer · Observer" if reviewer else "Observer"
             return (
                 '<div class="dz-corner-wrap">'
-                '<div class="dz-corner-badge" data-signed-in="1" title="Click to sign out">'
+                '<div class="dz-corner-badge" data-signed-in="1" title="Click to switch role or sign out">'
                 f'{estrella_svg(sides, 30, kind="citizen")}'
                 '<div class="dz-corner-text">'
                 f'<span class="dz-corner-nick">{_html.escape(str(nick))}'
@@ -714,6 +714,7 @@ def _insignia_esquina_html():
                 f'<span class="dz-corner-nom">{nom} · {sides}/5 star</span>'
                 '</div></div>'
                 '<div class="dz-corner-menu">'
+                '<button type="button" class="dz-corner-switch-item"><span>Switch to Review</span><span>⇄</span></button>'
                 '<button type="button" class="dz-corner-signout-item"><span>Sign out</span><span>↪</span></button>'
                 '</div>'
                 f'<div class="dz-corner-cd"><i></i><em>{cd_label}</em><span>· {_html.escape(cd_val)}</span></div>'
@@ -736,11 +737,13 @@ def _insignia_esquina_html():
 
 def _es_modo_experto():
     """True when the visitor is currently in Astronomer / Review mode."""
-    if st.session_state.get("review_space") == "desk" or st.session_state.get("space") == "desk":
-        return True
     if st.session_state.get("role") == "expert":
         return True
-    if st.session_state.get("review_space") == "mine" or st.session_state.get("role") == "amateur":
+    if st.session_state.get("role") == "amateur":
+        return False
+    if st.session_state.get("review_space") == "desk" or st.session_state.get("space") == "desk":
+        return True
+    if st.session_state.get("review_space") == "mine" or st.session_state.get("space") == "mine":
         return False
     try:
         import hallazgos
@@ -765,6 +768,17 @@ def navegacion():
             else:
                 st.session_state.pop("reviewer_code", None)
                 st.rerun()
+        if st.query_params.get("dz_switch_role") == "1":
+            st.query_params.pop("dz_switch_role", None)
+            if _es_modo_experto():
+                st.session_state["role"] = "amateur"
+                st.session_state["space"] = "mine"
+                st.session_state["review_space"] = "mine"
+            else:
+                st.session_state["role"] = "expert"
+                st.session_state["space"] = "desk"
+                st.session_state["review_space"] = "desk"
+            st.rerun()
     except Exception:
         pass
     tab3_label = "Review" if _es_modo_experto() else "My reports"
@@ -785,6 +799,16 @@ def navegacion():
         has_code = bool(st.session_state.get("reviewer_code"))
         if signed_user or has_code:
             with esquina.container(key="corner_signout_box"):
+                if st.button("Switch role", key="corner_switch_role_btn"):
+                    if _es_modo_experto():
+                        st.session_state["role"] = "amateur"
+                        st.session_state["space"] = "mine"
+                        st.session_state["review_space"] = "mine"
+                    else:
+                        st.session_state["role"] = "expert"
+                        st.session_state["space"] = "desk"
+                        st.session_state["review_space"] = "desk"
+                    st.rerun()
                 if st.button("Sign out", key="corner_signout_btn"):
                     if signed_user:
                         hallazgos.sign_out()
@@ -806,12 +830,26 @@ def aplicar_tema():
             "if (!d._dzFsClose) {"
             "  d._dzFsClose = true;"
             "  d.addEventListener('click', function(e) {"
+            "    const switchItem = e.target.closest('.dz-corner-switch-item');"
+            "    if (switchItem) {"
+            "      e.preventDefault(); e.stopPropagation();"
+            "      const wrap = switchItem.closest('.dz-corner-wrap');"
+            "      if (wrap) wrap.classList.remove('menu-open');"
+            "      const btns = d.querySelectorAll('.st-key-corner_signout_box button');"
+            "      if (btns.length >= 1) { btns[0].click(); } else {"
+            "        const u = new URL(window.parent.location.href);"
+            "        u.searchParams.set('dz_switch_role', '1');"
+            "        window.parent.location.href = u.toString();"
+            "      }"
+            "      return;"
+            "    }"
             "    const signoutItem = e.target.closest('.dz-corner-signout-item');"
             "    if (signoutItem) {"
             "      e.preventDefault(); e.stopPropagation();"
             "      const wrap = signoutItem.closest('.dz-corner-wrap');"
             "      if (wrap) wrap.classList.remove('menu-open');"
-            "      const stBtn = d.querySelector('.st-key-corner_signout_box button');"
+            "      const btns = d.querySelectorAll('.st-key-corner_signout_box button');"
+            "      const stBtn = btns.length >= 2 ? btns[1] : btns[0];"
             "      if (stBtn) { stBtn.click(); } else {"
             "        const u = new URL(window.parent.location.href);"
             "        u.searchParams.set('dz_signout', '1');"

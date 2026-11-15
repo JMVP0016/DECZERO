@@ -120,20 +120,11 @@ def card(report, reviewer=None, track=False):
 
 # ---------------------------------------------------------------- which workspace
 
-tema.seccion(1, "Review" if st.session_state.get("review_space") == "desk" else "My reports")
-
-
-def _on_workspace_change():
-    chosen = st.session_state.get("review_space", "mine")
-    st.session_state["space"] = chosen
-    st.session_state["role"] = "expert" if chosen == "desk" else "amateur"
-
-
-space = st.segmented_control(
-    "Workspace", list(SPACES), format_func=SPACES.get, label_visibility="collapsed",
-    key="review_space", on_change=_on_workspace_change,
-) or "mine"
+space = "desk" if tema._es_modo_experto() else "mine"
 st.session_state["space"] = space
+st.session_state["review_space"] = space
+
+tema.seccion(1, "Review" if space == "desk" else "My reports")
 
 try:
     reports = hallazgos.list_reports()
@@ -154,7 +145,7 @@ def choose(role, where):
     st.session_state["review_space"] = where
 
 
-if account and not st.session_state.get("role"):
+if not st.session_state.get("role") and not st.session_state.get("reviewer_code") and "claim" not in params and raw_space not in SPACES:
     tema.seccion(2, "How do you want to take part?")
     amateur, expert = st.columns(2, gap="large")
     with amateur.container(border=True, key="role_amateur"):
@@ -175,7 +166,7 @@ if account and not st.session_state.get("role"):
         )
         st.button("Go to the review desk", key="role_e", type="primary", use_container_width=True,
                   on_click=choose, args=("expert", "desk"))
-    st.caption("You can switch at any time with the selector above. Public rankings are in “Findings board”.")
+    st.caption("You can switch role at any time from your profile badge in the top-right corner.")
     tema.pie()
     st.stop()
 
