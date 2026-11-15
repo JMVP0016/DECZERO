@@ -189,7 +189,7 @@ else:
     columns[2].metric("Reviewed", sum(counts[v] for v in hallazgos.VERDICTS))
     columns[3].metric("Candidates", counts[hallazgos.VERDICTS[2]])
     left, right = st.columns([2, 1])
-    chosen = left.multiselect("Status", statuses, default=statuses)
+    chosen = left.pills("Status", statuses, selection_mode="multi", default=statuses) or []
     mine = right.text_input("Only reports by this nickname", placeholder="a nickname")
     visible = [
         r for r in reports

@@ -179,6 +179,10 @@ span[data-baseweb="tag"], span[data-baseweb="tag"] * { color: #0B1220 !important
 }
 [data-testid="stMetricLabel"] p { color: #5EEAD4; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; }
 [data-testid="stMetricValue"] { font-family: 'Montserrat', sans-serif; font-weight: 800; }
+[data-testid="stButtonGroup"] > div { flex-wrap: wrap !important; overflow: visible !important; row-gap: 0.35rem; }
+@media (max-width: 640px) {
+  [data-testid="stMetricLabel"], [data-testid="stMetricLabel"] * { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
+}
 
 /* top menu */
 .dz-nav-gap { height: 0.2rem; }

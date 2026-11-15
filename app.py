@@ -208,12 +208,13 @@ elif submitted or first_visit_with_link:
             "Dec must be between -90 and +90."
         )
     else:
-        st.query_params.update({"ra": f"{ra:.5f}", "dec": f"{dec:.5f}", "band": band})
         target = stored_target(ra, dec, band)
         if target:
             load_target(target, band)   # a direct link to a target loads instantly
         else:
             load(ra, dec, band)
+        # after loading: changing the address earlier redraws the form while it waits
+        st.query_params.update({"ra": f"{ra:.5f}", "dec": f"{dec:.5f}", "band": band})
         if st.session_state.get("result"):
             st.session_state["scroll_top"] = True
             st.rerun()            # redraw with the slim header, so the sequence is in view

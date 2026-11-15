@@ -148,7 +148,8 @@ def is_deczero_team(user=None, code=None):
     if not active_code:
         return False
     canonical = check_reviewer_code(active_code)
-    return bool(canonical and canonical in reviewers())
+    # a personal reviewer code opens the review desk, not the team's accreditation panel
+    return bool(canonical and reviewers().get(canonical) == TEAM_DECZERO_NAME)
 
 
 def can_write():
@@ -656,14 +657,20 @@ def _parse(issue):
 def _fetch():
     if _memory_mode():
         return list(_memory()["issues"].values())
-    response = requests.get(
-        f"{API}/issues",
-        params={"state": "open", "per_page": 100,   # closing an issue on GitHub hides it here
-                "sort": "created", "direction": "desc"},
-        headers=_headers(), timeout=20,
-    )
-    _check(response)
-    return [issue for issue in response.json() if "pull_request" not in issue]
+    found = []
+    for page in range(1, 6):               # up to 500 open issues, 100 per request
+        response = requests.get(
+            f"{API}/issues",
+            params={"state": "open", "per_page": 100, "page": page,   # closed issues are hidden
+                    "sort": "created", "direction": "desc"},
+            headers=_headers(), timeout=20,
+        )
+        _check(response)
+        batch = response.json()
+        found.extend(issue for issue in batch if "pull_request" not in issue)
+        if len(batch) < 100:
+            break
+    return found
 
 
 def list_reports():

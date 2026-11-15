@@ -91,6 +91,10 @@ def card(report, reviewer=None, track=False):
 
         if not reviewer:
             return
+        me = st.session_state.get("_account_id")
+        if me and report.get("owner") == me:
+            st.caption("This is your own report: another reviewer has to check it.")
+            return
         key = f"r{report['number']}"
         if report["status"] == hallazgos.STATUS_NEW:
             if st.button("I am opening this report to review it", key=key + "open"):
@@ -130,6 +134,13 @@ def choose(role, where):
     st.session_state["space"] = where
     st.session_state["review_space"] = where
 
+
+if not st.session_state.get("role") and space == "mine" and hallazgos.accounts_enabled():
+    try:
+        if hallazgos.reports_of(hallazgos.current_user()):
+            choose("amateur", "mine")
+    except Exception:
+        pass   # the board is unreachable: fall back to the question
 
 needs_role_choice = (
     not st.session_state.get("role")
@@ -196,6 +207,7 @@ except Exception as error:
 account = None
 if hallazgos.accounts_enabled():
     account = hallazgos.account_box(key="top_account", back=f"findings:{space}")
+st.session_state["_account_id"] = account["id"] if account else None
 
 # ---------------------------------------------------------------- my reports (amateur)
 
@@ -492,14 +504,14 @@ else:
                 st.rerun()
         tema.tarjeta_reputacion_experto(reviewer, erep)
 
-        # Team DecZero Manual Accreditation Verification Panel
-        if is_team_admin:
+        # Team DecZero Manual Accreditation Verification Panel (drawn after the queue)
+        def accreditation_panel(number):
             all_apps = hallazgos.list_accreditations()
             pending_apps = [a for a in all_apps if a.get("status") == "pending"]
             approved_apps = [a for a in all_apps if a.get("status") == "approved"]
             decided_apps = [a for a in all_apps if a.get("status") != "pending"]
 
-            tema.seccion(2, "Team DecZero: manual accreditation verification")
+            tema.seccion(number, "Team DecZero: manual accreditation verification")
             st.write(
                 "Special access panel for **Team DecZero**. Verify astronomer accreditation "
                 "requests by checking their **ORCID iD** and **DOI / NASA ADS publication**, "
@@ -584,7 +596,7 @@ else:
         others_open = [r for r in in_progress if r not in mine_open]
         signed = [r for r in reports if r["status"] in hallazgos.VERDICTS and by_me(r, hallazgos.VERDICTS)]
 
-        sec_base = 3 if is_team_admin else 2
+        sec_base = 2
         tema.seccion(sec_base, "Citizen report review queue")
         columns = st.columns(3)
         columns[0].metric("Waiting for a reviewer", len(queue))
@@ -610,6 +622,9 @@ else:
                 with st.expander(f"Verdicts I signed ({len(signed)})"):
                     for report in signed:
                         card(report)
+
+        if is_team_admin:
+            accreditation_panel(sec_base + 3)
 
     with st.expander("Where do reports & manual accreditation requests go? (Team DecZero & GitHub architecture)"):
         st.markdown(
