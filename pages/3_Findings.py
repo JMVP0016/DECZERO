@@ -30,10 +30,42 @@ import tema
 st.set_page_config(page_title="HAWAPACHA — Findings board", page_icon=tema.ICON, layout="wide")
 tema.aplicar_tema()
 tema.navegacion()
-tema.portada(compacta=True)
+tema.portada()
 
 SPACES = {"mine": "My reports", "desk": "Review desk", "top": "Candidates", "board": "All reports"}
 TRACK = ["Reported", "Opened by a reviewer", "Verdict signed"]
+
+
+def community_board(items):
+    """Build and draw the two-column Community contributions leaderboard."""
+    citizens, experts = {}, {}
+    for rep in items:
+        alias = str(rep.get("alias", "")).strip()
+        if alias:
+            citizens[alias] = citizens.get(alias, 0) + 1
+        for event in rep.get("events", []):
+            if event.get("type") in hallazgos.VERDICTS:
+                who = str(event.get("by", "")).split(",")[0].strip()
+                if who:
+                    experts[who] = experts.get(who, 0) + 1
+    c_rows = sorted(citizens.items(), key=lambda x: (-x[1], x[0].lower()))[:5]
+    e_rows = sorted(experts.items(), key=lambda x: (-x[1], x[0].lower()))[:5]
+    sample_used = False
+    if len(c_rows) < 3:
+        sample_used = True
+        seen = {name.lower() for name, _ in c_rows}
+        for name, count in tema.SAMPLE_CITIZENS:
+            if name.lower() not in seen and len(c_rows) < 3:
+                c_rows.append((name, count))
+        c_rows.sort(key=lambda x: (-x[1], x[0].lower()))
+    if len(e_rows) < 3:
+        sample_used = True
+        seen = {name.lower() for name, _ in e_rows}
+        for name, count in tema.SAMPLE_EXPERTS:
+            if name.lower() not in seen and len(e_rows) < 3:
+                e_rows.append((name, count))
+        e_rows.sort(key=lambda x: (-x[1], x[0].lower()))
+    tema.contribuciones(c_rows, e_rows, usar_ejemplo=sample_used)
 
 
 def progress(report):
@@ -180,19 +212,11 @@ if space == "top":
     columns[0].metric("Candidates", len(winners))
     columns[1].metric("Reports reviewed", reviewed)
     columns[2].metric("Observers with a candidate", len({r["alias"] for r in winners}))
+    community_board(reports)
+    tema.seccion(2, "Confirmed candidates")
     if not winners:
         st.info("No candidates yet. When a reviewer marks a report as a candidate, it appears here.")
     else:
-        tema.seccion(2, "Observers with most candidates")
-        ranking = {}
-        for report in winners:
-            ranking[report["alias"]] = ranking.get(report["alias"], 0) + 1
-        rows = "".join(
-            f'<li><i>{place:02d}</i><b>{html.escape(str(name))}</b><span>{count} candidate{"s" if count != 1 else ""}</span></li>'
-            for place, (name, count) in enumerate(sorted(ranking.items(), key=lambda item: (-item[1], item[0].lower()))[:10], start=1)
-        )
-        st.markdown(f'<ol class="dz-rank">{rows}</ol>', unsafe_allow_html=True)
-        tema.seccion(3, "Candidates")
         with st.container(key="board"):
             for report in winners:
                 card(report)
@@ -209,6 +233,7 @@ elif space == "board":
         "official report to the astronomical community."
     )
     tema.pasos(hallazgos.REPORT_FLOW)
+    community_board(reports)
 
     tema.seccion(2, "Reports")
     left, right = st.columns([2, 1])

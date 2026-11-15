@@ -361,6 +361,29 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
   color: #172234; -webkit-text-stroke: 2px rgba(94,234,212,0.75); paint-order: stroke fill; }
 .dz-role b { display: block; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.2rem; color: #F5F7FA; margin: 0.5rem 0 0.3rem 0; }
 .stApp .dz-role p { font-size: 0.93rem !important; line-height: 1.5; color: #C9D1E0; margin: 0 0 0.6rem 0; min-height: 5.6rem; }
+/* community contributions dual board (citizen science & professional astronomy) */
+.dz-contrib-wrap { margin: 1.4rem 0 2rem 0; }
+.stApp p.dz-contrib-kicker { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.85rem !important;
+  letter-spacing: 0.08em; text-transform: uppercase; color: #6C8CB0; margin: 0 0 0.2rem 0; }
+.stApp h2.dz-contrib-title { font-family: 'Montserrat', sans-serif !important; font-weight: 800;
+  font-size: clamp(1.65rem, 3.2vw, 2.5rem); color: #F5F7FA; margin: 0 0 1.25rem 0; letter-spacing: -0.02em; }
+.dz-contrib-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; }
+@media (max-width: 720px) { .dz-contrib-grid { grid-template-columns: 1fr; } }
+.dz-contrib-card { background: #131E30; border: 1px solid rgba(148,175,210,0.18); border-radius: 14px; overflow: hidden; }
+.dz-contrib-head { background: #1D2C43; padding: 1.1rem 1.4rem; border-bottom: 1px solid rgba(148,175,210,0.14); }
+.dz-contrib-head b { display: block; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 1.22rem; color: #F5F7FA; margin: 0 0 0.18rem 0; }
+.dz-contrib-head span { display: block; font-family: 'Inter', sans-serif; font-size: 0.92rem; color: #6E90B5; }
+.dz-contrib-list { list-style: none; margin: 0; padding: 0; }
+.dz-contrib-list li { display: flex; align-items: center; padding: 0.9rem 1.4rem; margin: 0;
+  border-bottom: 1px solid rgba(148,175,210,0.10); font-family: 'Inter', sans-serif; }
+.dz-contrib-list li:last-child { border-bottom: 0; }
+.dz-contrib-list i { font-style: normal; font-weight: 500; font-size: 1.1rem; color: #6C7D96; width: 2.2rem; }
+.dz-contrib-list b { font-weight: 500; font-size: 1.15rem; color: #F5F7FA; flex: 1; }
+.dz-contrib-list span { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.7rem; color: #4FD1C5; font-variant-numeric: tabular-nums; }
+.stApp p.dz-contrib-foot { text-align: center; font-size: 0.82rem !important; color: #5C708B; margin: 1rem 0 0.2rem 0; }
+/* fullscreen image: leave breathing room around the image so tapping outside closes it */
+[data-testid="stFullScreenFrame"][style*="fixed"] { background: rgba(7,12,22,0.92) !important; backdrop-filter: blur(4px); cursor: zoom-out; }
+[data-testid="stFullScreenFrame"][style*="fixed"] img { max-height: 82vh !important; max-width: 92vw !important; width: auto !important; object-fit: contain; cursor: default; }
 .dz-rank { list-style: none; margin: 0 0 1rem 0; padding: 0; }
 .dz-rank li { display: flex; align-items: baseline; gap: 1rem; padding: 0.55rem 0.2rem; margin: 0; border-bottom: 1px solid rgba(232,236,244,0.12);
   font-family: 'Inter', sans-serif; }
@@ -511,8 +534,30 @@ def navegacion():
 
 
 def aplicar_tema():
-    """Inject the CSS. Call once, right after st.set_page_config."""
+    """Inject the CSS and allow closing an enlarged fullscreen image by tapping outside it."""
     st.markdown(CSS, unsafe_allow_html=True)
+    try:
+        import streamlit.components.v1 as components
+        components.html(
+            "<script>try {"
+            "const d = window.parent.document;"
+            "if (!d._dzFsClose) {"
+            "  d._dzFsClose = true;"
+            "  d.addEventListener('click', function(e) {"
+            "    const fs = e.target.closest('[data-testid=\"stFullScreenFrame\"]');"
+            "    if (!fs || window.parent.getComputedStyle(fs).position !== 'fixed') return;"
+            "    if (e.target.closest('img, button, a, input')) return;"
+            "    const exitBtn = fs.querySelector('button[aria-label*=\"Exit\"], button[title*=\"Exit\"], button[aria-label*=\"Close\"]');"
+            "    if (exitBtn) { exitBtn.click(); } else {"
+            "      d.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true}));"
+            "    }"
+            "  }, true);"
+            "}"
+            "} catch (e) {}</script>",
+            height=0,
+        )
+    except Exception:
+        pass
 
 
 # Mission facts shown in the hero. Source: https://science.nasa.gov/mission/spherex/
@@ -823,6 +868,48 @@ def seccion(numero, titulo):
     """Numbered section label, for example: 01 EXPLORE."""
     st.markdown(
         f'<div class="dz-section"><i>{numero:02d}</i><b>{titulo}</b></div>',
+        unsafe_allow_html=True,
+    )
+
+
+SAMPLE_CITIZENS = [("Ana M.", 24), ("Luis R.", 18), ("Sofía V.", 12)]
+SAMPLE_EXPERTS = [("Elena P.", 21), ("Mateo S.", 16), ("Lucía C.", 11)]
+
+
+def contribuciones(citizen_rows, expert_rows, usar_ejemplo=False):
+    """
+    Two-column Community contributions board:
+      - Left:  Citizen science (Reports sent for review)
+      - Right: Professional astronomy (Completed reviews)
+    """
+    import html as _html
+
+    def _items(rows):
+        return "".join(
+            f'<li><i>{idx}</i><b>{_html.escape(str(name))}</b><span>{int(count)}</span></li>'
+            for idx, (name, count) in enumerate(rows, start=1)
+        )
+
+    foot = (
+        '<p class="dz-contrib-foot">Prototype · Sample data (updates live as reports and reviews are published)</p>'
+        if usar_ejemplo else ""
+    )
+    st.markdown(
+        '<div class="dz-contrib-wrap">'
+        '<p class="dz-contrib-kicker">HAWAPACHA</p>'
+        '<h2 class="dz-contrib-title">Community contributions</h2>'
+        '<div class="dz-contrib-grid">'
+        '<div class="dz-contrib-card">'
+        '<div class="dz-contrib-head"><b>Citizen science</b><span>Reports sent for review</span></div>'
+        f'<ol class="dz-contrib-list">{_items(citizen_rows)}</ol>'
+        '</div>'
+        '<div class="dz-contrib-card">'
+        '<div class="dz-contrib-head"><b>Professional astronomy</b><span>Completed reviews</span></div>'
+        f'<ol class="dz-contrib-list">{_items(expert_rows)}</ol>'
+        '</div>'
+        '</div>'
+        f'{foot}'
+        '</div>',
         unsafe_allow_html=True,
     )
 
