@@ -692,6 +692,8 @@ def cooldown_seconds_left(user, items=None):
     """
     if not user or st.session_state.get("skip_cooldown"):
         return 0
+    if not isinstance(user, dict):          # create_report passes only the account id
+        user = {"id": str(user)}
     owned = (
         [r for r in items if r.get("owner") == user["id"]]
         if items is not None else reports_of(user)
