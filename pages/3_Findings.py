@@ -2,8 +2,10 @@
 # SI disclosure: this file was drafted with an SI tool (Claude, Anthropic)
 # and reviewed and run by the team. See "Use of SI" in README.md.
 """
-Findings board, with three spaces:
-  - Public board: every report, for anyone.
+Findings board, with four spaces:
+  - Candidates:   only the reports that a reviewer marked as a candidate worth a
+                  follow-up, and the observers with most candidates. For anyone.
+  - All reports:  every report and its status, for anyone.
   - My reports:   a visitor follows their own reports with their claim codes. The
                   codes travel in the page address, so a saved link is the way back.
   - Review desk:  a reviewer signs in with the code given by the team, sees the
@@ -30,7 +32,7 @@ tema.aplicar_tema()
 tema.navegacion()
 tema.portada(compacta=True)
 
-SPACES = {"board": "Public board", "mine": "My reports", "desk": "Review desk"}
+SPACES = {"mine": "My reports", "desk": "Review desk", "top": "Candidates", "board": "All reports"}
 TRACK = ["Reported", "Opened by a reviewer", "Verdict signed"]
 
 
@@ -102,6 +104,7 @@ if st.session_state.get("space") not in SPACES:      # first time here in this v
     st.session_state["space"] = start if start in SPACES else "board"
 space = st.segmented_control(
     "Space", list(SPACES), format_func=SPACES.get, label_visibility="collapsed", key="space",
+    on_change=lambda: st.session_state.setdefault("role", "tab"),
 ) or "board"
 
 try:
@@ -110,11 +113,79 @@ except Exception as error:
     st.error(f"The board could not be loaded right now. Detail: {error}")
     st.stop()
 
+# ---------------------------------------------------------------- account and role
+
+account = None
+if hallazgos.accounts_enabled():
+    account = hallazgos.account_box(key="top_account", back=f"findings:{space}")
+
+
+def choose(role, where):
+    st.session_state["role"] = role
+    st.session_state["space"] = where
+
+
+if account and not st.session_state.get("role"):
+    # Right after signing in: one question, then straight to the right space.
+    tema.seccion(2, "How do you want to take part?")
+    amateur, expert = st.columns(2, gap="large")
+    with amateur.container(border=True, key="role_amateur"):
+        st.markdown(
+            '<div class="dz-role"><i>01</i><b>I am an amateur</b>'
+            "<p>Look at the sequences, report what you notice and follow your reports "
+            "until a reviewer signs a verdict.</p></div>", unsafe_allow_html=True)
+        st.button("Go to my reports", key="role_a", type="primary", use_container_width=True,
+                  on_click=choose, args=("amateur", "mine"))
+    with expert.container(border=True, key="role_expert"):
+        st.markdown(
+            '<div class="dz-role"><i>02</i><b>I am an astronomer or expert</b>'
+            "<p>Open the reports waiting in the queue, check them against catalogues and "
+            "sign a verdict with your name. The desk opens for the accounts on the team's "
+            "reviewers list.</p></div>", unsafe_allow_html=True)
+        st.button("Go to the review desk", key="role_e", type="primary", use_container_width=True,
+                  on_click=choose, args=("expert", "desk"))
+    st.caption("You can change at any time with the tabs above. To report, open a sequence in the Viewer.")
+    tema.pie()
+    st.stop()
+
 statuses = [hallazgos.STATUS_NEW, hallazgos.STATUS_OPENED] + hallazgos.VERDICTS
 
 # ---------------------------------------------------------------- public board
 
-if space == "board":
+if space == "top":
+    candidate = hallazgos.VERDICTS[2]
+    winners = [r for r in reports if r["status"] == candidate]
+    st.write(
+        "Reports that a reviewer checked and marked as a **candidate worth a follow-up**. "
+        "This list only holds what passed a review; everything else is in “All reports”."
+    )
+    st.caption(
+        "A candidate is not a discovery: it means a reviewer found no known object or image "
+        "artifact that explains it, so it deserves more data."
+    )
+    reviewed = sum(r["status"] in hallazgos.VERDICTS for r in reports)
+    columns = st.columns(3)
+    columns[0].metric("Candidates", len(winners))
+    columns[1].metric("Reports reviewed", reviewed)
+    columns[2].metric("Observers with a candidate", len({r["alias"] for r in winners}))
+    if not winners:
+        st.info("No candidates yet. When a reviewer marks a report as a candidate, it appears here.")
+    else:
+        tema.seccion(2, "Observers with most candidates")
+        ranking = {}
+        for report in winners:
+            ranking[report["alias"]] = ranking.get(report["alias"], 0) + 1
+        rows = "".join(
+            f'<li><i>{place:02d}</i><b>{html.escape(str(name))}</b><span>{count} candidate{"s" if count != 1 else ""}</span></li>'
+            for place, (name, count) in enumerate(sorted(ranking.items(), key=lambda item: (-item[1], item[0].lower()))[:10], start=1)
+        )
+        st.markdown(f'<ol class="dz-rank">{rows}</ol>', unsafe_allow_html=True)
+        tema.seccion(3, "Candidates")
+        with st.container(key="board"):
+            for report in winners:
+                card(report)
+
+elif space == "board":
     st.write(
         "Things that visitors noticed in the SPHEREx sequences. Every report is public "
         "from the moment it is sent, with a public date and time that shows when it was "
@@ -156,7 +227,6 @@ elif space == "mine" and hallazgos.accounts_enabled():
         "Follow the reports you sent. Your account has one nickname, which nobody else can "
         "use, and every report you publish is signed with it."
     )
-    account = hallazgos.account_box(key="mine_account", back="findings:mine")
     if account:
         found = hallazgos.reports_of(account)
         waiting = sum(r["status"] == hallazgos.STATUS_NEW for r in found)
@@ -229,7 +299,6 @@ else:
             "For the astronomers who review the reports. The desk opens for the accounts that "
             "the team has put on its reviewers list; every step is published with the reviewer's name."
         )
-        account = hallazgos.account_box(key="desk_account", back="findings:desk")
         reviewer = hallazgos.reviewer_name(account)
         if account and not reviewer:
             st.info(

@@ -351,6 +351,20 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 .dz-who { display: flex; align-items: center; gap: 0.6rem; border-left: 2px solid #5EEAD4; background: #172234; border-radius: 0 10px 10px 0;
   padding: 0.6rem 0.9rem; font-family: 'Inter', sans-serif; font-size: 0.92rem; color: #F5F7FA; }
 .dz-who span { font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: #5EEAD4; font-weight: 600; }
+/* findings: the two ways to take part, and the ranking of observers */
+.st-key-role_amateur, .st-key-role_expert { background: #172234; border-color: rgba(232,236,244,0.10) !important; border-radius: 14px;
+  transition: border-color 0.2s ease, transform 0.2s ease; }
+.st-key-role_amateur:hover, .st-key-role_expert:hover { border-color: rgba(94,234,212,0.55) !important; transform: translateY(-2px); }
+.dz-role i { font-style: normal; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 2.4rem; line-height: 1;
+  color: #172234; -webkit-text-stroke: 2px rgba(94,234,212,0.75); paint-order: stroke fill; }
+.dz-role b { display: block; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.2rem; color: #F5F7FA; margin: 0.5rem 0 0.3rem 0; }
+.stApp .dz-role p { font-size: 0.93rem !important; line-height: 1.5; color: #C9D1E0; margin: 0 0 0.6rem 0; min-height: 4.4rem; }
+.dz-rank { list-style: none; margin: 0 0 1rem 0; padding: 0; }
+.dz-rank li { display: flex; align-items: baseline; gap: 1rem; padding: 0.55rem 0.2rem; margin: 0; border-bottom: 1px solid rgba(232,236,244,0.12);
+  font-family: 'Inter', sans-serif; }
+.dz-rank i { font-style: normal; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 0.85rem; letter-spacing: 0.1em; color: #5EEAD4; min-width: 2rem; }
+.dz-rank b { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.05rem; color: #F5F7FA; flex: 1; }
+.dz-rank span { font-size: 0.9rem; color: #FBBF24; font-variant-numeric: tabular-nums; }
 /* larger section titles */
 .dz-section { margin-top: 3.6rem; }
 .dz-section b { font-size: clamp(1.25rem, 2.2vw, 1.7rem); letter-spacing: 0.06em; }

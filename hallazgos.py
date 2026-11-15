@@ -155,8 +155,9 @@ def sign_in():
 
 
 def sign_out():
+    for key in ("test_user", "role", "returned", "return_cleared"):
+        st.session_state.pop(key, None)
     if _memory_mode():
-        st.session_state.pop("test_user", None)
         st.rerun()
     st.logout()
 
@@ -255,7 +256,7 @@ def back_after_sign_in():
         target = ""
     parts = target.split(":")
     if parts[0] == "findings":
-        st.session_state["space"] = parts[1] if len(parts) > 1 and parts[1] in ("board", "mine", "desk") else "mine"
+        st.session_state["space"] = parts[1] if len(parts) > 1 and parts[1] in ("board", "mine", "desk", "top") else "mine"
         st.switch_page("pages/3_Findings.py")
     if parts[0] == "viewer" and len(parts) == 4:
         try:
