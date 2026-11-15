@@ -461,7 +461,9 @@ def back_after_sign_in():
         target = ""
     parts = target.split(":")
     if parts[0] == "findings":
-        where = parts[1] if len(parts) > 1 and parts[1] in ("board", "mine", "desk", "top") else "mine"
+        where = parts[1] if len(parts) > 1 and parts[1] in ("board", "mine", "desk", "top", "choose") else "mine"
+        if where == "choose":
+            st.switch_page("pages/4_Review.py")
         st.session_state["space"] = where
         if where in ("mine", "desk"):
             st.session_state["review_space"] = where
@@ -489,6 +491,8 @@ def account_box(place=None, key="account", back=""):
     place = place or st
     user = current_user()
     if not user:
+        if st.session_state.get("reviewer_code") and back.startswith("findings:desk"):
+            return None
         left, right = place.columns([3, 1.3], vertical_alignment="center")
         left.caption(
             "Sign in with a Google account to report and to follow your reports. We keep no "
@@ -525,40 +529,53 @@ def account_box(place=None, key="account", back=""):
             sign_out()
         return None
     left, right = place.columns([4, 1], vertical_alignment="center")
-    role = reviewer_name(user)
+    role = reviewer_name(user) or reviewers().get(st.session_state.get("reviewer_code", ""))
+    admin_pill = ' <em class="dz-nom-pill">TEAM DECZERO ADMIN</em>' if is_deczero_team(user) else ""
+    in_expert = back.startswith("findings:desk")
     try:
         import tema
-        rep = reputation_of({**user, "nick": nick})
-        c_title = tema.nombramiento_estrella(rep["sides"], kind="citizen")
-        star = f'{tema.estrella_svg(rep["sides"], 24, kind="citizen")} '
-        star_label = f' <em class="dz-nom-pill">{c_title} · {rep["sides"]}/5</em>'
-        if role:
-            erep = expert_reputation_of(role)
+        in_expert = in_expert or tema._es_modo_experto()
+        if in_expert:
+            erep = expert_reputation_of(role or nick)
             e_title = tema.nombramiento_estrella(erep["sides"], kind="expert")
-            expert_part = (
-                f' · {tema.estrella_svg(erep["sides"], 24, kind="expert")} '
-                f'<em class="dz-nom-pill expert">{e_title} · {erep["sides"]}/5</em> '
-                f'({clean(role, 70)})'
-            )
+            star = f'{tema.estrella_svg(erep["sides"], 24, kind="expert")} '
+            star_label = f' <em class="dz-nom-pill expert">{e_title} · {erep["sides"]}/5</em>'
+            expert_part = f"{admin_pill} ({clean(role, 70)})" if role else admin_pill
         else:
-            expert_part = ""
+            rep = reputation_of({**user, "nick": nick})
+            c_title = tema.nombramiento_estrella(rep["sides"], kind="citizen")
+            star = f'{tema.estrella_svg(rep["sides"], 24, kind="citizen")} '
+            star_label = f' <em class="dz-nom-pill">{c_title} · {rep["sides"]}/5</em>'
+            if role:
+                erep = expert_reputation_of(role)
+                e_title = tema.nombramiento_estrella(erep["sides"], kind="expert")
+                expert_part = (
+                    f' · {tema.estrella_svg(erep["sides"], 24, kind="expert")} '
+                    f'<em class="dz-nom-pill expert">{e_title} · {erep["sides"]}/5</em>{admin_pill} '
+                    f'({clean(role, 70)})'
+                )
+            else:
+                expert_part = admin_pill
     except Exception:
         star = ""
         star_label = ""
         expert_part = f" · reviewer: {clean(role, 80)}" if role else ""
-    wait_sec = cooldown_seconds_left(user)
-    if wait_sec > 0:
-        cd_strip = (
-            f'<div class="dz-user-cd"><i></i><span>Cooldown</span>'
-            f'<b>· {format_countdown(wait_sec)}</b>'
-            '<em>(1 / 24h)</em></div>'
-        )
+    if in_expert:
+        cd_strip = ""
     else:
-        cd_strip = (
-            '<div class="dz-user-cd"><i></i><span>Report ready</span>'
-            '<b>· 00h 00m</b>'
-            '<em>(1 / 24h)</em></div>'
-        )
+        wait_sec = cooldown_seconds_left(user)
+        if wait_sec > 0:
+            cd_strip = (
+                f'<div class="dz-user-cd"><i></i><span>Cooldown</span>'
+                f'<b>· {format_countdown(wait_sec)}</b>'
+                '<em>(1 / 24h)</em></div>'
+            )
+        else:
+            cd_strip = (
+                '<div class="dz-user-cd"><i></i><span>Report ready</span>'
+                '<b>· 00h 00m</b>'
+                '<em>(1 / 24h)</em></div>'
+            )
     left.markdown(
         '<div class="dz-who"><span>Signed in as</span><b>'
         + clean(nick, 20) + "</b> " + star + star_label + expert_part + "</div>" + cd_strip,
@@ -751,13 +768,13 @@ def expert_reputation_of(reviewer, items=None):
     """
     all_reports = items if items is not None else list_reports()
     full_name = str(reviewer or "").strip().lower()
-    short_name = full_name.split(",")[0].strip()
+    short_name = full_name.split(",")[0].split("—")[0].strip()
     signed = 0
     opened = 0
     for r in all_reports:
         for ev in r.get("events", []):
             by = str(ev.get("by", "")).strip().lower()
-            by_short = by.split(",")[0].strip()
+            by_short = by.split(",")[0].split("—")[0].strip()
             if full_name and (by == full_name or (short_name and by_short == short_name)):
                 if ev.get("type") in VERDICTS:
                     signed += 1
@@ -1056,7 +1073,7 @@ def report_button(ra, dec, band, view, frame, picture=None, open_now=False):
                         '</div>',
                         unsafe_allow_html=True,
                     )
-                    if is_team_reviewer(account):
+                    if is_deczero_team(account):
                         if st.button("Reset 24h cooldown (team demo)", key="reset_cd_cta"):
                             st.session_state["skip_cooldown"] = True
                             st.session_state.pop("reports_sent", None)

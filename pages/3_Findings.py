@@ -55,7 +55,7 @@ def community_board(items):
             c_counts[key] = c_counts.get(key, 0) + 1
         for event in rep.get("events", []):
             if event.get("type") in hallazgos.VERDICTS:
-                who = str(event.get("by", "")).split(",")[0].strip()
+                who = str(event.get("by", "")).split(",")[0].split("—")[0].strip()
                 if who:
                     ekey = who.lower()
                     e_names.setdefault(ekey, who)
@@ -77,25 +77,23 @@ def community_board(items):
         for k, count in sorted(e_counts.items(), key=lambda x: (-x[1], x[0]))[:5]
     ]
     sample_used = False
-    if len(c_rows) < 3:
-        sample_used = True
-        seen = {row[0].lower() for row in c_rows}
-        for item in tema.SAMPLE_CITIZENS:
-            name, count = item[0], item[1]
-            sides = item[2] if len(item) >= 3 else min(5, 1 + count // 5)
-            if name.lower() not in seen and len(c_rows) < 3:
-                c_rows.append((name, count, sides))
-        c_rows.sort(key=lambda x: -x[1])
-    if len(e_rows) < 3:
-        sample_used = True
-        seen = {row[0].lower() for row in e_rows}
-        for item in tema.SAMPLE_EXPERTS:
-            name, count = item[0], item[1]
-            sides = item[2] if len(item) >= 3 else min(5, 1 + count // 5)
-            if name.lower() not in seen and len(e_rows) < 3:
-                e_rows.append((name, count, sides))
-        e_rows.sort(key=lambda x: -x[1])
-    tema.contribuciones(c_rows, e_rows, usar_ejemplo=sample_used)
+    seen_c = {row[0].lower() for row in c_rows}
+    for item in tema.SAMPLE_CITIZENS:
+        name, count = item[0], item[1]
+        sides = item[2] if len(item) >= 3 else min(5, 1 + count // 5)
+        if name.lower() not in seen_c and len(c_rows) < 5:
+            sample_used = True
+            c_rows.append((name, count, sides))
+    c_rows.sort(key=lambda x: -x[1])
+    seen_e = {row[0].lower() for row in e_rows}
+    for item in tema.SAMPLE_EXPERTS:
+        name, count = item[0], item[1]
+        sides = item[2] if len(item) >= 3 else min(5, 1 + count // 5)
+        if name.lower() not in seen_e and len(e_rows) < 5:
+            sample_used = True
+            e_rows.append((name, count, sides))
+    e_rows.sort(key=lambda x: -x[1])
+    tema.contribuciones(c_rows[:5], e_rows[:5], usar_ejemplo=sample_used)
 
 
 def card(report):
@@ -148,7 +146,7 @@ if params.get("space") in PUBLIC_SPACES and st.session_state.get("_last_pub_para
 elif st.session_state.get("public_space") not in PUBLIC_SPACES:
     st.session_state["public_space"] = "board"
 
-tema.seccion(1, "All reports")
+tema.seccion(1, PUBLIC_SPACES.get(st.session_state.get("public_space", "board"), "All reports"))
 space = st.segmented_control(
     "Public board view", list(PUBLIC_SPACES), format_func=PUBLIC_SPACES.get,
     label_visibility="collapsed", key="public_space",

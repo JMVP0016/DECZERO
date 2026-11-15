@@ -174,11 +174,23 @@ span[data-baseweb="tag"], span[data-baseweb="tag"] * { color: #0B1220 !important
   box-shadow: 0 0 0 4px rgba(94,234,212,0.06), 0 12px 30px rgba(0,0,0,0.45);
 }
 [data-testid="stImageCaption"], [data-testid="stCaptionContainer"] { letter-spacing: 0.02em; }
+[data-testid="stMetric"] {
+  background: #131E30; border: 1px solid rgba(148,175,210,0.16); border-radius: 12px; padding: 0.7rem 0.95rem;
+}
 [data-testid="stMetricLabel"] p { color: #5EEAD4; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; }
 [data-testid="stMetricValue"] { font-family: 'Montserrat', sans-serif; font-weight: 800; }
 
 /* top menu */
 .dz-nav-gap { height: 0.2rem; }
+@media (min-width: 641px) {
+  [data-testid="stHorizontalBlock"]:has([data-testid="stPageLink"]) { gap: 0.55rem; align-items: center; }
+  [data-testid="stHorizontalBlock"]:has([data-testid="stPageLink"]) > [data-testid="stColumn"]:nth-child(-n+3) {
+    width: auto !important; flex: 0 0 auto !important;
+  }
+  [data-testid="stHorizontalBlock"]:has([data-testid="stPageLink"]) > [data-testid="stColumn"]:nth-child(4) {
+    flex: 1 1 auto !important;
+  }
+}
 [data-testid="stPageLink"] a { border-radius: 999px; border: 1px solid rgba(232,236,244,0.16); padding: 0.3rem 1rem; width: fit-content; max-width: none; white-space: nowrap; transition: border-color 0.2s ease, background 0.2s ease; }
 [data-testid="stPageLink"] a * { white-space: nowrap; overflow: visible; text-overflow: clip; }
 [data-testid="stPageLink"] a:hover { border-color: #5EEAD4; }
@@ -197,7 +209,7 @@ span[data-baseweb="tag"], span[data-baseweb="tag"] * { color: #0B1220 !important
 .dz-loader .dz-band:nth-child(2) { animation-delay: 0.2s; } .dz-loader .dz-band:nth-child(3) { animation-delay: 0.4s; }
 .dz-loader .dz-band:nth-child(4) { animation-delay: 0.6s; } .dz-loader .dz-band:nth-child(5) { animation-delay: 0.8s; }
 .dz-loader .dz-band:nth-child(6) { animation-delay: 1.0s; }
-.dz-loader .dz-dot { animation: dz-twinkle 2.8s ease-in-out infinite alternate; }
+.dz-loader .dz-dot, .dz-px-orbit .dz-dot { animation: dz-twinkle 2.8s ease-in-out infinite alternate; }
 .dz-loader-text { font-family: 'Montserrat', sans-serif; font-weight: 600; color: #F5F7FA; margin: 0.4rem 0 0.15rem 0; text-align: center; }
 .dz-loader-sub { color: #8FD9CE; font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; margin: 0; text-align: center; }
 .dz-loader-note { color: #9AA7BD; font-size: 0.75rem; margin: 0.6rem 0 0 0; }
@@ -205,7 +217,7 @@ span[data-baseweb="tag"], span[data-baseweb="tag"] * { color: #0B1220 !important
 @keyframes dz-sway { from { transform: rotate(-24deg); } to { transform: rotate(-14deg); } }
 @keyframes dz-band { 0%, 100% { opacity: 0.10; } 50% { opacity: 0.95; } }
 @media (prefers-reduced-motion: reduce) {
-  .dz-loader .dz-orbit, .dz-loader .dz-craft, .dz-loader .dz-band, .dz-loader .dz-dot { animation: none; }
+  .dz-loader .dz-orbit, .dz-loader .dz-craft, .dz-loader .dz-band, .dz-loader .dz-dot, .dz-px-orbit .dz-dot, .dz-px-orbit, .dz-px-ring { animation: none; }
   .dz-loader .dz-band { opacity: 0.6; }
 }
 .stButton > button, .stDownloadButton > button, [data-testid="stFormSubmitButton"] > button { border-radius: 10px; font-weight: 600; }
@@ -366,7 +378,11 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 .st-key-role_amateur, .st-key-role_expert { background: #172234; border-color: rgba(232,236,244,0.10) !important; border-radius: 14px;
   transition: border-color 0.2s ease, transform 0.2s ease; }
 .st-key-role_amateur:hover { border-color: rgba(94,234,212,0.55) !important; transform: translateY(-2px); }
+.st-key-role_expert { border-color: rgba(167,139,250,0.34) !important; }
 .st-key-role_expert:hover { border-color: rgba(167,139,250,0.65) !important; transform: translateY(-2px); }
+.st-key-role_expert button[kind="primary"] { background: #A78BFA !important; border-color: #A78BFA !important; color: #0B1220 !important; }
+.st-key-role_expert button[kind="primary"] p { color: #0B1220 !important; }
+.st-key-role_expert button[kind="primary"]:hover { background: #C4B5FD !important; border-color: #C4B5FD !important; }
 .dz-role i { font-style: normal; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 2.4rem; line-height: 1;
   color: #172234; -webkit-text-stroke: 2px rgba(94,234,212,0.75); paint-order: stroke fill; }
 .st-key-role_expert .dz-role i { -webkit-text-stroke: 2px rgba(167,139,250,0.85); }
@@ -380,7 +396,7 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 .dz-contrib-px span { font-family: 'Montserrat', sans-serif; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #5EEAD4; }
 @keyframes dz-logo-orbit { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(22deg); } }
 @keyframes dz-logo-bar { 0%, 100% { opacity: 1; } 50% { opacity: 0.72; } }
-.dz-px-orbit { transform-origin: 60px 50px; animation: dz-logo-orbit 5s ease-in-out infinite; }
+.dz-px-orbit { transform-box: view-box; transform-origin: 60px 50px; animation: dz-logo-orbit 5s ease-in-out infinite; }
 .dz-px-ring { animation: dz-logo-bar 3.5s ease-in-out infinite; }
 .stApp p.dz-contrib-kicker { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.85rem !important;
   letter-spacing: 0.08em; text-transform: uppercase; color: #6C8CB0; margin: 0 0 0.2rem 0; }
@@ -388,12 +404,12 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
   font-size: clamp(1.65rem, 3.2vw, 2.5rem); color: #F5F7FA; margin: 0; letter-spacing: -0.02em; }
 .dz-contrib-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; }
 @media (max-width: 720px) { .dz-contrib-grid { grid-template-columns: 1fr; } }
-.dz-contrib-card { background: #131E30; border: 1px solid rgba(148,175,210,0.18); border-radius: 14px; overflow: hidden; }
+.dz-contrib-card { background: #131E30; border: 1px solid rgba(94,234,212,0.24); border-radius: 14px; overflow: hidden; }
 .dz-contrib-card.expert { border-color: rgba(167,139,250,0.28); }
-.dz-contrib-head { background: #1D2C43; padding: 1.1rem 1.4rem; border-bottom: 1px solid rgba(148,175,210,0.14); }
+.dz-contrib-head { background: linear-gradient(90deg, rgba(94,234,212,0.12), #1D2C43 75%); padding: 1.1rem 1.4rem; border-bottom: 1px solid rgba(94,234,212,0.18); }
 .dz-contrib-card.expert .dz-contrib-head { background: linear-gradient(90deg, rgba(167,139,250,0.16), #1D2C43 75%); border-bottom-color: rgba(167,139,250,0.20); }
 .dz-contrib-head b { display: block; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 1.22rem; color: #F5F7FA; margin: 0 0 0.18rem 0; }
-.dz-contrib-head span { display: block; font-family: 'Inter', sans-serif; font-size: 0.92rem; color: #6E90B5; }
+.dz-contrib-head span { display: block; font-family: 'Inter', sans-serif; font-size: 0.92rem; color: #8FD9CE; }
 .dz-contrib-card.expert .dz-contrib-head span { color: #C4B5FD; }
 .dz-contrib-list { list-style: none; margin: 0; padding: 0; }
 .dz-contrib-list li { display: flex; align-items: center; padding: 0.9rem 1.4rem; margin: 0;
@@ -418,14 +434,18 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 .dz-corner-badge.expert[data-signed-in="1"]:hover { border-color: #A78BFA; box-shadow: 0 4px 18px rgba(167,139,250,0.26); }
 .dz-corner-caret { font-style: normal; font-size: 0.68rem; color: #8792A8; margin-left: 0.15rem; transition: transform .16s ease; }
 .dz-corner-wrap.menu-open .dz-corner-caret { transform: rotate(180deg); color: #5EEAD4; }
+.dz-corner-wrap:has(.dz-corner-badge.expert).menu-open .dz-corner-caret { color: #C4B5FD; }
 .dz-corner-menu { display: none; position: absolute; top: calc(100% + 0.35rem); right: 0; z-index: 999;
   background: #131E30; border: 1px solid rgba(94,234,212,0.45); border-radius: 12px; padding: 0.35rem;
   box-shadow: 0 10px 28px rgba(0,0,0,0.55); min-width: 12.5rem; }
+.dz-corner-wrap:has(.dz-corner-badge.expert) .dz-corner-menu { border-color: rgba(167,139,250,0.48); }
 .dz-corner-wrap.menu-open .dz-corner-menu { display: flex; flex-direction: column; gap: 0.25rem; }
 .dz-corner-switch-item { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; justify-content: space-between;
   width: 100%; padding: 0.45rem 0.75rem; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-weight: 700;
   font-size: 0.74rem; letter-spacing: 0.03em; color: #F5F7FA; background: rgba(94,234,212,0.12); border: 1px solid rgba(94,234,212,0.35); }
 .dz-corner-switch-item:hover { background: rgba(94,234,212,0.22); border-color: #5EEAD4; color: #FFFFFF; }
+.dz-corner-wrap:has(.dz-corner-badge.expert) .dz-corner-switch-item { background: rgba(167,139,250,0.14); border-color: rgba(167,139,250,0.42); color: #F5F7FA; }
+.dz-corner-wrap:has(.dz-corner-badge.expert) .dz-corner-switch-item:hover { background: rgba(167,139,250,0.26); border-color: #A78BFA; color: #FFFFFF; }
 .dz-corner-signout-item { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; justify-content: space-between;
   width: 100%; padding: 0.45rem 0.75rem; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-weight: 700;
   font-size: 0.78rem; letter-spacing: 0.04em; color: #F5F7FA; background: rgba(248,113,113,0.12); border: 1px solid rgba(248,113,113,0.35); }
@@ -477,7 +497,7 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 .dz-cooldown-box.expert span { color: #C4B5FD; }
 .dz-cooldown-box b { display: block; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.3rem; color: #F5F7FA; margin: 0.15rem 0; font-variant-numeric: tabular-nums; }
 .dz-cooldown-box em { display: block; font-style: normal; font-size: 0.8rem; color: #AEB8CC; }
-.dz-star-scale { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.6rem; margin-top: 1.1rem; padding-top: 1rem; border-top: 1px solid rgba(232,236,244,0.10); }
+.dz-star-scale { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.6rem; margin-top: 1.1rem; padding-top: 1rem; border-top: 1px solid rgba(232,236,244,0.10); }
 .dz-star-step { display: flex; align-items: center; gap: 0.5rem; padding: 0.45rem 0.6rem; border-radius: 10px; background: rgba(11,18,32,0.55); border: 1px solid rgba(232,236,244,0.08); }
 .dz-star-step.active { border-color: rgba(94,234,212,0.65); background: rgba(94,234,212,0.08); }
 .dz-rep-card.expert .dz-star-step.active { border-color: rgba(167,139,250,0.70); background: rgba(167,139,250,0.12); }
@@ -527,7 +547,7 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
   .dz-corner-nick { white-space: normal; flex-wrap: wrap; row-gap: 0.12rem; gap: 0.3rem; font-size: 0.76rem; word-break: break-word; }
   .dz-corner-role { font-size: 0.56rem; padding: 0.06rem 0.36rem; }
   .dz-corner-nom { white-space: normal; font-size: 0.66rem; }
-  .dz-corner-menu { left: 0; right: auto; top: calc(100% + 0.3rem); min-width: 8.8rem; }
+  .dz-corner-menu { left: 0; right: auto; top: calc(100% + 0.3rem); min-width: 11.8rem; }
   .dz-corner-cd { max-width: 100%; box-sizing: border-box; white-space: normal; flex-wrap: wrap; font-size: 0.62rem; padding: 0.14rem 0.55rem; gap: 0.32rem; }
   /* reputation card, 5-sided star scale, community board & countdown strip on mobile */
   .dz-rep-card { padding: 1rem; }
@@ -696,11 +716,11 @@ def _insignia_esquina_html():
                 '<button type="button" class="dz-corner-switch-item"><span>Switch to My reports</span><span>⇄</span></button>'
                 '<button type="button" class="dz-corner-signout-item"><span>Sign out</span><span>↪</span></button>'
                 '</div>'
-                f'<div class="dz-corner-cd expert"><i></i><em>{cd_label}</em><span>· {_html.escape(cd_val)}</span></div>'
                 '</div>'
             )
-        if nick:
-            crep = hallazgos.reputation_of({**(user or {}), "nick": nick})
+        if nick or reviewer:
+            display = nick or (reviewer.split(",")[0].split("—")[0].strip() if reviewer else "Observer")
+            crep = hallazgos.reputation_of({**(user or {}), "nick": display})
             sides = crep["sides"]
             nom = nombramiento_estrella(sides, kind="citizen")
             role_tag = "Astronomer · Observer" if reviewer else "Observer"
@@ -709,7 +729,7 @@ def _insignia_esquina_html():
                 '<div class="dz-corner-badge" data-signed-in="1" title="Click to switch role or sign out">'
                 f'{estrella_svg(sides, 30, kind="citizen")}'
                 '<div class="dz-corner-text">'
-                f'<span class="dz-corner-nick">{_html.escape(str(nick))}'
+                f'<span class="dz-corner-nick">{_html.escape(str(display))}'
                 f'<i class="dz-corner-role">{role_tag}</i><i class="dz-corner-caret">▾</i></span>'
                 f'<span class="dz-corner-nom">{nom} · {sides}/5 star</span>'
                 '</div></div>'
@@ -722,14 +742,32 @@ def _insignia_esquina_html():
             )
     except Exception:
         pass
+    in_expert_guest = _es_modo_experto()
+    if in_expert_guest:
+        return (
+            '<div class="dz-corner-wrap">'
+            '<div class="dz-corner-badge expert" data-signed-in="1" title="Click to switch between Review and My reports">'
+            f'{estrella_svg(1, 28, kind="expert")}'
+            '<div class="dz-corner-text">'
+            '<span class="dz-corner-nick">Guest Reviewer<i class="dz-corner-role">Astronomer</i><i class="dz-corner-caret">▾</i></span>'
+            '<span class="dz-corner-nom">Accredited Vetter · Sign in to vet</span>'
+            '</div></div>'
+            '<div class="dz-corner-menu">'
+            '<button type="button" class="dz-corner-switch-item"><span>Switch to My reports</span><span>⇄</span></button>'
+            '</div>'
+            '</div>'
+        )
     return (
         '<div class="dz-corner-wrap">'
-        '<div class="dz-corner-badge">'
+        '<div class="dz-corner-badge" data-signed-in="1" title="Click to switch between My reports and Review">'
         f'{estrella_svg(1, 28, kind="citizen")}'
         '<div class="dz-corner-text">'
-        '<span class="dz-corner-nick">Guest Observer<i class="dz-corner-role">Start 1/5</i></span>'
+        '<span class="dz-corner-nick">Guest Observer<i class="dz-corner-role">Start 1/5</i><i class="dz-corner-caret">▾</i></span>'
         '<span class="dz-corner-nom">First Light · Sign in to rank</span>'
         '</div></div>'
+        '<div class="dz-corner-menu">'
+        '<button type="button" class="dz-corner-switch-item"><span>Switch to Review</span><span>⇄</span></button>'
+        '</div>'
         '<div class="dz-corner-cd"><i></i><em>Limit</em><span>· 1 / 24h</span></div>'
         '</div>'
     )
@@ -741,10 +779,6 @@ def _es_modo_experto():
         return True
     if st.session_state.get("role") == "amateur":
         return False
-    if st.session_state.get("review_space") == "desk" or st.session_state.get("space") == "desk":
-        return True
-    if st.session_state.get("review_space") == "mine" or st.session_state.get("space") == "mine":
-        return False
     try:
         import hallazgos
         if st.session_state.get("reviewer_code"):
@@ -754,6 +788,10 @@ def _es_modo_experto():
             return True
     except Exception:
         pass
+    if st.session_state.get("review_space") == "desk" or st.session_state.get("space") == "desk":
+        return True
+    if st.session_state.get("review_space") == "mine" or st.session_state.get("space") == "mine":
+        return False
     return False
 
 
@@ -766,7 +804,8 @@ def navegacion():
             if hallazgos.current_user():
                 hallazgos.sign_out()
             else:
-                st.session_state.pop("reviewer_code", None)
+                for k in ("reviewer_code", "role", "space", "review_space", "skip_cooldown"):
+                    st.session_state.pop(k, None)
                 st.rerun()
         if st.query_params.get("dz_switch_role") == "1":
             st.query_params.pop("dz_switch_role", None)
@@ -797,23 +836,24 @@ def navegacion():
         import hallazgos
         signed_user = hallazgos.current_user()
         has_code = bool(st.session_state.get("reviewer_code"))
-        if signed_user or has_code:
-            with esquina.container(key="corner_signout_box"):
-                if st.button("Switch role", key="corner_switch_role_btn"):
-                    if _es_modo_experto():
-                        st.session_state["role"] = "amateur"
-                        st.session_state["space"] = "mine"
-                        st.session_state["review_space"] = "mine"
-                    else:
-                        st.session_state["role"] = "expert"
-                        st.session_state["space"] = "desk"
-                        st.session_state["review_space"] = "desk"
-                    st.rerun()
+        with esquina.container(key="corner_signout_box"):
+            if st.button("Switch role", key="corner_switch_role_btn"):
+                if _es_modo_experto():
+                    st.session_state["role"] = "amateur"
+                    st.session_state["space"] = "mine"
+                    st.session_state["review_space"] = "mine"
+                else:
+                    st.session_state["role"] = "expert"
+                    st.session_state["space"] = "desk"
+                    st.session_state["review_space"] = "desk"
+                st.rerun()
+            if signed_user or has_code:
                 if st.button("Sign out", key="corner_signout_btn"):
                     if signed_user:
                         hallazgos.sign_out()
                     else:
-                        st.session_state.pop("reviewer_code", None)
+                        for k in ("reviewer_code", "role", "space", "review_space", "skip_cooldown"):
+                            st.session_state.pop(k, None)
                         st.rerun()
     except Exception:
         pass
@@ -1337,7 +1377,7 @@ def tarjeta_reputacion_experto(reviewer, rep):
     import html as _html
     sides = rep["sides"]
     title = nombramiento_estrella(sides, kind="expert")
-    short_name = str(reviewer).split(",")[0].strip()
+    short_name = str(reviewer).split(",")[0].split("—")[0].strip()
     if sides < 5:
         next_line = (
             f"<b>{rep['next_side_in']}</b> more signed verdict"

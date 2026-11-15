@@ -41,7 +41,7 @@ if "claim" in params or raw_space in SPACES:
 elif st.session_state.get("space") in SPACES and st.session_state.get("review_space") not in SPACES:
     st.session_state["review_space"] = st.session_state["space"]
 elif st.session_state.get("review_space") not in SPACES:
-    st.session_state["review_space"] = "mine"
+    st.session_state["review_space"] = "desk" if tema._es_modo_experto() else "mine"
 
 tema.aplicar_tema()
 tema.navegacion()
@@ -124,20 +124,6 @@ space = "desk" if tema._es_modo_experto() else "mine"
 st.session_state["space"] = space
 st.session_state["review_space"] = space
 
-tema.seccion(1, "Review" if space == "desk" else "My reports")
-
-try:
-    reports = hallazgos.list_reports()
-except Exception as error:
-    st.error(f"The reports could not be loaded right now. Detail: {error}")
-    st.stop()
-
-# ---------------------------------------------------------------- account and role
-
-account = None
-if hallazgos.accounts_enabled():
-    account = hallazgos.account_box(key="top_account", back=f"findings:{space}")
-
 
 def choose(role, where):
     st.session_state["role"] = role
@@ -145,8 +131,18 @@ def choose(role, where):
     st.session_state["review_space"] = where
 
 
-if not st.session_state.get("role") and not st.session_state.get("reviewer_code") and "claim" not in params and raw_space not in SPACES:
-    tema.seccion(2, "How do you want to take part?")
+needs_role_choice = (
+    not st.session_state.get("role")
+    and not st.session_state.get("reviewer_code")
+    and "claim" not in params
+    and raw_space not in SPACES
+    and not (hallazgos.accounts_enabled() and hallazgos.reviewer_name(hallazgos.current_user()))
+)
+
+if needs_role_choice:
+    tema.seccion(1, "How do you want to take part?")
+    if hallazgos.accounts_enabled():
+        hallazgos.account_box(key="top_account", back="findings:choose")
     amateur, expert = st.columns(2, gap="large")
     with amateur.container(border=True, key="role_amateur"):
         st.markdown(
@@ -166,9 +162,40 @@ if not st.session_state.get("role") and not st.session_state.get("reviewer_code"
         )
         st.button("Go to the review desk", key="role_e", type="primary", use_container_width=True,
                   on_click=choose, args=("expert", "desk"))
+    with st.expander("Team DecZero & Reviewer special access code", expanded=False):
+        st.caption(
+            "Members of Team DecZero or invited guest reviewers can enter their special "
+            "access code here to unlock the manual accreditation verification panel and the Review Desk directly."
+        )
+        with st.form("signin_code_choose"):
+            code = st.text_input("Special access / Reviewer code", type="password", placeholder="DECZERO-2026")
+            if st.form_submit_button("Unlock Team DecZero / Review Desk", type="primary"):
+                canonical = hallazgos.check_reviewer_code(code)
+                if canonical:
+                    st.session_state["reviewer_code"] = canonical
+                    st.session_state["role"] = "expert"
+                    st.session_state["space"] = "desk"
+                    st.session_state["review_space"] = "desk"
+                    st.rerun()
+                else:
+                    st.error("Unknown access code.")
     st.caption("You can switch role at any time from your profile badge in the top-right corner.")
     tema.pie()
     st.stop()
+
+tema.seccion(1, "Review" if space == "desk" else "My reports")
+
+try:
+    reports = hallazgos.list_reports()
+except Exception as error:
+    st.error(f"The reports could not be loaded right now. Detail: {error}")
+    st.stop()
+
+# ---------------------------------------------------------------- account and role
+
+account = None
+if hallazgos.accounts_enabled():
+    account = hallazgos.account_box(key="top_account", back=f"findings:{space}")
 
 # ---------------------------------------------------------------- my reports (amateur)
 
@@ -184,7 +211,7 @@ if space == "mine" and hallazgos.accounts_enabled():
         wait_seconds = hallazgos.cooldown_seconds_left(account, found)
         cd_text = f"Next report in {hallazgos.format_countdown(wait_seconds)}" if wait_seconds > 0 else None
         tema.tarjeta_reputacion(account["nick"], rep, cooldown_text=cd_text)
-        if wait_seconds > 0 and hallazgos.is_team_reviewer(account):
+        if wait_seconds > 0 and hallazgos.is_deczero_team(account):
             if st.button("Reset 24h cooldown (team demo)", key="reset_cd_mine"):
                 st.session_state["skip_cooldown"] = True
                 st.session_state.pop("reports_sent", None)
@@ -395,6 +422,9 @@ else:
                         canonical = hallazgos.check_reviewer_code(code)
                         if canonical:
                             st.session_state["reviewer_code"] = canonical
+                            st.session_state["role"] = "expert"
+                            st.session_state["space"] = "desk"
+                            st.session_state["review_space"] = "desk"
                             st.rerun()
                         else:
                             st.error("Unknown access code.")
@@ -411,6 +441,9 @@ else:
                         canonical = hallazgos.check_reviewer_code(code)
                         if canonical:
                             st.session_state["reviewer_code"] = canonical
+                            st.session_state["role"] = "expert"
+                            st.session_state["space"] = "desk"
+                            st.session_state["review_space"] = "desk"
                             st.rerun()
                         else:
                             st.error("Unknown access code.")
@@ -428,6 +461,9 @@ else:
                 canonical = hallazgos.check_reviewer_code(code)
                 if canonical:
                     st.session_state["reviewer_code"] = canonical
+                    st.session_state["role"] = "expert"
+                    st.session_state["space"] = "desk"
+                    st.session_state["review_space"] = "desk"
                     st.rerun()
                 else:
                     st.error("Unknown access code.")
@@ -439,7 +475,7 @@ else:
     else:
         erep = hallazgos.expert_reputation_of(reviewer, reports)
         is_team_admin = hallazgos.is_deczero_team(account)
-        if not by_email:
+        if not account:
             who, out = st.columns([4, 1], vertical_alignment="center")
             e_title = tema.nombramiento_estrella(erep["sides"], kind="expert")
             admin_pill = ' <em class="dz-nom-pill">TEAM DECZERO ADMIN</em>' if is_team_admin else ""
@@ -451,7 +487,8 @@ else:
                 unsafe_allow_html=True,
             )
             if out.button("Leave review desk" if by_account else "Sign out", use_container_width=True):
-                st.session_state.pop("reviewer_code", None)
+                for k in ("reviewer_code", "role", "space", "review_space", "skip_cooldown"):
+                    st.session_state.pop(k, None)
                 st.rerun()
         tema.tarjeta_reputacion_experto(reviewer, erep)
 
@@ -532,11 +569,11 @@ else:
 
         def by_me(report, kinds):
             full_r = str(reviewer or "").strip().lower()
-            short_r = full_r.split(",")[0].strip()
+            short_r = full_r.split(",")[0].split("—")[0].strip()
             for e in report.get("events", []):
                 if e.get("type") in kinds:
                     by = str(e.get("by", "")).strip().lower()
-                    by_s = by.split(",")[0].strip()
+                    by_s = by.split(",")[0].split("—")[0].strip()
                     if full_r and (by == full_r or (short_r and by_s == short_r)):
                         return True
             return False
