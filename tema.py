@@ -254,6 +254,33 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
   }
 }
 
+/* report form: steps joined by a line, the position being reported, the claim code */
+.dz-flow { list-style: none; margin: 0.2rem 0 1.2rem 0; padding: 0; }
+.dz-flow li { display: flex; gap: 0.9rem; position: relative; padding: 0 0 1.1rem 0; margin: 0; }
+.dz-flow li::before { content: ""; position: absolute; left: 1.05rem; top: 2.2rem; bottom: 0; width: 1px; background: rgba(94,234,212,0.35); }
+.dz-flow li:last-child::before { display: none; }
+.dz-flow i { flex: 0 0 2.1rem; height: 2.1rem; border: 1px solid rgba(94,234,212,0.75); border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-style: normal; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 0.72rem; color: #5EEAD4; }
+.dz-flow b { display: block; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 0.92rem; letter-spacing: 0.06em;
+  text-transform: uppercase; color: #F5F7FA; }
+.dz-flow span { display: block; font-family: 'Inter', sans-serif; font-size: 0.9rem; line-height: 1.4; color: #AEB8CC; }
+.dz-context { border-left: 2px solid #FBBF24; background: #172234; border-radius: 0 10px 10px 0; padding: 0.7rem 0.9rem; font-family: 'Inter', sans-serif; }
+.dz-context span { display: block; font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: #FBBF24; font-weight: 600; }
+.dz-context b { display: block; font-family: 'Montserrat', sans-serif; font-size: 1rem; color: #F5F7FA; margin: 0.15rem 0; }
+.dz-context em { display: block; font-style: normal; font-size: 0.82rem; color: #AEB8CC; }
+.st-key-claim { border-color: rgba(94,234,212,0.55) !important; }
+.dz-claim-label { font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase;
+  color: #5EEAD4; margin: 0.4rem 0 0 0; }
+.st-key-claim [data-testid="stCode"] code { font-size: 1.6rem; letter-spacing: 0.12em; color: #F5F7FA; }
+/* findings board: one card per report */
+.st-key-board [data-testid="stVerticalBlockBorderWrapper"] { background: #172234; border-color: rgba(232,236,244,0.10) !important; border-radius: 14px;
+  transition: border-color 0.2s ease; }
+.st-key-board [data-testid="stVerticalBlockBorderWrapper"]:hover { border-color: rgba(94,234,212,0.45) !important; }
+.dz-rnum { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.25rem; color: #5EEAD4;
+  margin-right: 0.6rem; }
+.dz-rkind { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.05rem; color: #F5F7FA; }
+.dz-rby { font-family: 'Inter', sans-serif; font-size: 0.85rem; color: #AEB8CC; margin: 0.1rem 0 0 0; }
+
 /* footer: large word mark, then the credits */
 .dz-footer-top { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 0.6rem 2rem;
   border-top: 1px solid rgba(232,236,244,0.14); margin-top: 4rem; padding-top: 1.6rem; }
@@ -659,13 +686,22 @@ STEPS = [
 ]
 
 
-def pasos():
-    """Three numbered steps under the hero: what the visitor does on this page."""
+def pasos(lista=None):
+    """Three numbered steps in a row: by default, what the visitor does on the main page."""
     items = "".join(
         f'<div class="dz-step"><i>{n:02d}</i><div><b>{title}</b><span>{text}</span></div></div>'
-        for n, (title, text) in enumerate(STEPS, start=1)
+        for n, (title, text) in enumerate(lista or STEPS, start=1)
     )
     st.markdown(f'<div class="dz-steps">{items}</div>', unsafe_allow_html=True)
+
+
+def flujo(pasos_lista):
+    """Vertical list of numbered steps joined by a line (HTML, for st.markdown)."""
+    items = "".join(
+        f'<li><i>{n:02d}</i><div><b>{title}</b><span>{text}</span></div></li>'
+        for n, (title, text) in enumerate(pasos_lista, start=1)
+    )
+    return f'<ol class="dz-flow">{items}</ol>'
 
 
 def seccion(numero, titulo):

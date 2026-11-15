@@ -126,29 +126,41 @@ tema.navegacion()
 tema.portada(compacta=bool(st.session_state.get("result")))
 if not st.session_state.get("result"):
     tema.pasos()
-tema.seccion(1, "Explore any position")
+has_result = bool(st.session_state.get("result"))
 
 params = st.query_params
 start_text = f"{params['ra']} {params['dec']}" if "ra" in params and "dec" in params else ""
 start_band = params.get("band", "D2")
 
-with st.form("search"):
-    left, right = st.columns([3, 1])
-    text = left.text_input(
-        "Sky position (RA and Dec)",
-        value=start_text,
-        placeholder="210.80227 54.34895   or   08h55m10.831s -7d14m42.53s",
-    )
-    band = right.selectbox(
-        "Detector (infrared band)",
-        BANDS,
-        index=BANDS.index(start_band) if start_band in BANDS else 1,
-        help="D1 is the bluest (0.75 µm) and D6 the reddest (5 µm).",
-    )
-    submitted = st.form_submit_button("Show images", type="primary")
+# With a sequence on screen, the search form and the targets fold into one line,
+# so the pictures are visible without scrolling.
+if has_result:
+    chooser = st.expander("Change position or target")
+else:
+    chooser = st.container()
+    tema.seccion(1, "Explore any position")
 
-tema.seccion(2, "Or start with the five challenge targets")
-clicked = tema.tarjetas(TARGETS, compactas=bool(st.session_state.get("result")))
+with chooser:
+    with st.form("search"):
+        left, right = st.columns([3, 1])
+        text = left.text_input(
+            "Sky position (RA and Dec)",
+            value=start_text,
+            placeholder="210.80227 54.34895   or   08h55m10.831s -7d14m42.53s",
+        )
+        band = right.selectbox(
+            "Detector (infrared band)",
+            BANDS,
+            index=BANDS.index(start_band) if start_band in BANDS else 1,
+            help="D1 is the bluest (0.75 µm) and D6 the reddest (5 µm).",
+        )
+        submitted = st.form_submit_button("Show images", type="primary")
+
+    if has_result:
+        st.caption("Or open one of the five challenge targets:")
+    else:
+        tema.seccion(2, "Or start with the five challenge targets")
+    clicked = tema.tarjetas(TARGETS, compactas=has_result)
 
 first_visit_with_link = bool(start_text) and "result" not in st.session_state
 
@@ -183,7 +195,7 @@ if st.session_state.get("error"):
 
 result = st.session_state.get("result")
 if result:
-    tema.seccion(3, "The sequence")
+    tema.seccion(1, "The sequence")
     cutouts = result["cutouts"]
     if result.get("stored"):
         st.success(
@@ -282,6 +294,7 @@ if result:
             "so a change in brightness is not by itself a change over time."
         )
 
+    tema.seccion(2, "Did you notice something? Report it")
     hallazgos.report_form(result["ra"], result["dec"], result["band"], mode, frame["label"])
 
     st.caption(
@@ -290,6 +303,6 @@ if result:
         "Data: NASA/IPAC IRSA, SPHEREx."
     )
 
-tema.seccion(4 if st.session_state.get("result") else 3, "How to read the images")
+tema.seccion(3, "How to read the images")
 tema.ayuda()
 tema.pie()

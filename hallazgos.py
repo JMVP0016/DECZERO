@@ -54,6 +54,13 @@ VERDICTS = [
     "Inconclusive",
 ]
 
+# What happens with a report, shown next to the form and at the top of the board.
+REPORT_FLOW = [
+    ("You report", "It is published at once, with a public date and time that nobody can change."),
+    ("Reviewer opens it", "The reviewer signs with a name and checks catalogues and the images."),
+    ("Signed verdict", "Known object, image artifact, inconclusive, or candidate worth a follow-up."),
+]
+
 
 # ---------------------------------------------------------------- configuration
 
@@ -271,64 +278,71 @@ def add_event(report, kind, reviewer, text=""):
 # ---------------------------------------------------------------- report form
 
 def report_form(ra, dec, band, view, frame):
-    """Small form shown under a sequence in the main page."""
-    with st.container(border=True):
-        st.markdown("**Did you notice something? Report it**")
-        if not can_write():
-            st.info("Reporting is not set up on this copy of the app yet.")
-            return
-        st.write(
-            "Your report is published on the public findings board with the current "
-            "time, so there is a public record of when you reported it. A reviewer may then "
-            "check it. Use a nickname; do not write personal data."
-        )
-        sent = st.session_state.get("reports_sent", 0)
-        if sent >= MAX_REPORTS_PER_VISIT:
-            st.warning("You have reached the limit of reports for this visit.")
-            return
-        if st.session_state.get("last_claim"):
-            number, code = st.session_state["last_claim"]
-            st.success(
-                f"Published as report #{number}. You can follow it on the Findings page."
+    """Report form under a sequence: what happens with a report on the left, the form on the right."""
+    import tema
+
+    if not can_write():
+        st.info("Reporting is not set up on this copy of the app yet.")
+        return
+    sent = st.session_state.get("reports_sent", 0)
+    if st.session_state.get("last_claim"):
+        number, code = st.session_state["last_claim"]
+        with st.container(border=True, key="claim"):
+            st.success(f"Published as report #{number}. You can follow it on the Findings board.")
+            st.markdown(
+                '<p class="dz-claim-label">Your claim code</p>', unsafe_allow_html=True
             )
+            st.code(code, language=None)
             st.warning(
                 "Write down this claim code now: it is shown only once, and it is the "
                 "only way to prove later that this report is yours."
             )
-            st.code(code, language=None)
-        with st.form("report"):
-            alias = st.text_input("Your nickname", max_chars=40)
-            kind = st.selectbox("What did you notice?", KINDS)
-            place = st.selectbox("Where in the picture?", PLACES)
-            note = st.text_area(
-                "Describe it: what changes, and between which dates",
-                max_chars=600,
+    if sent >= MAX_REPORTS_PER_VISIT:
+        st.warning("You have reached the limit of reports for this visit.")
+        return
+
+    explain, form_column = st.columns([2, 3], gap="large")
+    explain.markdown(tema.flujo(REPORT_FLOW), unsafe_allow_html=True)
+    explain.markdown(
+        '<div class="dz-context"><span>You are reporting</span>'
+        f"<b>RA {ra:.5f}°, Dec {dec:.5f}°</b>"
+        f"<em>Detector {clean(band, 4)} · {clean(view, 40).split(' (')[0]} view · frame: {clean(frame, 60)}</em></div>",
+        unsafe_allow_html=True,
+    )
+    with form_column.form("report"):
+        first, second = st.columns(2)
+        alias = first.text_input("Your nickname", max_chars=40, placeholder="No personal data")
+        kind = second.selectbox("What did you notice?", KINDS)
+        place = st.selectbox("Where in the picture?", PLACES)
+        note = st.text_area(
+            "Describe it: what changes, and between which dates",
+            max_chars=600, height=110,
+        )
+        submitted = st.form_submit_button("Report what I noticed", type="primary")
+    if submitted:
+        if not alias.strip() or len(note.strip()) < 15 or len(note.split()) < 4:
+            form_column.error(
+                "Please write a nickname and a description of at least four words "
+                "(15 characters), so a reviewer can find what you saw."
             )
-            submitted = st.form_submit_button("Report what I noticed", type="primary")
-        if submitted:
-            if not alias.strip() or len(note.strip()) < 15 or len(note.split()) < 4:
-                st.error(
-                    "Please write a nickname and a description of at least four words "
-                    "(15 characters), so a reviewer can find what you saw."
-                )
+            return
+        try:
+            if reports_last_hour() >= MAX_REPORTS_PER_HOUR:
+                form_column.error("Too many reports were sent in the last hour. Please try again later.")
                 return
-            try:
-                if reports_last_hour() >= MAX_REPORTS_PER_HOUR:
-                    st.error("Too many reports were sent in the last hour. Please try again later.")
-                    return
-                same = [
-                    r for r in list_reports()
-                    if r["alias"] == clean(alias, 40) and r["note"] == clean(f"[{place}] {note}", 600)
-                ]
-                if same:
-                    st.error(f"This report was already published as #{same[0]['number']}.")
-                    return
-                number, code = create_report(
-                    alias, ra, dec, band, kind, f"[{place}] {note}", view, frame
-                )
-            except Exception as error:
-                st.error(f"The report could not be published. Please try again. Detail: {error}")
+            same = [
+                r for r in list_reports()
+                if r["alias"] == clean(alias, 40) and r["note"] == clean(f"{place}: {note}", 600)
+            ]
+            if same:
+                form_column.error(f"This report was already published as #{same[0]['number']}.")
                 return
-            st.session_state["reports_sent"] = sent + 1
-            st.session_state["last_claim"] = (number, code)
-            st.rerun()
+            number, code = create_report(
+                alias, ra, dec, band, kind, f"{place}: {note}", view, frame
+            )
+        except Exception as error:
+            form_column.error(f"The report could not be published. Please try again. Detail: {error}")
+            return
+        st.session_state["reports_sent"] = sent + 1
+        st.session_state["last_claim"] = (number, code)
+        st.rerun()
