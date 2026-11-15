@@ -670,6 +670,17 @@ def _embed(html, height):
         components.html(html, height=height, scrolling=False)
 
 
+def subir():
+    """Scroll the page back to the top (used right after a sequence is opened)."""
+    import streamlit.components.v1 as components
+    components.html(
+        "<script>try { const d = window.parent.document;"
+        "const m = d.querySelector('[data-testid=\"stMain\"]') || d.scrollingElement;"
+        "m.scrollTo({top: 0}); } catch (e) {}</script>",
+        height=0,
+    )
+
+
 def _facts_html():
     return "".join(
         f'<div class="dz-fact"><b>{big}</b><span>{small}</span></div>' for big, small in FACTS

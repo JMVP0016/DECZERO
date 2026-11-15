@@ -181,6 +181,7 @@ if clicked:
         "ra": f"{clicked['ra']:.5f}", "dec": f"{clicked['dec']:.5f}", "band": clicked["band"],
     })
     load_target(clicked)
+    st.session_state["scroll_top"] = True
     st.rerun()   # redraw the form so it shows the position and detector just loaded
 elif submitted or first_visit_with_link:
     try:
@@ -201,6 +202,7 @@ elif submitted or first_visit_with_link:
         else:
             load(ra, dec, band)
         if st.session_state.get("result"):
+            st.session_state["scroll_top"] = True
             st.rerun()            # redraw with the slim header, so the sequence is in view
 
 if st.session_state.get("error"):
@@ -334,3 +336,5 @@ if result:
 tema.seccion(2 if has_result else 3, "How to read the images")
 tema.ayuda()
 tema.pie()
+if st.session_state.pop("scroll_top", False):
+    tema.subir()   # on a phone the page would stay halfway down after opening a sequence
