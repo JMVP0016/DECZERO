@@ -62,10 +62,13 @@ def card(report, reviewer=None, track=False):
 
         st.write(report["note"])
         link = f"/?ra={report['ra']:.5f}&dec={report['dec']:.5f}&band={report['band']}"
+        coord = f"{report['ra']:.5f}%20{report['dec']:+.5f}".replace("+", "%2B")
+        simbad = f"https://simbad.cds.unistra.fr/simbad/sim-coo?Coord={coord}&Radius=2&Radius.unit=arcmin"
         st.markdown(
             f"RA {report['ra']:.5f}°, Dec {report['dec']:.5f}° · detector {report['band']} · "
             f"seen in “{report['view']}”, frame {report['frame']} · "
-            f"[Open these coordinates in the viewer]({link})"
+            f"[Open these coordinates in the viewer]({link}) · "
+            f"[Check in SIMBAD (2′)]({simbad})"
             + (f" · [Public record]({report['url']})" if report["url"] else "")
         )
         for event in report.get("events", []):
@@ -245,6 +248,9 @@ elif space == "mine" and hallazgos.accounts_enabled():
         columns[2].metric("With a verdict", len(found) - waiting - opened)
         if not found:
             st.info("You have not sent any report yet. Open a sequence in the viewer and use “Report a finding”.")
+        if st.button("Open the Viewer to report a finding", key="go_viewer_mine",
+                     type="primary" if not found else "secondary"):
+            st.switch_page("app.py")
         with st.container(key="board"):
             for report in found:
                 card(report, track=True)
@@ -302,20 +308,29 @@ elif space == "mine":
 
 else:
     by_account = hallazgos.accounts_enabled()
+    reviewers = hallazgos.reviewers()
+    by_email = hallazgos.reviewer_name(account) if by_account else None
+    reviewer = by_email or reviewers.get(st.session_state.get("reviewer_code", ""))
     if by_account:
         st.write(
             "For the astronomers who review the reports. The desk opens for the accounts that "
             "the team has put on its reviewers list; every step is published with the reviewer's name."
         )
-        reviewer = hallazgos.reviewer_name(account)
         if account and not reviewer:
             st.info(
                 "This account is not on the reviewers list. If you are an astronomer and want "
                 "to review reports, write to the team."
             )
-    else:
-        reviewers = hallazgos.reviewers()
-        reviewer = reviewers.get(st.session_state.get("reviewer_code", ""))
+            if reviewers:
+                with st.expander("Have a reviewer code from the team?"):
+                    with st.form("signin_code"):
+                        code = st.text_input("Reviewer code", type="password")
+                        if st.form_submit_button("Open review desk", type="primary"):
+                            if code in reviewers:
+                                st.session_state["reviewer_code"] = code
+                                st.rerun()
+                            else:
+                                st.error("Unknown code.")
     if by_account and not reviewer:
         pass
     elif not reviewer:
@@ -337,11 +352,11 @@ else:
             "want to review, write to the team."
         )
     else:
-        if not by_account:
+        if not by_email:
             who, out = st.columns([4, 1], vertical_alignment="center")
             who.markdown(f'<div class="dz-who"><span>Signed in as</span>{html.escape(reviewer)}</div>',
                          unsafe_allow_html=True)
-            if out.button("Sign out", use_container_width=True):
+            if out.button("Leave review desk" if by_account else "Sign out", use_container_width=True):
                 st.session_state.pop("reviewer_code", None)
                 st.rerun()
 

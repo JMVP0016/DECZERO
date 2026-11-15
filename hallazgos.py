@@ -164,7 +164,7 @@ def sign_in():
 
 
 def sign_out():
-    for key in ("test_user", "role", "returned", "return_cleared"):
+    for key in ("test_user", "role", "returned", "return_cleared", "reviewer_code"):
         st.session_state.pop(key, None)
     if _memory_mode():
         st.rerun()
