@@ -379,7 +379,11 @@ def back_after_sign_in():
         target = ""
     parts = target.split(":")
     if parts[0] == "findings":
-        st.session_state["space"] = parts[1] if len(parts) > 1 and parts[1] in ("board", "mine", "desk", "top") else "mine"
+        where = parts[1] if len(parts) > 1 and parts[1] in ("board", "mine", "desk", "top") else "mine"
+        st.session_state["space"] = where
+        if where in ("mine", "desk"):
+            st.session_state["review_space"] = where
+            st.switch_page("pages/4_Review.py")
         st.switch_page("pages/3_Findings.py")
     if parts[0] == "viewer" and len(parts) == 4:
         try:
@@ -781,7 +785,7 @@ def _claim_box(number, code):
             unsafe_allow_html=True,
         )
         st.markdown(
-            f"[Follow this report in “My reports”](/Findings?space=mine&claim={code}) · "
+            f"[Follow this report in “My reports”](/Review?space=mine&claim={code}) · "
             "save that link: it is your way back, without an account."
         )
 
@@ -800,7 +804,8 @@ def _report_dialog(ra, dec, band, view, frame, picture, account=None):
                 st.session_state.pop("claim_in_dialog", None)
                 st.session_state["role"] = "amateur"
                 st.session_state["space"] = "mine"
-                st.switch_page("pages/3_Findings.py")
+                st.session_state["review_space"] = "mine"
+                st.switch_page("pages/4_Review.py")
             if c2.button("Stay in the Viewer", use_container_width=True):
                 st.session_state.pop("claim_in_dialog", None)
                 st.rerun()

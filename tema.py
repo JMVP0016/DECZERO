@@ -589,6 +589,7 @@ def _insignia_esquina_html():
         in_expert_view = (
             st.session_state.get("role") == "expert"
             or st.session_state.get("space") == "desk"
+            or st.session_state.get("review_space") == "desk"
             or (reviewer and not nick)
         )
         if reviewer and in_expert_view:
@@ -635,15 +636,17 @@ def _insignia_esquina_html():
 
 
 def navegacion():
-    """Top menu with only the pages meant for visitors, plus the corner star & nomination badge."""
-    izquierda, derecha, esquina = st.columns([1.1, 1.9, 5], vertical_alignment="center")
+    """Top menu with the three main tabs for visitors, plus the corner star & nomination badge."""
+    t1, t2, t3, esquina = st.columns([1.05, 1.75, 2.25, 3.95], vertical_alignment="center")
     try:
-        izquierda.page_link("app.py", label="Viewer")
-        derecha.page_link("pages/3_Findings.py", label="Findings board")
+        t1.page_link("app.py", label="Viewer")
+        t2.page_link("pages/3_Findings.py", label="Findings board")
+        t3.page_link("pages/4_Review.py", label="My reports & Review")
     except Exception:
         # page_link needs the multipage context; fall back to plain links
-        izquierda.markdown("[Viewer](/)")
-        derecha.markdown("[Findings board](/Findings)")
+        t1.markdown("[Viewer](/)")
+        t2.markdown("[Findings board](/Findings)")
+        t3.markdown("[My reports & Review](/Review)")
     esquina.markdown(_insignia_esquina_html(), unsafe_allow_html=True)
 
 
