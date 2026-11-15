@@ -28,8 +28,9 @@ Tests (synthetic data): `pip install pytest` and then `python -m pytest`.
 | `app.py` | The web page | Jonnathan |
 | `datos.py` | Fetches images from the NASA archive (IRSA) | Geo |
 | `proceso.py` | Aligns, groups and stacks the images | Henry, then Darwin |
-| `render.py` | Turns data into images and animations | David |
-| `objetivos.py` | The five challenge targets (positions still provisional) | David |
+| `objetivos.py` | The five challenge targets: reference positions and proper motions | David |
+| `vista.py` | Turns cutouts into pictures and animations | Jonnathan |
+| `gifs/` | One animation per target for the project page (made with `hacer_gifs.py`) | David |
 | `cache/` | Light cutouts of the five targets (made with `regenerar_cache.py`) and saved searches | David |
 | `validacion.ipynb` | The numbers behind each target | David and Henry |
 
@@ -73,7 +74,7 @@ by a team member before being committed.
 | Tool | Used for | Files |
 | :--- | :--- | :--- |
 | Claude (Anthropic) | Drafting the repository skeleton, the viewer page, the stored-image reader, the findings board, the visual theme and help texts, the dependency-check page and the diagnostics page | `app.py`, `cache_local.py`, `tema.py`, `hallazgos.py`, `pages/3_Findings.py`, `.streamlit/config.toml`, `pages/1_Diagnostics.py`, `pages/2_System_check.py`, `README.md`, `requirements.txt` |
-| Claude (Anthropic) | Code review, bug fixes (retries, query cache, flag mask, alignment failures) and synthetic tests | `datos.py`, `proceso.py`, `test_proceso.py`, `sembrar_busquedas.py`, `objetivos.py`, `regenerar_cache.py`, `assets/icon.png` |
+| Claude (Anthropic) | Code review, bug fixes (retries, query cache, flag mask, alignment failures) and synthetic tests | `datos.py`, `proceso.py`, `test_proceso.py`, `sembrar_busquedas.py`, `objetivos.py`, `regenerar_cache.py`, `vista.py`, `hacer_gifs.py`, `assets/icon.png` |
 
 Each SI-assisted source file also says so in its header comment.
 
