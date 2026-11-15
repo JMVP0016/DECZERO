@@ -83,6 +83,8 @@ def card(report, reviewer=None, track=False):
             f"[Check in SIMBAD (2′)]({simbad})"
             + (f" · [Public record]({report['url']})" if report["url"] else "")
         )
+        if hallazgos.spot_text(report):
+            st.markdown(hallazgos.spot_text(report))
         for event in report.get("events", []):
             line = f"{event['at']} — **{event['type']}** by {event['by']}"
             if event.get("text"):

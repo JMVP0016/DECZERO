@@ -28,6 +28,7 @@ Configuration (Streamlit secrets):
 
 import hashlib
 import json
+import math
 import os
 import re
 import secrets
@@ -829,7 +830,46 @@ def reports_last_hour():
     return count
 
 
-def create_report(alias, ra, dec, band, kind, note, view, frame, owner=None):
+def spot_position(ra, dec, field_arcmin, across, upward):
+    """
+    Sky position of a point of a north-up, east-left frame centred on (ra, dec).
+    across and upward are percentages of the frame, from the left and from the bottom.
+    """
+    field_deg = float(field_arcmin) / 60.0
+    d_dec = (upward - 50) / 100.0 * field_deg
+    d_ra = -(across - 50) / 100.0 * field_deg / max(math.cos(math.radians(dec)), 1e-6)
+    return (ra + d_ra) % 360.0, max(-90.0, min(90.0, dec + d_dec))
+
+
+def mark_spot(picture, across, upward):
+    """A copy of the frame with a pink circle at that point."""
+    from PIL import ImageDraw
+    marked = picture.copy().convert("RGB")
+    width, height = marked.size
+    x, y = across / 100.0 * width, (100 - upward) / 100.0 * height
+    radius = max(8, width // 28)
+    draw = ImageDraw.Draw(marked)
+    for grow, colour in ((2, (11, 18, 32)), (0, (244, 114, 182))):
+        draw.ellipse([x - radius - grow, y - radius - grow, x + radius + grow, y + radius + grow],
+                     outline=colour, width=3)
+    return marked
+
+
+def spot_text(report):
+    """Markdown line for a report whose observer marked a spot, or an empty text."""
+    try:
+        s_ra, s_dec = float(report["spot_ra"]), float(report["spot_dec"])
+    except (KeyError, TypeError, ValueError):
+        return ""
+    coord = f"{s_ra:.5f}%20{s_dec:+.5f}".replace("+", "%2B")
+    return (
+        f"**Marked spot:** RA {s_ra:.5f}°, Dec {s_dec:.5f}° · "
+        f"[Open the spot in the viewer](/?ra={s_ra:.5f}&dec={s_dec:.5f}&band={clean(report.get('band', 'D2'), 2)}) · "
+        f"[SIMBAD around the spot (30″)](https://simbad.cds.unistra.fr/simbad/sim-coo?Coord={coord}&Radius=30&Radius.unit=arcsec)"
+    )
+
+
+def create_report(alias, ra, dec, band, kind, note, view, frame, owner=None, spot=None):
     """
     Publish a report. Returns (number, claim code); the code is shown only once.
     owner is the account identifier when the visitor is signed in.
@@ -850,6 +890,8 @@ def create_report(alias, ra, dec, band, kind, note, view, frame, owner=None):
     }
     if owner:
         data["owner"] = str(owner)
+    if spot:                                   # where in the frame the observer pointed
+        data["spot_ra"], data["spot_dec"] = round(float(spot[0]), 5), round(float(spot[1]), 5)
     title = f"{TITLE_PREFIX} {data['alias']}: RA {data['ra']:.4f}, Dec {data['dec']:.4f} ({data['band']})"
     if _memory_mode():
         store = _memory()
@@ -917,7 +959,7 @@ def _claim_box(number, code):
 
 
 @st.dialog("Report a finding", width="large")
-def _report_dialog(ra, dec, band, view, frame, picture, account=None):
+def _report_dialog(ra, dec, band, view, frame, picture, account=None, field_arcmin=None):
     """The report form, in a window over the page. It shows the frame being reported."""
     if not account and accounts_enabled():
         user = current_user()
@@ -956,8 +998,22 @@ def _report_dialog(ra, dec, band, view, frame, picture, account=None):
         "set by GitHub, not by us. A reviewer then opens it and signs a verdict."
     )
     seen, form_column = st.columns([2, 3], gap="medium")
+    spot = None
+    can_mark = picture is not None and field_arcmin and hasattr(picture, "copy")
+    marking = can_mark and seen.toggle(
+        "Mark the spot (optional)", key="spot_on",
+        help="Move a pink circle to where you saw the object. The reviewer gets its sky position.",
+    )
+    if marking:
+        across = seen.slider("Left ↔ right", 0, 100, 50, key="spot_x")
+        upward = seen.slider("Down ↔ up", 0, 100, 50, key="spot_y")
+        spot = spot_position(ra, dec, field_arcmin, across, upward)
+        picture = mark_spot(picture, across, upward)
     if picture is not None:
-        seen.image(picture, use_container_width=True)
+        # while marking, phones show the whole frame (the usual preview is cropped)
+        seen.container(key="spot_pic" if marking else "seen_pic").image(picture, use_container_width=True)
+    if spot:
+        seen.caption(f"Marked spot: RA {spot[0]:.5f}°, Dec {spot[1]:.5f}° (accurate to a few pixels).")
     seen.markdown(
         '<div class="dz-context"><span>You are reporting</span>'
         f"<b>RA {ra:.5f}°, Dec {dec:.5f}°</b>"
@@ -1017,7 +1073,7 @@ def _report_dialog(ra, dec, band, view, frame, picture, account=None):
             form_column.error(f"This report was already published as #{same[0]['number']}.")
             return
         number, code = create_report(alias, ra, dec, band, kind, f"{place}: {note}", view, frame,
-                                     owner=account["id"] if account else None)
+                                     owner=account["id"] if account else None, spot=spot)
     except Exception as error:
         form_column.error(f"The report could not be published. Please try again. Detail: {error}")
         return
@@ -1040,7 +1096,7 @@ def can_report():
     return True
 
 
-def report_button(ra, dec, band, view, frame, picture=None, open_now=False):
+def report_button(ra, dec, band, view, frame, picture=None, open_now=False, field_arcmin=None):
     """
     A band under the pictures with one button; the form opens in a window.
     open_now=True opens the window too (used by the second button above the pictures).
@@ -1091,6 +1147,6 @@ def report_button(ra, dec, band, view, frame, picture=None, open_now=False):
             st.info("Sign in first, in the band “Noticed something in these images?” below the pictures.")
     if (clicked or open_now) and ready and can_report():
         st.session_state.pop("claim_in_dialog", None)
-        _report_dialog(ra, dec, band, view, frame, picture, account)
+        _report_dialog(ra, dec, band, view, frame, picture, account, field_arcmin)
     if st.session_state.get("last_claim"):
         _claim_box(*st.session_state["last_claim"])

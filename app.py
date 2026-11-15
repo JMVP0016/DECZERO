@@ -351,6 +351,7 @@ if result:
 
     hallazgos.report_button(
         result["ra"], result["dec"], result["band"], mode, frame["label"], frame["picture"],
+        field_arcmin=info.get("field_arcmin"),
     )
 
     legend = (

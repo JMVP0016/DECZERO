@@ -303,6 +303,7 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 [data-testid="stDialog"] [role="dialog"] { background: #0B1220; border: 1px solid rgba(94,234,212,0.35); border-radius: 16px; }
 [data-testid="stDialog"] .dz-context { margin-top: 0.6rem; }
 @media (max-width: 640px) { [data-testid="stDialog"] [data-testid="stImage"] img { height: 170px; object-fit: cover; } }
+@media (max-width: 640px) { [data-testid="stDialog"] .st-key-spot_pic [data-testid="stImage"] img { height: auto; object-fit: contain; } }
 .dz-context { border-left: 2px solid #FBBF24; background: #172234; border-radius: 0 10px 10px 0; padding: 0.7rem 0.9rem; font-family: 'Inter', sans-serif; }
 .dz-context span { display: block; font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: #FBBF24; font-weight: 600; }
 .dz-context b { display: block; font-family: 'Montserrat', sans-serif; font-size: 1rem; color: #F5F7FA; margin: 0.15rem 0; }
