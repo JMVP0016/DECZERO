@@ -10,10 +10,20 @@ GitHub sets the creation time, so the record of who reported first cannot be
 changed by us or by a reviewer. Every later step (opened, verdict) is added as
 a comment on the issue and is signed with the reviewer's name.
 
+Accounts (optional). If the secrets have an [auth] table (Google sign-in of
+Streamlit, st.login), visitors sign in, choose one nickname that nobody else can
+take, and their reports are tied to that account. Reviewers are the accounts
+whose e-mail is listed in [REVIEWER_EMAILS]. No e-mail is ever stored or shown:
+reports and the nickname list keep only a salted hash of it. Without [auth] the
+app works as before, with free nicknames, claim codes and reviewer codes.
+
 Configuration (Streamlit secrets):
     GITHUB_TOKEN = "..."          token with Issues read/write on the repository
     [REVIEWERS]                   one line per reviewer:  code = "Name, role"
     "code-1" = "Dr. Example, astronomer"
+    [auth]                        Google sign-in: redirect_uri, cookie_secret,
+                                  client_id, client_secret, server_metadata_url
+    [REVIEWER_EMAILS]             one line per reviewer:  "e-mail" = "Name, role"
 """
 
 import hashlib
@@ -95,6 +105,173 @@ def _memory_mode():
 @st.cache_resource
 def _memory():
     return {"next": 1, "issues": {}}
+
+
+# ---------------------------------------------------------------- accounts
+
+ACCOUNTS_TITLE = "[Accounts] HAWAPACHA nicknames"
+ACCOUNTS_START = "<!-- hawapacha-accounts"
+ACCOUNTS_END = "hawapacha-accounts -->"
+NICKNAME_RULE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{2,19}")
+
+
+def accounts_enabled():
+    """True if this copy of the app has sign-in set up."""
+    if _memory_mode():
+        return os.environ.get("HAWAPACHA_ACCOUNTS") == "1"
+    try:
+        return "auth" in st.secrets
+    except Exception:
+        return False
+
+
+def _user_id(email):
+    """What we keep of an account: a salted hash of its e-mail, never the e-mail."""
+    salt = "test" if _memory_mode() else str(dict(_secret("auth", {})).get("cookie_secret", ""))
+    return hashlib.sha256(f"{salt}:{email.strip().lower()}".encode()).hexdigest()[:24]
+
+
+def current_user():
+    """The signed-in account as {"id", "email"}, or None."""
+    if not accounts_enabled():
+        return None
+    if _memory_mode():
+        email = st.session_state.get("test_user", "")
+    else:
+        try:
+            email = st.user.email if st.user.is_logged_in else ""
+        except Exception:
+            email = ""
+    if not email:
+        return None
+    return {"id": _user_id(email), "email": email}
+
+
+def sign_in():
+    if _memory_mode():
+        st.session_state["test_user"] = os.environ.get("HAWAPACHA_TEST_USER", "visitor@example.org")
+        st.rerun()
+    st.login()
+
+
+def sign_out():
+    if _memory_mode():
+        st.session_state.pop("test_user", None)
+        st.rerun()
+    st.logout()
+
+
+def reviewer_name(user):
+    """Name and role if this account is one of the reviewers chosen by the team."""
+    if not user:
+        return None
+    if _memory_mode():
+        table = {"astro@example.org": "Test Reviewer, astronomer"}
+    else:
+        table = dict(_secret("REVIEWER_EMAILS", {}))
+    table = {str(k).strip().lower(): str(v) for k, v in table.items()}
+    return table.get(user["email"].strip().lower())
+
+
+def _accounts_issue():
+    """(issue number or None, {account id: nickname})."""
+    if _memory_mode():
+        return None, dict(_memory().setdefault("accounts", {}))
+    for issue in _fetch():
+        author = (issue.get("user") or {}).get("login")
+        if issue.get("title") == ACCOUNTS_TITLE and author in TRUSTED_AUTHORS:
+            body = issue.get("body") or ""
+            try:
+                raw = body.split(ACCOUNTS_START, 1)[1].split(ACCOUNTS_END, 1)[0]
+                return issue["number"], dict(json.loads(raw))
+            except Exception:
+                return issue["number"], {}
+    return None, {}
+
+
+def nickname_of(user):
+    return _accounts_issue()[1].get(user["id"]) if user else None
+
+
+def register_nickname(user, nickname):
+    """Give this account its nickname. Returns an error text, or None if it worked."""
+    nickname = nickname.strip()
+    if not NICKNAME_RULE.fullmatch(nickname):
+        return "Use 3 to 20 letters, numbers, hyphens or underscores, starting with a letter or number."
+    _fetch.clear()                       # read the latest list before deciding
+    number, table = _accounts_issue()
+    if user["id"] in table:
+        return f"This account already has the nickname {table[user['id']]}."
+    if nickname.lower() in {name.lower() for name in table.values()}:
+        return "That nickname is taken. Please choose another one."
+    table[user["id"]] = nickname
+    if _memory_mode():
+        _memory()["accounts"] = table
+    else:
+        body = (
+            "Nicknames of the accounts of the HAWAPACHA app. Each line of the data below is "
+            "an anonymous account identifier and its nickname; no e-mail is stored.\n\n"
+            f"{ACCOUNTS_START}\n{json.dumps(table)}\n{ACCOUNTS_END}"
+        )
+        if number is None:
+            _check(requests.post(f"{API}/issues", headers=_headers(), timeout=20,
+                                 json={"title": ACCOUNTS_TITLE, "body": body}))
+        else:
+            _check(requests.patch(f"{API}/issues/{number}", headers=_headers(), timeout=20,
+                                  json={"body": body}))
+    _fetch.clear()
+    return None
+
+
+def account_box(place=None, key="account"):
+    """
+    Sign-in strip. Returns {"id", "email", "nick"} when the visitor is signed in and
+    has a nickname; otherwise draws what is missing (sign-in button or nickname form)
+    and returns None.
+    """
+    place = place or st
+    user = current_user()
+    if not user:
+        left, right = place.columns([3, 1.3], vertical_alignment="center")
+        left.caption(
+            "Sign in with a Google account to report and to follow your reports. We keep no "
+            "e-mail and no name: only the nickname you choose."
+        )
+        if right.button("Sign in with Google", key=key + "_in", type="primary", use_container_width=True):
+            sign_in()
+        return None
+    try:
+        nick = nickname_of(user)
+    except Exception as error:
+        place.error(f"Your account could not be read right now. Detail: {error}")
+        return None
+    if not nick:
+        with place.form(key + "_nick"):
+            st.markdown("**Choose your nickname**")
+            st.caption("It is public, it is yours alone and it cannot be changed later. Do not use your real name.")
+            wanted = st.text_input("Nickname", max_chars=20, placeholder="for example sky_watcher")
+            if st.form_submit_button("Keep this nickname", type="primary"):
+                try:
+                    problem = register_nickname(user, wanted)
+                except Exception as error:
+                    problem = f"The nickname could not be saved. Detail: {error}"
+                if problem:
+                    st.error(problem)
+                else:
+                    st.rerun()
+        if place.button("Sign out", key=key + "_out0"):
+            sign_out()
+        return None
+    left, right = place.columns([4, 1], vertical_alignment="center")
+    role = reviewer_name(user)
+    left.markdown(
+        '<div class="dz-who"><span>Signed in as</span>'
+        + nick + (f" · reviewer: {clean(role, 80)}" if role else "") + "</div>",
+        unsafe_allow_html=True,
+    )
+    if right.button("Sign out", key=key + "_out", use_container_width=True):
+        sign_out()
+    return {**user, "nick": nick}
 
 
 # ---------------------------------------------------------------- text safety
@@ -187,6 +364,11 @@ def list_reports():
     return sorted((r for r in reports if r), key=lambda r: r["number"], reverse=True)
 
 
+def reports_of(user):
+    """Reports published from this account."""
+    return [r for r in list_reports() if user and r.get("owner") == user["id"]]
+
+
 def claim_hash(code):
     """What we store of the claim code: its SHA-256, never the code itself."""
     normal = re.sub(r"[^0-9A-Za-z]", "", str(code)).upper()
@@ -220,8 +402,11 @@ def reports_last_hour():
     return count
 
 
-def create_report(alias, ra, dec, band, kind, note, view, frame):
-    """Publish a report. Returns (number, claim code); the code is shown only once."""
+def create_report(alias, ra, dec, band, kind, note, view, frame, owner=None):
+    """
+    Publish a report. Returns (number, claim code); the code is shown only once.
+    owner is the account identifier when the visitor is signed in.
+    """
     code = new_claim_code()
     data = {
         "claim": claim_hash(code),
@@ -232,6 +417,8 @@ def create_report(alias, ra, dec, band, kind, note, view, frame):
         "view": clean(view, 40), "frame": clean(frame, 60),
         "status": STATUS_NEW, "events": [],
     }
+    if owner:
+        data["owner"] = str(owner)
     title = f"{TITLE_PREFIX} {data['alias']}: RA {data['ra']:.4f}, Dec {data['dec']:.4f} ({data['band']})"
     if _memory_mode():
         store = _memory()
@@ -296,10 +483,17 @@ def _claim_box(number, code):
 
 
 @st.dialog("Report a finding", width="large")
-def _report_dialog(ra, dec, band, view, frame, picture):
+def _report_dialog(ra, dec, band, view, frame, picture, account=None):
     """The report form, in a window over the page. It shows the frame being reported."""
     if st.session_state.get("claim_in_dialog"):
-        _claim_box(*st.session_state["claim_in_dialog"])
+        if account:
+            st.success(
+                f"Observation saved as report #{st.session_state['claim_in_dialog'][0]}, "
+                f"signed with your nickname {account['nick']}."
+            )
+            st.markdown("[Follow it in “My reports”](/Findings?space=mine)")
+        else:
+            _claim_box(*st.session_state["claim_in_dialog"])
         if st.button("Done", type="primary"):
             st.rerun()
         return
@@ -318,7 +512,11 @@ def _report_dialog(ra, dec, band, view, frame, picture):
     )
     with form_column.form("report"):
         first, second = st.columns(2)
-        alias = first.text_input("Your nickname", max_chars=40, placeholder="No personal data")
+        if account:
+            first.text_input("Your nickname", value=account["nick"], disabled=True)
+            alias = account["nick"]
+        else:
+            alias = first.text_input("Your nickname", max_chars=40, placeholder="No personal data")
         kind = second.selectbox("What did you notice?", KINDS)
         place = st.selectbox("Where in the picture?", PLACES)
         note = st.text_area(
@@ -345,12 +543,14 @@ def _report_dialog(ra, dec, band, view, frame, picture):
         if same:
             form_column.error(f"This report was already published as #{same[0]['number']}.")
             return
-        number, code = create_report(alias, ra, dec, band, kind, f"{place}: {note}", view, frame)
+        number, code = create_report(alias, ra, dec, band, kind, f"{place}: {note}", view, frame,
+                                     owner=account["id"] if account else None)
     except Exception as error:
         form_column.error(f"The report could not be published. Please try again. Detail: {error}")
         return
     st.session_state["reports_sent"] = st.session_state.get("reports_sent", 0) + 1
-    st.session_state["last_claim"] = (number, code)
+    if not account:
+        st.session_state["last_claim"] = (number, code)
     st.session_state["claim_in_dialog"] = (number, code)
     st.rerun(scope="fragment")   # redraw only this window, now with the claim code
 
@@ -366,6 +566,7 @@ def report_button(ra, dec, band, view, frame, picture=None, open_now=False):
     open_now=True opens the window too (used by the second button above the pictures).
     """
     clicked = False
+    account = None
     with st.container(key="cta"):
         text, action = st.columns([3, 1], vertical_alignment="center")
         text.markdown(
@@ -378,10 +579,17 @@ def report_button(ra, dec, band, view, frame, picture=None, open_now=False):
             action.caption("Reporting is not set up on this copy of the app yet.")
         elif st.session_state.get("reports_sent", 0) >= MAX_REPORTS_PER_VISIT:
             action.caption("You have reached the limit of reports for this visit.")
+        elif accounts_enabled():
+            account = account_box(key="cta_account")     # sign-in or nickname first
+            if account:
+                clicked = st.button("Report a finding", type="primary", key="report_open")
         else:
             clicked = action.button("Report a finding", type="primary", key="report_open", use_container_width=True)
-    if clicked or (open_now and can_report()):
+    ready = account is not None or not accounts_enabled()
+    if open_now and not ready:
+        st.info("Sign in first, in the band “Noticed something in these images?” below the pictures.")
+    if (clicked or open_now) and ready and can_report():
         st.session_state.pop("claim_in_dialog", None)
-        _report_dialog(ra, dec, band, view, frame, picture)
+        _report_dialog(ra, dec, band, view, frame, picture, account)
     if st.session_state.get("last_claim"):
         _claim_box(*st.session_state["last_claim"])

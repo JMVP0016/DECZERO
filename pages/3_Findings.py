@@ -8,7 +8,9 @@ Findings board, with three spaces:
                   codes travel in the page address, so a saved link is the way back.
   - Review desk:  a reviewer signs in with the code given by the team, sees the
                   queue and signs verdicts. The sign-in lasts for the browser session.
-There are no accounts: nothing personal is stored.
+With sign-in set up (see hallazgos.py), "My reports" lists the reports of the
+signed-in account and the review desk opens for the accounts on the reviewers
+list. No e-mail or name is stored: only the nickname the visitor chooses.
 """
 
 import html
@@ -46,7 +48,8 @@ def card(report, reviewer=None, track=False):
         head.markdown(
             f'<span class="dz-rnum">#{int(report["number"])}</span>'
             f'<span class="dz-rkind">{html.escape(str(report["kind"]))}</span>'
-            f'<p class="dz-rby">Reported by <b>{html.escape(str(report["alias"]))}</b> '
+            f'<p class="dz-rby">Reported by <b>{html.escape(str(report["alias"]))}</b>'
+            f'{" (account)" if report.get("owner") else ""} '
             f'on {html.escape(str(report["reported"]))}</p>',
             unsafe_allow_html=True,
         )
@@ -147,6 +150,30 @@ if space == "board":
 
 # ---------------------------------------------------------------- my reports
 
+elif space == "mine" and hallazgos.accounts_enabled():
+    st.write(
+        "Follow the reports you sent. Your account has one nickname, which nobody else can "
+        "use, and every report you publish is signed with it."
+    )
+    account = hallazgos.account_box(key="mine_account")
+    if account:
+        found = hallazgos.reports_of(account)
+        waiting = sum(r["status"] == hallazgos.STATUS_NEW for r in found)
+        opened = sum(r["status"] == hallazgos.STATUS_OPENED for r in found)
+        columns = st.columns(3)
+        columns[0].metric("My reports", len(found))
+        columns[1].metric("Waiting or in review", waiting + opened)
+        columns[2].metric("With a verdict", len(found) - waiting - opened)
+        if not found:
+            st.info("You have not sent any report yet. Open a sequence in the viewer and use “Report a finding”.")
+        with st.container(key="board"):
+            for report in found:
+                card(report, track=True)
+                if report["status"] == hallazgos.STATUS_NEW:
+                    st.caption("Nobody has opened this report yet. Reviewers are volunteers; come back later.")
+                elif report["status"] == hallazgos.STATUS_OPENED:
+                    st.caption("A reviewer is looking at this report. The verdict will appear here, signed.")
+
 elif space == "mine":
     st.write(
         "Follow the reports you sent. There are no accounts here: the **claim code** you "
@@ -195,9 +222,25 @@ elif space == "mine":
 # ---------------------------------------------------------------- review desk
 
 else:
-    reviewers = hallazgos.reviewers()
-    reviewer = reviewers.get(st.session_state.get("reviewer_code", ""))
-    if not reviewer:
+    by_account = hallazgos.accounts_enabled()
+    if by_account:
+        st.write(
+            "For the astronomers who review the reports. The desk opens for the accounts that "
+            "the team has put on its reviewers list; every step is published with the reviewer's name."
+        )
+        account = hallazgos.account_box(key="desk_account")
+        reviewer = hallazgos.reviewer_name(account)
+        if account and not reviewer:
+            st.info(
+                "This account is not on the reviewers list. If you are an astronomer and want "
+                "to review reports, write to the team."
+            )
+    else:
+        reviewers = hallazgos.reviewers()
+        reviewer = reviewers.get(st.session_state.get("reviewer_code", ""))
+    if by_account and not reviewer:
+        pass
+    elif not reviewer:
         st.write(
             "For the astronomers who review the reports. The team gives each reviewer a "
             "personal code; every step you take is published with your name."
@@ -216,12 +259,13 @@ else:
             "want to review, write to the team."
         )
     else:
-        who, out = st.columns([4, 1], vertical_alignment="center")
-        who.markdown(f'<div class="dz-who"><span>Signed in as</span>{html.escape(reviewer)}</div>',
-                     unsafe_allow_html=True)
-        if out.button("Sign out", use_container_width=True):
-            st.session_state.pop("reviewer_code", None)
-            st.rerun()
+        if not by_account:
+            who, out = st.columns([4, 1], vertical_alignment="center")
+            who.markdown(f'<div class="dz-who"><span>Signed in as</span>{html.escape(reviewer)}</div>',
+                         unsafe_allow_html=True)
+            if out.button("Sign out", use_container_width=True):
+                st.session_state.pop("reviewer_code", None)
+                st.rerun()
 
         def by_me(report, kinds):
             return any(e["by"] == reviewer and e["type"] in kinds for e in report.get("events", []))
