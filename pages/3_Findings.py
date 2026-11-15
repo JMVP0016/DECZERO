@@ -115,7 +115,8 @@ if st.session_state.get("space") not in SPACES:      # first time here in this v
     st.session_state["space"] = start if start in SPACES else "board"
 space = st.segmented_control(
     "Space", list(SPACES), format_func=SPACES.get, label_visibility="collapsed", key="space",
-    on_change=lambda: st.session_state.setdefault("role", "tab"),
+    on_change=lambda: st.session_state.setdefault("role", "tab")
+    if hallazgos.nickname_of(hallazgos.current_user()) else None,
 ) or "board"
 
 try:
@@ -151,8 +152,8 @@ if account and not st.session_state.get("role"):
         st.markdown(
             '<div class="dz-role"><i>02</i><b>I am an astronomer or expert</b>'
             "<p>Open the reports waiting in the queue, check them against catalogues and "
-            "sign a verdict with your name. The desk opens for the accounts on the team's "
-            "reviewers list.</p></div>", unsafe_allow_html=True)
+            "sign a verdict with your name. The desk opens for the team's reviewers list "
+            "or after accreditation.</p></div>", unsafe_allow_html=True)
         st.button("Go to the review desk", key="role_e", type="primary", use_container_width=True,
                   on_click=choose, args=("expert", "desk"))
     st.caption("You can change at any time with the tabs above. To report, open a sequence in the Viewer.")
@@ -238,19 +239,30 @@ elif space == "mine" and hallazgos.accounts_enabled():
         "Follow the reports you sent. Your account has one nickname, which nobody else can "
         "use, and every report you publish is signed with it."
     )
+    tema.pasos(hallazgos.AMATEUR_FLOW)
     if account:
         found = hallazgos.reports_of(account)
         waiting = sum(r["status"] == hallazgos.STATUS_NEW for r in found)
         opened = sum(r["status"] == hallazgos.STATUS_OPENED for r in found)
-        columns = st.columns(3)
+        candidates = sum(r["status"] == hallazgos.VERDICTS[2] for r in found)
+        columns = st.columns(4)
         columns[0].metric("My reports", len(found))
         columns[1].metric("Waiting or in review", waiting + opened)
         columns[2].metric("With a verdict", len(found) - waiting - opened)
+        columns[3].metric("Candidates", candidates)
+        with st.container(key="mine_cta"):
+            left, right = st.columns([3, 1.3], vertical_alignment="center")
+            left.markdown(
+                '<p class="dz-cta-title">Ready to inspect a SPHEREx sequence?</p>'
+                '<p class="dz-cta-line">Open one of the five challenge targets or enter any sky '
+                'coordinate in the Viewer, compare epochs and publish what you find.</p>',
+                unsafe_allow_html=True,
+            )
+            if right.button("Open the Viewer", key="go_viewer_mine", type="primary", use_container_width=True):
+                st.switch_page("app.py")
+        tema.seccion(2, "My submitted reports")
         if not found:
-            st.info("You have not sent any report yet. Open a sequence in the viewer and use “Report a finding”.")
-        if st.button("Open the Viewer to report a finding", key="go_viewer_mine",
-                     type="primary" if not found else "secondary"):
-            st.switch_page("app.py")
+            st.info("You have not sent any report yet. Use “Open the Viewer” above and click “Report a finding” under a sequence.")
         with st.container(key="board"):
             for report in found:
                 card(report, track=True)
@@ -258,6 +270,8 @@ elif space == "mine" and hallazgos.accounts_enabled():
                     st.caption("Nobody has opened this report yet. Reviewers are volunteers; come back later.")
                 elif report["status"] == hallazgos.STATUS_OPENED:
                     st.caption("A reviewer is looking at this report. The verdict will appear here, signed.")
+    else:
+        st.info("Sign in with Google above to follow the reports you have sent and to publish new ones with your nickname.")
 
 elif space == "mine":
     st.write(
@@ -313,17 +327,132 @@ else:
     reviewer = by_email or reviewers.get(st.session_state.get("reviewer_code", ""))
     if by_account:
         st.write(
-            "For the astronomers who review the reports. The desk opens for the accounts that "
-            "the team has put on its reviewers list; every step is published with the reviewer's name."
+            "For the astronomers and domain experts who vet the reports. Every step is signed "
+            "with the reviewer's public name, institution and ORCID iD or team credential."
         )
+        tema.pasos(hallazgos.EXPERT_FLOW)
         if account and not reviewer:
-            st.info(
-                "This account is not on the reviewers list. If you are an astronomer and want "
-                "to review reports, write to the team."
-            )
+            application = hallazgos.accreditation_of(account)
+            ACCRED_TRACK = [
+                "Application sent",
+                "Manual verification by the team",
+                "Accredited on Review Desk",
+            ]
+            tema.seccion(2, "Reviewer accreditation")
+            if application and not st.session_state.get("edit_accreditation"):
+                status_text = (
+                    "Not approved" if application.get("status") == "rejected"
+                    else "Pending manual verification"
+                )
+                with st.container(border=True, key="accred_status"):
+                    head, badge = st.columns([3, 1])
+                    head.markdown(
+                        f'<span class="dz-rkind">{html.escape(application["signature"])}</span>'
+                        f'<p class="dz-rby">{html.escape(application["institution"])} · '
+                        f'Account nickname: <b>{html.escape(str(application.get("nick", account["nick"])))}</b> · '
+                        f'Submitted {html.escape(application["at"])}</p>',
+                        unsafe_allow_html=True,
+                    )
+                    badge.markdown(tema.estado(status_text, False), unsafe_allow_html=True)
+                    step = 1 if application.get("status") == "rejected" else 2
+                    st.markdown(tema.seguimiento(step, ACCRED_TRACK), unsafe_allow_html=True)
+                    orcid_url = f"https://orcid.org/{html.escape(application['orcid'])}"
+                    st.markdown(
+                        f"**ORCID iD:** [{html.escape(application['orcid'])}]({orcid_url}) · "
+                        f"**Reference publication (DOI / ADS):** `{html.escape(application['publication'])}` · "
+                        f"**Specialty:** {html.escape(application['specialty'])}"
+                    )
+                    st.caption(f"Vetting protocol & catalogues declared: {application['note']}")
+                    st.info(
+                        "Your accreditation request is queued for manual verification by the team. "
+                        "Once approved, this account opens the Review Desk automatically and your "
+                        "public signature above will appear on every verdict you sign."
+                    )
+                    if st.button("Update application details", key="edit_accred_btn"):
+                        st.session_state["edit_accreditation"] = True
+                        st.rerun()
+            else:
+                with st.container(border=True, key="accred_form_box"):
+                    st.markdown(
+                        '<p class="dz-cta-title">Apply for reviewer accreditation (manual verification)</p>'
+                        '<p class="dz-cta-line">Following the citizen-science vetting model of '
+                        '<i>Backyard Worlds: Planet 9</i> (Kuchner et al. 2017, <i>ApJ Letters</i>, 840, L23) '
+                        'and SIMBAD cross-identification practices (Ochsenbein et al. 2000, <i>A&amp;AS</i>, 143, 23), '
+                        'candidate detections in infrared sky surveys require traceable expert cross-matching '
+                        'against astrometric and photometric catalogues before follow-up. Complete the fields '
+                        'below so that, once verified by the team, your expert signature is ready on the web '
+                        'with no missing credentials.</p>',
+                        unsafe_allow_html=True,
+                    )
+                    defaults = application or {}
+                    with st.form("accreditation_form", border=False):
+                        col1, col2 = st.columns(2)
+                        signature = col1.text_input(
+                            "Public signature (name and title as shown on verdicts)",
+                            value=defaults.get("signature", ""),
+                            max_chars=80,
+                            placeholder="Dr. Elena Vega, Infrared Astronomer",
+                        )
+                        institution = col2.text_input(
+                            "Institution, observatory or society",
+                            value=defaults.get("institution", ""),
+                            max_chars=100,
+                            placeholder="Observatorio Astronómico de Quito — EPN",
+                        )
+                        col3, col4 = st.columns(2)
+                        orcid = col3.text_input(
+                            "ORCID iD (16-digit researcher identifier)",
+                            value=defaults.get("orcid", ""),
+                            max_chars=19,
+                            placeholder="0000-0002-1825-0097",
+                        )
+                        publication = col4.text_input(
+                            "Reference publication or catalogue entry (DOI or NASA ADS bibcode)",
+                            value=defaults.get("publication", ""),
+                            max_chars=140,
+                            placeholder="10.3847/2041-8213/aa7200 or 2017ApJ...840L..23K",
+                        )
+                        specialty = st.selectbox(
+                            "Primary vetting specialty",
+                            hallazgos.SPECIALTIES,
+                            index=hallazgos.SPECIALTIES.index(defaults["specialty"])
+                            if defaults.get("specialty") in hallazgos.SPECIALTIES else 0,
+                        )
+                        note = st.text_area(
+                            "Catalogues and checks you use to vet candidates (e.g. SIMBAD, Gaia DR3, AllWISE, artifact flags)",
+                            value=defaults.get("note", ""),
+                            max_chars=400,
+                            height=90,
+                            placeholder="Cross-matching astrometry in Gaia DR3 and SIMBAD within 2 arcmin, plus checking AllWISE/2MASS colours and bad-pixel masks.",
+                        )
+                        sent = st.form_submit_button("Submit accreditation request", type="primary")
+                    if sent:
+                        try:
+                            problem = hallazgos.submit_accreditation(
+                                account, signature, institution, orcid, publication, specialty, note
+                            )
+                        except Exception as error:
+                            problem = f"The accreditation request could not be saved. Detail: {error}"
+                        if problem:
+                            st.error(problem)
+                        else:
+                            st.session_state.pop("edit_accreditation", None)
+                            st.rerun()
             if reviewers:
-                with st.expander("Have a reviewer code from the team?"):
+                with st.expander("Already have a reviewer code from the team?"):
                     with st.form("signin_code"):
+                        code = st.text_input("Reviewer code", type="password")
+                        if st.form_submit_button("Open review desk", type="primary"):
+                            if code in reviewers:
+                                st.session_state["reviewer_code"] = code
+                                st.rerun()
+                            else:
+                                st.error("Unknown code.")
+        elif not account and not reviewer:
+            st.info("Sign in with Google above to open the Review Desk or to apply for reviewer accreditation.")
+            if reviewers:
+                with st.expander("Already have a reviewer code from the team?"):
+                    with st.form("signin_code_anon"):
                         code = st.text_input("Reviewer code", type="password")
                         if st.form_submit_button("Open review desk", type="primary"):
                             if code in reviewers:
@@ -338,6 +467,7 @@ else:
             "For the astronomers who review the reports. The team gives each reviewer a "
             "personal code; every step you take is published with your name."
         )
+        tema.pasos(hallazgos.EXPERT_FLOW)
         with st.form("signin"):
             code = st.text_input("Reviewer code", type="password")
             if st.form_submit_button("Sign in", type="primary"):
@@ -372,6 +502,39 @@ else:
         columns[0].metric("Waiting for a reviewer", len(queue))
         columns[1].metric("Opened by me", len(mine_open))
         columns[2].metric("Verdicts I signed", len(signed))
+
+        # Team reviewers can verify and approve pending accreditation requests right here
+        if hallazgos.is_team_reviewer(account) or st.session_state.get("reviewer_code") in reviewers:
+            pending_apps = [a for a in hallazgos.list_accreditations() if a.get("status") == "pending"]
+            if pending_apps:
+                with st.expander(f"Reviewer accreditation requests waiting for manual verification ({len(pending_apps)})", expanded=True):
+                    for app in pending_apps:
+                        with st.container(border=True, key=f"app_{app['id'][:10]}"):
+                            st.markdown(
+                                f"**{html.escape(app['signature'])}** — {html.escape(app['institution'])} "
+                                f"(nickname `{html.escape(str(app.get('nick', '')))}`, {html.escape(app['at'])})"
+                            )
+                            st.markdown(
+                                f"ORCID: [{html.escape(app['orcid'])}](https://orcid.org/{html.escape(app['orcid'])}) · "
+                                f"Publication (DOI / ADS): `{html.escape(app['publication'])}` · "
+                                f"Specialty: {html.escape(app['specialty'])}"
+                            )
+                            st.caption(f"Catalogues & checks: {app['note']}")
+                            b_ok, b_no, _ = st.columns([1.8, 1.2, 2.6])
+                            if b_ok.button("Approve as reviewer", key=f"ok_{app['id'][:10]}", type="primary", use_container_width=True):
+                                try:
+                                    hallazgos.decide_accreditation(app["id"], "approved", reviewer)
+                                except Exception as error:
+                                    st.error(f"Could not approve accreditation. Detail: {error}")
+                                else:
+                                    st.rerun()
+                            if b_no.button("Dismiss", key=f"no_{app['id'][:10]}", use_container_width=True):
+                                try:
+                                    hallazgos.decide_accreditation(app["id"], "rejected", reviewer)
+                                except Exception as error:
+                                    st.error(f"Could not update accreditation. Detail: {error}")
+                                else:
+                                    st.rerun()
 
         with st.container(key="board"):
             tema.seccion(2, "Opened by me: verdict pending")

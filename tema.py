@@ -100,7 +100,7 @@ h1, h2, h3, .dz-title { font-family: 'Montserrat', sans-serif; letter-spacing: -
 
 /* review states: amber ring while waiting, turquoise dot once there is a verdict */
 .dz-state { display: inline-flex; align-items: center; gap: 0.45rem; font-weight: 600; font-size: 0.9rem; }
-.dz-state i { width: 0.7rem; height: 0.7rem; border-radius: 50%; display: inline-block; box-sizing: border-box; }
+.dz-state i { width: 0.7rem; height: 0.7rem; border-radius: 50%; display: inline-block; box-sizing: border-box; flex-shrink: 0; }
 .dz-state.waiting { color: #FBBF24; } .dz-state.waiting i { border: 2px solid #FBBF24; }
 .dz-state.done { color: #5EEAD4; } .dz-state.done i { background: #5EEAD4; }
 [data-testid="stMetricValue"], [data-testid="stCaptionContainer"] { font-variant-numeric: tabular-nums; }
@@ -255,8 +255,10 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 }
 
 /* report: the band with the button, the window, the position being reported, the claim code */
-.st-key-cta { background: linear-gradient(90deg, rgba(94,234,212,0.10), rgba(23,34,52,0.9) 55%); border: 1px solid rgba(94,234,212,0.35);
+.st-key-cta, .st-key-mine_cta { background: linear-gradient(90deg, rgba(94,234,212,0.10), rgba(23,34,52,0.9) 55%); border: 1px solid rgba(94,234,212,0.35);
   border-radius: 14px; padding: 1rem 1.2rem; margin: 0.6rem 0 0.4rem 0; }
+.st-key-accred_status, .st-key-accred_form_box, [class*="st-key-app_"] { background: #172234; border-color: rgba(94,234,212,0.28) !important; border-radius: 14px; }
+.st-key-accred_form_box [data-testid="stForm"] { border: 0 !important; padding: 0 !important; }
 .dz-cta-title { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.1rem; color: #F5F7FA; margin: 0; }
 .dz-cta-line { font-family: 'Inter', sans-serif; font-size: 0.92rem; color: #AEB8CC; margin: 0.15rem 0 0 0; }
 [data-testid="stDialog"] [role="dialog"] { background: #0B1220; border: 1px solid rgba(94,234,212,0.35); border-radius: 16px; }
@@ -341,16 +343,16 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 }
 /* findings: progress of one report, and the bar that says who is signed in */
 .dz-track { list-style: none; display: flex; margin: 0.4rem 0 0.9rem 0; padding: 0; }
-.dz-track li { flex: 1; position: relative; padding-top: 1.3rem; margin: 0; font-family: 'Inter', sans-serif; font-size: 0.8rem; color: #8792A8; }
+.dz-track li { flex: 1; position: relative; padding-top: 1.3rem; padding-right: 0.6rem; margin: 0; font-family: 'Inter', sans-serif; font-size: 0.8rem; color: #8792A8; }
 .dz-track li::before { content: ""; position: absolute; left: 0; right: 0; top: 0.42rem; height: 2px; background: rgba(232,236,244,0.16); }
 .dz-track li i { position: absolute; left: 0; top: 0; width: 0.9rem; height: 0.9rem; border-radius: 50%; box-sizing: border-box;
   border: 2px solid rgba(232,236,244,0.35); background: #0B1220; }
 .dz-track li.on { color: #F5F7FA; }
 .dz-track li.on::before { background: #5EEAD4; }
 .dz-track li.on i { border-color: #5EEAD4; background: #5EEAD4; }
-.dz-who { display: flex; align-items: center; gap: 0.6rem; border-left: 2px solid #5EEAD4; background: #172234; border-radius: 0 10px 10px 0;
+.dz-who { display: flex; align-items: center; flex-wrap: wrap; gap: 0.6rem; border-left: 2px solid #5EEAD4; background: #172234; border-radius: 0 10px 10px 0;
   padding: 0.6rem 0.9rem; font-family: 'Inter', sans-serif; font-size: 0.92rem; color: #F5F7FA; }
-.dz-who span { font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: #5EEAD4; font-weight: 600; }
+.dz-who span { font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: #5EEAD4; font-weight: 600; white-space: nowrap; }
 /* findings: the two ways to take part, and the ranking of observers */
 .st-key-role_amateur, .st-key-role_expert { background: #172234; border-color: rgba(232,236,244,0.10) !important; border-radius: 14px;
   transition: border-color 0.2s ease, transform 0.2s ease; }
@@ -358,7 +360,7 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 .dz-role i { font-style: normal; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 2.4rem; line-height: 1;
   color: #172234; -webkit-text-stroke: 2px rgba(94,234,212,0.75); paint-order: stroke fill; }
 .dz-role b { display: block; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.2rem; color: #F5F7FA; margin: 0.5rem 0 0.3rem 0; }
-.stApp .dz-role p { font-size: 0.93rem !important; line-height: 1.5; color: #C9D1E0; margin: 0 0 0.6rem 0; min-height: 4.4rem; }
+.stApp .dz-role p { font-size: 0.93rem !important; line-height: 1.5; color: #C9D1E0; margin: 0 0 0.6rem 0; min-height: 5.6rem; }
 .dz-rank { list-style: none; margin: 0 0 1rem 0; padding: 0; }
 .dz-rank li { display: flex; align-items: baseline; gap: 1rem; padding: 0.55rem 0.2rem; margin: 0; border-bottom: 1px solid rgba(232,236,244,0.12);
   font-family: 'Inter', sans-serif; }
@@ -378,6 +380,7 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 @media (max-width: 640px) {
   .st-key-targets [data-testid="stImage"] img { aspect-ratio: 16 / 9; }
   .dz-state { float: none; }
+  .stApp .dz-role p { min-height: 0; }
   /* the two menu links side by side, and the four board numbers two by two */
   [data-testid="stHorizontalBlock"]:has([data-testid="stPageLink"]) { flex-direction: row !important; flex-wrap: nowrap; gap: 0.5rem; }
   [data-testid="stHorizontalBlock"]:has([data-testid="stPageLink"]) > [data-testid="stColumn"] { width: auto !important; flex: 0 0 auto !important; min-width: 0 !important; }

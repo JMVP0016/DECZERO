@@ -70,6 +70,23 @@ REPORT_FLOW = [
     ("Reviewer opens it", "The reviewer signs with a name and checks catalogues and the images."),
     ("Signed verdict", "Known object, image artifact, inconclusive, or candidate worth a follow-up."),
 ]
+AMATEUR_FLOW = [
+    ("Inspect a sequence", "Open one of the five targets or any sky position in the Viewer and compare periods."),
+    ("Publish your report", "Mark where you saw movement or brightness change; GitHub sets the public UTC time."),
+    ("Follow the verdict", "An astronomer checks catalogues and signs a verdict; candidates enter the ranking."),
+]
+EXPERT_FLOW = [
+    ("Open from queue", "Claim the oldest waiting report so other reviewers see it is being checked."),
+    ("Cross-check catalogues", "Inspect the SPHEREx sequence in the Viewer and check SIMBAD (2′) for known objects."),
+    ("Sign a verdict", "Cite the catalogue or artifact check, or mark it as a candidate worth a follow-up."),
+]
+ORCID_RULE = re.compile(r"\d{4}-\d{4}-\d{4}-\d{3}[0-9Xx]")
+SPECIALTIES = [
+    "Astrometry & proper motion (brown dwarfs, solar neighbourhood, KBOs)",
+    "Infrared photometry & spectral energy distributions (SPHEREx, WISE, 2MASS)",
+    "Variable stars, young stellar objects & transients",
+    "Detector artifacts, WCS calibration & image reduction",
+]
 
 
 # ---------------------------------------------------------------- configuration
@@ -171,8 +188,8 @@ def sign_out():
     st.logout()
 
 
-def reviewer_name(user):
-    """Name and role if this account is one of the reviewers chosen by the team."""
+def is_team_reviewer(user):
+    """Name and role if this account is on the team's [REVIEWER_EMAILS] list."""
     if not user:
         return None
     if _memory_mode():
@@ -183,11 +200,27 @@ def reviewer_name(user):
     return table.get(user["email"].strip().lower())
 
 
+def reviewer_name(user):
+    """Name and role if this account is an accredited reviewer (team list or approved application)."""
+    if not user:
+        return None
+    team = is_team_reviewer(user)
+    if team:
+        return team
+    try:
+        app = accreditation_of(user)
+    except Exception:
+        app = None
+    if app and app.get("status") == "approved":
+        return f"{app['signature']}, {app['institution']} (ORCID {app['orcid']})"
+    return None
+
+
 def _accounts_issue():
-    """(issue number or None, {account id: nickname})."""
+    """(issue number or None, {account id: nickname, '_applications': {...}})."""
     if _memory_mode():
         return None, dict(_memory().setdefault("accounts", {}))
-    number, merged = None, {}
+    number, merged, apps = None, {}, {}
     for issue in reversed(_fetch()):
         author = (issue.get("user") or {}).get("login")
         if issue.get("title") == ACCOUNTS_TITLE and author in TRUSTED_AUTHORS:
@@ -195,34 +228,24 @@ def _accounts_issue():
             body = issue.get("body") or ""
             try:
                 raw = body.split(ACCOUNTS_START, 1)[1].split(ACCOUNTS_END, 1)[0]
-                merged.update(dict(json.loads(raw)))
+                loaded = dict(json.loads(raw))
+                if isinstance(loaded.get("_applications"), dict):
+                    apps.update(loaded.pop("_applications"))
+                merged.update(loaded)
             except Exception:
                 pass
+    if apps:
+        merged["_applications"] = apps
     return number, merged
 
 
-def nickname_of(user):
-    return _accounts_issue()[1].get(user["id"]) if user else None
-
-
-def register_nickname(user, nickname):
-    """Give this account its nickname. Returns an error text, or None if it worked."""
-    nickname = nickname.strip()
-    if not NICKNAME_RULE.fullmatch(nickname):
-        return "Use 3 to 20 letters, numbers, hyphens or underscores, starting with a letter or number."
-    _fetch.clear()                       # read the latest list before deciding
-    number, table = _accounts_issue()
-    if user["id"] in table:
-        return f"This account already has the nickname {table[user['id']]}."
-    if nickname.lower() in {name.lower() for name in table.values()}:
-        return "That nickname is taken. Please choose another one."
-    table[user["id"]] = nickname
+def _save_accounts(number, table):
     if _memory_mode():
         _memory()["accounts"] = table
     else:
         body = (
-            "Nicknames of the accounts of the HAWAPACHA app. Each line of the data below is "
-            "an anonymous account identifier and its nickname; no e-mail is stored.\n\n"
+            "Nicknames and reviewer accreditations of the HAWAPACHA app. Each entry is "
+            "an anonymous account identifier; no e-mail is stored.\n\n"
             f"{ACCOUNTS_START}\n{json.dumps(table)}\n{ACCOUNTS_END}"
         )
         if number is None:
@@ -232,7 +255,95 @@ def register_nickname(user, nickname):
             _check(requests.patch(f"{API}/issues/{number}", headers=_headers(), timeout=20,
                                   json={"body": body}))
     _fetch.clear()
+
+
+def nickname_of(user):
+    if not user:
+        return None
+    value = _accounts_issue()[1].get(user["id"])
+    return value if isinstance(value, str) else None
+
+
+def register_nickname(user, nickname):
+    """Give this account its nickname. Returns an error text, or None if it worked."""
+    nickname = nickname.strip()
+    if not NICKNAME_RULE.fullmatch(nickname):
+        return "Use 3 to 20 letters, numbers, hyphens or underscores, starting with a letter or number."
+    _fetch.clear()                       # read the latest list before deciding
+    number, table = _accounts_issue()
+    if isinstance(table.get(user["id"]), str):
+        return f"This account already has the nickname {table[user['id']]}."
+    taken = {str(name).lower() for k, name in table.items() if not str(k).startswith("_") and isinstance(name, str)}
+    if nickname.lower() in taken:
+        return "That nickname is taken. Please choose another one."
+    table[user["id"]] = nickname
+    _save_accounts(number, table)
     return None
+
+
+def accreditation_of(user):
+    """The reviewer accreditation application of this account, or None."""
+    if not user:
+        return None
+    apps = _accounts_issue()[1].get("_applications", {})
+    return apps.get(user["id"]) if isinstance(apps, dict) else None
+
+
+def list_accreditations():
+    """All reviewer accreditation applications, newest first."""
+    apps = _accounts_issue()[1].get("_applications", {})
+    if not isinstance(apps, dict):
+        return []
+    return list(reversed(list(apps.values())))
+
+
+def submit_accreditation(user, signature, institution, orcid, publication, specialty, note):
+    """Submit a request for manual reviewer accreditation. Returns an error text, or None."""
+    signature = clean(signature, 80)
+    institution = clean(institution, 100)
+    orcid = orcid.strip().upper()
+    publication = clean(publication, 140)
+    note = clean(note, 400)
+    if len(signature) < 5 or len(institution) < 3:
+        return "Please write your public name and role (for example 'Dr. Ana Perez, astronomer') and your institution."
+    if not ORCID_RULE.fullmatch(orcid):
+        return "Please enter a valid 16-digit ORCID iD in the format 0000-0002-1825-0097."
+    if len(publication) < 6:
+        return "Please cite at least one reference publication or catalogue entry (DOI or NASA/SAO ADS bibcode)."
+    if len(note) < 15:
+        return "Please describe briefly which catalogues or checks you use when vetting candidates (at least 15 characters)."
+    _fetch.clear()
+    number, table = _accounts_issue()
+    apps = dict(table.get("_applications") or {})
+    apps[user["id"]] = {
+        "id": user["id"],
+        "nick": user.get("nick") or table.get(user["id"], ""),
+        "signature": signature,
+        "institution": institution,
+        "orcid": orcid,
+        "publication": publication,
+        "specialty": specialty if specialty in SPECIALTIES else SPECIALTIES[0],
+        "note": note,
+        "status": "pending",
+        "at": now_text(),
+    }
+    table["_applications"] = apps
+    _save_accounts(number, table)
+    return None
+
+
+def decide_accreditation(applicant_id, status, reviewer):
+    """Approve or dismiss a reviewer accreditation request."""
+    _fetch.clear()
+    number, table = _accounts_issue()
+    apps = dict(table.get("_applications") or {})
+    if applicant_id not in apps:
+        return
+    apps[applicant_id]["status"] = status
+    apps[applicant_id]["verified_by"] = clean(reviewer, 80)
+    apps[applicant_id]["verified_at"] = now_text()
+    table["_applications"] = apps
+    _save_accounts(number, table)
 
 
 RETURN_COOKIE = "hawapacha_return"
@@ -555,7 +666,14 @@ def _report_dialog(ra, dec, band, view, frame, picture, account=None):
                 f"Observation saved as report #{st.session_state['claim_in_dialog'][0]}, "
                 f"signed with your nickname {account['nick']}."
             )
-            st.markdown("[Follow it in “My reports”](/Findings?space=mine)")
+            c1, c2 = st.columns(2)
+            if c1.button("Follow it in My reports", type="primary", use_container_width=True):
+                st.session_state["role"] = "amateur"
+                st.session_state["space"] = "mine"
+                st.switch_page("pages/3_Findings.py")
+            if c2.button("Stay in the Viewer", use_container_width=True):
+                st.rerun()
+            return
         else:
             _claim_box(*st.session_state["claim_in_dialog"])
         if st.button("Done", type="primary"):
