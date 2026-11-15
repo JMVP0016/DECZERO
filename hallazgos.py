@@ -223,8 +223,53 @@ def register_nickname(user, nickname):
     return None
 
 
-def account_box(place=None, key="account"):
+RETURN_COOKIE = "hawapacha_return"
+
+
+def _cookie_script(value):
+    """Set (or, with an empty value, remove) the small cookie that says where to go back to."""
+    try:
+        import streamlit.components.v1 as components
+        age = 900 if value else 0
+        components.html(
+            "<script>try { window.parent.document.cookie = "
+            f"'{RETURN_COOKIE}={value}; path=/; max-age={age}; SameSite=Lax'; }} catch (e) {{}}</script>",
+            height=0,
+        )
+    except Exception:
+        pass   # a convenience only
+
+
+def back_after_sign_in():
     """
+    Google sends the visitor back to the first page of the app. If they started the
+    sign-in somewhere else, take them there. Call it at the top of app.py.
+    Returns ("viewer", ra, dec, band) when the viewer should open that position.
+    """
+    if not accounts_enabled() or st.session_state.get("returned") or not current_user():
+        return None
+    st.session_state["returned"] = True          # only once per visit
+    try:
+        target = str(st.context.cookies.get(RETURN_COOKIE, ""))
+    except Exception:
+        target = ""
+    parts = target.split(":")
+    if parts[0] == "findings":
+        st.session_state["space"] = parts[1] if len(parts) > 1 and parts[1] in ("board", "mine", "desk") else "mine"
+        st.switch_page("pages/3_Findings.py")
+    if parts[0] == "viewer" and len(parts) == 4:
+        try:
+            return "viewer", float(parts[1]), float(parts[2]), clean(parts[3], 2)
+        except ValueError:
+            return None
+    return None
+
+
+def account_box(place=None, key="account", back=""):
+    """
+    back says where the visitor is ("findings:mine", "viewer:ra:dec:band"), so that
+    the sign-in can bring them back to the same place.
+
     Sign-in strip. Returns {"id", "email", "nick"} when the visitor is signed in and
     has a nickname; otherwise draws what is missing (sign-in button or nickname form)
     and returns None.
@@ -237,9 +282,14 @@ def account_box(place=None, key="account"):
             "Sign in with a Google account to report and to follow your reports. We keep no "
             "e-mail and no name: only the nickname you choose."
         )
+        if back and re.fullmatch(r"[A-Za-z0-9:._-]{1,80}", back):
+            _cookie_script(back)                 # ready before the button is pressed
         if right.button("Sign in with Google", key=key + "_in", type="primary", use_container_width=True):
             sign_in()
         return None
+    if not st.session_state.get("return_cleared"):
+        st.session_state["return_cleared"] = True
+        _cookie_script("")                       # signed in: the way back is no longer needed
     try:
         nick = nickname_of(user)
     except Exception as error:
@@ -580,7 +630,8 @@ def report_button(ra, dec, band, view, frame, picture=None, open_now=False):
         elif st.session_state.get("reports_sent", 0) >= MAX_REPORTS_PER_VISIT:
             action.caption("You have reached the limit of reports for this visit.")
         elif accounts_enabled():
-            account = account_box(key="cta_account")     # sign-in or nickname first
+            account = account_box(key="cta_account",     # sign-in or nickname first
+                                  back=f"viewer:{float(ra):.5f}:{float(dec):.5f}:{clean(band, 2)}")
             if account:
                 clicked = st.button("Report a finding", type="primary", key="report_open")
         else:

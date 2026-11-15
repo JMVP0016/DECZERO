@@ -98,9 +98,10 @@ def card(report, reviewer=None, track=False):
 params = st.query_params
 start = params.get("space", "mine" if "claim" in params else "board")
 tema.seccion(1, "Findings")
+if st.session_state.get("space") not in SPACES:      # first time here in this visit
+    st.session_state["space"] = start if start in SPACES else "board"
 space = st.segmented_control(
-    "Space", list(SPACES), format_func=SPACES.get, label_visibility="collapsed",
-    default=start if start in SPACES else "board", key="space",
+    "Space", list(SPACES), format_func=SPACES.get, label_visibility="collapsed", key="space",
 ) or "board"
 
 try:
@@ -155,7 +156,7 @@ elif space == "mine" and hallazgos.accounts_enabled():
         "Follow the reports you sent. Your account has one nickname, which nobody else can "
         "use, and every report you publish is signed with it."
     )
-    account = hallazgos.account_box(key="mine_account")
+    account = hallazgos.account_box(key="mine_account", back="findings:mine")
     if account:
         found = hallazgos.reports_of(account)
         waiting = sum(r["status"] == hallazgos.STATUS_NEW for r in found)
@@ -228,7 +229,7 @@ else:
             "For the astronomers who review the reports. The desk opens for the accounts that "
             "the team has put on its reviewers list; every step is published with the reviewer's name."
         )
-        account = hallazgos.account_box(key="desk_account")
+        account = hallazgos.account_box(key="desk_account", back="findings:desk")
         reviewer = hallazgos.reviewer_name(account)
         if account and not reviewer:
             st.info(

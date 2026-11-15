@@ -137,6 +137,11 @@ def load(ra, dec, band):
     }
 
 
+# after a Google sign-in the visitor lands here: take them back to where they were
+came_back = hallazgos.back_after_sign_in()
+if came_back:
+    st.query_params.update({"ra": f"{came_back[1]:.5f}", "dec": f"{came_back[2]:.5f}", "band": came_back[3]})
+
 tema.navegacion()
 tema.portada(compacta=bool(st.session_state.get("result")))
 if not st.session_state.get("result"):
