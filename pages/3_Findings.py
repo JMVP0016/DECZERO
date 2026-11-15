@@ -515,13 +515,21 @@ else:
             "want to review, write to the team."
         )
     else:
+        erep = hallazgos.expert_reputation_of(reviewer, reports)
         if not by_email:
             who, out = st.columns([4, 1], vertical_alignment="center")
-            who.markdown(f'<div class="dz-who"><span>Signed in as</span>{html.escape(reviewer)}</div>',
-                         unsafe_allow_html=True)
+            e_title = tema.nombramiento_estrella(erep["sides"], kind="expert")
+            who.markdown(
+                f'<div class="dz-who"><span>Signed in as</span>'
+                f'<b>{html.escape(reviewer)}</b> '
+                f'{tema.estrella_svg(erep["sides"], 24, kind="expert")} '
+                f'<em class="dz-nom-pill expert">{e_title} · {erep["sides"]}/5</em></div>',
+                unsafe_allow_html=True,
+            )
             if out.button("Leave review desk" if by_account else "Sign out", use_container_width=True):
                 st.session_state.pop("reviewer_code", None)
                 st.rerun()
+        tema.tarjeta_reputacion_experto(reviewer, erep)
 
         def by_me(report, kinds):
             return any(e["by"] == reviewer and e["type"] in kinds for e in report.get("events", []))

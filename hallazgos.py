@@ -441,14 +441,26 @@ def account_box(place=None, key="account", back=""):
     try:
         import tema
         rep = reputation_of({**user, "nick": nick})
-        star = f'{tema.estrella_svg(rep["sides"], 22)} '
-        star_label = f' · star {rep["sides"]}/5 · rep tier {rep["behavior_level"]}'
+        c_title = tema.nombramiento_estrella(rep["sides"], kind="citizen")
+        star = f'{tema.estrella_svg(rep["sides"], 24, kind="citizen")} '
+        star_label = f' <em class="dz-nom-pill">{c_title} · {rep["sides"]}/5</em>'
+        if role:
+            erep = expert_reputation_of(role)
+            e_title = tema.nombramiento_estrella(erep["sides"], kind="expert")
+            expert_part = (
+                f' · {tema.estrella_svg(erep["sides"], 24, kind="expert")} '
+                f'<em class="dz-nom-pill expert">{e_title} · {erep["sides"]}/5</em> '
+                f'({clean(role, 70)})'
+            )
+        else:
+            expert_part = ""
     except Exception:
         star = ""
         star_label = ""
+        expert_part = f" · reviewer: {clean(role, 80)}" if role else ""
     left.markdown(
-        '<div class="dz-who"><span>Signed in as</span>'
-        + star + nick + star_label + (f" · reviewer: {clean(role, 80)}" if role else "") + "</div>",
+        '<div class="dz-who"><span>Signed in as</span><b>'
+        + nick + "</b> " + star + star_label + expert_part + "</div>",
         unsafe_allow_html=True,
     )
     if right.button("Sign out", key=key + "_out", use_container_width=True):
@@ -619,6 +631,41 @@ def reputation_of(user_or_alias, items=None):
     return {
         "total": total,
         "validated": validated,
+        "sides": sides,
+        "next_side_in": next_side_in,
+        "behavior_level": behavior_level,
+        "next_rep_in": next_rep_in,
+    }
+
+
+def expert_reputation_of(reviewer, items=None):
+    """
+    Astronomer / expert reputation & 5-sided violet star progress:
+      - Every accredited reviewer starts with 1 side illuminated (1/5, Accredited Vetter).
+      - Each additional side illuminates for every 5 signed verdicts, up to 5/5 (Principal Investigator).
+      - Consistency tier rises by +1 for every 10 signed verdicts.
+    """
+    all_reports = items if items is not None else list_reports()
+    full_name = str(reviewer or "").strip().lower()
+    short_name = full_name.split(",")[0].strip()
+    signed = 0
+    opened = 0
+    for r in all_reports:
+        for ev in r.get("events", []):
+            by = str(ev.get("by", "")).strip().lower()
+            by_short = by.split(",")[0].strip()
+            if full_name and (by == full_name or (short_name and by_short == short_name)):
+                if ev.get("type") in VERDICTS:
+                    signed += 1
+                elif ev.get("type") == STATUS_OPENED:
+                    opened += 1
+    sides = min(5, 1 + (signed // 5))
+    next_side_in = 0 if sides >= 5 else 5 - (signed % 5)
+    behavior_level = 1 + (signed // 10)
+    next_rep_in = 10 - (signed % 10)
+    return {
+        "signed": signed,
+        "opened": opened,
         "sides": sides,
         "next_side_in": next_side_in,
         "behavior_level": behavior_level,
