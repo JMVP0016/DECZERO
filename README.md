@@ -22,6 +22,8 @@ hackathon.
   that can be downloaded. Two views, both with north up and east left: one frame
   per observing period (median of the images of that period) or one frame per exposure.
 - Five challenge targets open with one click from images stored in this repository.
+  Three of them are also stored in a second detector (Barnard's Star and RW Aurigae
+  in D5, Epsilon Indi B in D3), to compare other infrared colours.
 - A cross-hair marks where the catalogue position and proper motion put each target.
 - A difference image (last observing period minus the first) and a choice of field
   of view (4, 6 or 10 arcmin).

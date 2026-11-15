@@ -74,25 +74,26 @@ def build_frames(result, mode, ring, grid_pixels=200, invert=False):
 
 
 def stored_target(ra, dec, band):
-    """The challenge target at this position (within 3 arcmin) and band, if any."""
+    """The challenge target at this position (within 3 arcmin), if it has stored images in this band."""
     here = SkyCoord(ra * u.deg, dec * u.deg)
     for target in TARGETS:
         there = SkyCoord(target["ra"] * u.deg, target["dec"] * u.deg)
-        if target["band"] == band and here.separation(there).arcmin <= 3.0:
+        if here.separation(there).arcmin <= 3.0 and cache_local.disponibles(target["folder"], band):
             return target
     return None
 
 
-def load_target(target):
+def load_target(target, band=None):
     """One of the five targets: stored images if we have them, live download otherwise."""
+    band = band or target["band"]
     with tema.cargando(f"Opening the SPHEREx images of {target['name']}", "Stored by the team", lugar=notice):
-        cutouts = cache_local.leer_objetivo(target["folder"], target["band"])
+        cutouts = cache_local.leer_objetivo(target["folder"], band, target["ra"], target["dec"])
     if not cutouts:
-        load(target["ra"], target["dec"], target["band"])
+        load(target["ra"], target["dec"], band)
         return
     st.session_state["error"] = None
     st.session_state["result"] = {
-        "ra": target["ra"], "dec": target["dec"], "band": target["band"],
+        "ra": target["ra"], "dec": target["dec"], "band": band,
         "available": len(cutouts), "cutouts": cutouts, "stored": target["name"],
     }
 
@@ -206,7 +207,7 @@ elif submitted or first_visit_with_link:
         st.query_params.update({"ra": f"{ra:.5f}", "dec": f"{dec:.5f}", "band": band})
         target = stored_target(ra, dec, band)
         if target:
-            load_target(target)   # a direct link to a target loads instantly
+            load_target(target, band)   # a direct link to a target loads instantly
         else:
             load(ra, dec, band)
         if st.session_state.get("result"):
@@ -229,6 +230,20 @@ if result:
             "(the Aligned view combines them into one frame per observing period), "
             f"detector {result['band']}, around RA {result['ra']:.5f}°, Dec {result['dec']:.5f}°."
         )
+        # the same target in another detector (another range of infrared colours), if stored
+        shown = next(t for t in TARGETS if t["name"] == result["stored"])
+        others = [b for b in cache_local.bandas(shown["folder"]) if b != result["band"]]
+        if others:
+            with st.container(key="other_bands"):
+                columns = st.columns([3.2] + [1] * len(others) + [max(0.1, 3.2 - len(others))],
+                                     vertical_alignment="center")
+                columns[0].caption("Also stored for this target, in other infrared colours:")
+                for column, other in zip(columns[1:], others):
+                    if column.button(f"Detector {other}", key=f"band_{other}", use_container_width=True):
+                        st.query_params.update({"band": other})
+                        load_target(shown, other)
+                        st.session_state["scroll_top"] = False
+                        st.rerun()
     else:
         st.success(
             f"Showing {len(cutouts)} of {result['available']} images at "
