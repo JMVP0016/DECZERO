@@ -723,6 +723,26 @@ def _insignia_esquina_html():
     )
 
 
+def _es_modo_experto():
+    """True when the visitor is currently in Astronomer / Review mode."""
+    if st.session_state.get("review_space") == "desk" or st.session_state.get("space") == "desk":
+        return True
+    if st.session_state.get("role") == "expert":
+        return True
+    if st.session_state.get("review_space") == "mine" or st.session_state.get("role") == "amateur":
+        return False
+    try:
+        import hallazgos
+        if st.session_state.get("reviewer_code"):
+            return True
+        user = hallazgos.current_user()
+        if user and hallazgos.reviewer_name(user):
+            return True
+    except Exception:
+        pass
+    return False
+
+
 def navegacion():
     """Top menu with the three main tabs for visitors, plus the corner star & nomination badge."""
     try:
@@ -736,16 +756,17 @@ def navegacion():
                 st.rerun()
     except Exception:
         pass
+    tab3_label = "Review" if _es_modo_experto() else "My reports"
     t1, t2, t3, esquina = st.columns([1.05, 1.75, 2.25, 3.95], vertical_alignment="center")
     try:
         t1.page_link("app.py", label="Viewer")
         t2.page_link("pages/3_Findings.py", label="Findings board")
-        t3.page_link("pages/4_Review.py", label="My reports & Review")
+        t3.page_link("pages/4_Review.py", label=tab3_label)
     except Exception:
         # page_link needs the multipage context; fall back to plain links
         t1.markdown("[Viewer](/)")
         t2.markdown("[Findings board](/Findings)")
-        t3.markdown("[My reports & Review](/Review)")
+        t3.markdown(f"[{tab3_label}](/Review)")
     esquina.markdown(_insignia_esquina_html(), unsafe_allow_html=True)
     try:
         import hallazgos

@@ -25,12 +25,27 @@ import hallazgos
 import tema
 
 st.set_page_config(page_title="HAWAPACHA — My reports & Review", page_icon=tema.ICON, layout="wide")
-tema.aplicar_tema()
-tema.navegacion()
-tema.portada()
 
 SPACES = {"mine": "My reports (Amateur)", "desk": "Review desk (Astronomer)"}
 TRACK = ["Reported", "Opened by a reviewer", "Verdict signed"]
+
+params = st.query_params
+raw_space = params.get("space") or params.get("view")
+if "claim" in params or raw_space in SPACES:
+    param_target = "desk" if raw_space == "desk" else "mine"
+    if st.session_state.get("_last_rev_param") != (raw_space, params.get("claim")):
+        st.session_state["_last_rev_param"] = (raw_space, params.get("claim"))
+        st.session_state["review_space"] = param_target
+        st.session_state["space"] = param_target
+        st.session_state["role"] = "expert" if param_target == "desk" else "amateur"
+elif st.session_state.get("space") in SPACES and st.session_state.get("review_space") not in SPACES:
+    st.session_state["review_space"] = st.session_state["space"]
+elif st.session_state.get("review_space") not in SPACES:
+    st.session_state["review_space"] = "mine"
+
+tema.aplicar_tema()
+tema.navegacion()
+tema.portada()
 
 
 def progress(report):
@@ -105,21 +120,7 @@ def card(report, reviewer=None, track=False):
 
 # ---------------------------------------------------------------- which workspace
 
-params = st.query_params
-raw_space = params.get("space") or params.get("view")
-if "claim" in params or raw_space in SPACES:
-    param_target = "desk" if raw_space == "desk" else "mine"
-    if st.session_state.get("_last_rev_param") != (raw_space, params.get("claim")):
-        st.session_state["_last_rev_param"] = (raw_space, params.get("claim"))
-        st.session_state["review_space"] = param_target
-        st.session_state["space"] = param_target
-        st.session_state["role"] = "expert" if param_target == "desk" else "amateur"
-elif st.session_state.get("space") in SPACES and st.session_state.get("review_space") not in SPACES:
-    st.session_state["review_space"] = st.session_state["space"]
-elif st.session_state.get("review_space") not in SPACES:
-    st.session_state["review_space"] = "mine"
-
-tema.seccion(1, "My reports & Review")
+tema.seccion(1, "Review" if st.session_state.get("review_space") == "desk" else "My reports")
 
 
 def _on_workspace_change():
