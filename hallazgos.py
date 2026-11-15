@@ -82,7 +82,16 @@ def _secret(name, default=None):
 
 
 def token():
-    return _secret("GITHUB_TOKEN")
+    found = _secret("GITHUB_TOKEN")
+    if found:
+        return str(found).strip()
+    try:
+        for value in st.secrets.values():
+            if hasattr(value, "get") and value.get("GITHUB_TOKEN"):
+                return str(value.get("GITHUB_TOKEN")).strip()
+    except Exception:
+        pass
+    return None
 
 
 def reviewers():
@@ -178,16 +187,18 @@ def _accounts_issue():
     """(issue number or None, {account id: nickname})."""
     if _memory_mode():
         return None, dict(_memory().setdefault("accounts", {}))
-    for issue in _fetch():
+    number, merged = None, {}
+    for issue in reversed(_fetch()):
         author = (issue.get("user") or {}).get("login")
         if issue.get("title") == ACCOUNTS_TITLE and author in TRUSTED_AUTHORS:
+            number = issue["number"]
             body = issue.get("body") or ""
             try:
                 raw = body.split(ACCOUNTS_START, 1)[1].split(ACCOUNTS_END, 1)[0]
-                return issue["number"], dict(json.loads(raw))
+                merged.update(dict(json.loads(raw)))
             except Exception:
-                return issue["number"], {}
-    return None, {}
+                pass
+    return number, merged
 
 
 def nickname_of(user):
@@ -356,7 +367,9 @@ def _check(response):
     except Exception:
         reason = response.text[:200]
     hint = ""
-    if response.status_code in (401, 403):
+    if not token():
+        hint = ' (GITHUB_TOKEN is missing in Streamlit Secrets; add GITHUB_TOKEN = "..." at the top of Settings → Secrets)'
+    elif response.status_code in (401, 403, 404):
         hint = " (check that the token is valid and has Issues: Read and write on this repository)"
     raise RuntimeError(f"GitHub answered {response.status_code}: {reason}{hint}")
 

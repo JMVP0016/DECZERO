@@ -79,8 +79,12 @@ def card(report, reviewer=None, track=False):
         key = f"r{report['number']}"
         if report["status"] == hallazgos.STATUS_NEW:
             if st.button("I am opening this report to review it", key=key + "open"):
-                hallazgos.add_event(report, hallazgos.STATUS_OPENED, reviewer)
-                st.rerun()
+                try:
+                    hallazgos.add_event(report, hallazgos.STATUS_OPENED, reviewer)
+                except Exception as error:
+                    st.error(f"The review step could not be saved. Detail: {error}")
+                else:
+                    st.rerun()
         elif report["status"] == hallazgos.STATUS_OPENED:   # one verdict per report
             with st.form(key + "form"):
                 verdict = st.selectbox("Verdict", hallazgos.VERDICTS, key=key + "v")
@@ -91,8 +95,12 @@ def card(report, reviewer=None, track=False):
                     if len(reason.strip()) < 15:
                         st.error("Please give a reason of at least 15 characters.")
                     else:
-                        hallazgos.add_event(report, verdict, reviewer, reason)
-                        st.rerun()
+                        try:
+                            hallazgos.add_event(report, verdict, reviewer, reason)
+                        except Exception as error:
+                            st.error(f"The verdict could not be published. Detail: {error}")
+                        else:
+                            st.rerun()
 
 
 # ---------------------------------------------------------------- which space
