@@ -1,5 +1,5 @@
 # DecZero - NASA Space Apps Challenge 2026 - Planet X and SPHEREx
-# SI disclosure: this file was drafted with an SI tool (Claude, Anthropic)
+# SI disclosure: this file was drafted with SI tools (Gemini, Google; Claude, Anthropic)
 # and reviewed and run by the team. See "Use of SI" in README.md.
 """
 My reports & Review desk (Tab 3):
@@ -168,7 +168,7 @@ if needs_role_choice:
             "access code here to unlock the manual accreditation verification panel and the Review Desk directly."
         )
         with st.form("signin_code_choose"):
-            code = st.text_input("Special access / Reviewer code", type="password", placeholder="DECZERO-2026")
+            code = st.text_input("Special access / Reviewer code", type="password", placeholder="your access code")
             if st.form_submit_button("Unlock Team DecZero / Review Desk", type="primary"):
                 canonical = hallazgos.check_reviewer_code(code)
                 if canonical:
@@ -417,7 +417,7 @@ else:
                     "access code here to unlock the manual accreditation verification panel and the Review Desk."
                 )
                 with st.form("signin_code"):
-                    code = st.text_input("Special access / Reviewer code", type="password", placeholder="DECZERO-2026")
+                    code = st.text_input("Special access / Reviewer code", type="password", placeholder="your access code")
                     if st.form_submit_button("Unlock Team DecZero / Review Desk", type="primary"):
                         canonical = hallazgos.check_reviewer_code(code)
                         if canonical:
@@ -436,7 +436,7 @@ else:
                     "access code here to unlock the manual accreditation verification panel and the Review Desk."
                 )
                 with st.form("signin_code_anon"):
-                    code = st.text_input("Special access / Reviewer code", type="password", placeholder="DECZERO-2026")
+                    code = st.text_input("Special access / Reviewer code", type="password", placeholder="your access code")
                     if st.form_submit_button("Unlock Team DecZero / Review Desk", type="primary"):
                         canonical = hallazgos.check_reviewer_code(code)
                         if canonical:
@@ -456,7 +456,7 @@ else:
         )
         tema.pasos(hallazgos.EXPERT_FLOW)
         with st.form("signin"):
-            code = st.text_input("Special access / Reviewer code", type="password", placeholder="DECZERO-2026")
+            code = st.text_input("Special access / Reviewer code", type="password", placeholder="your access code")
             if st.form_submit_button("Unlock Review Desk", type="primary"):
                 canonical = hallazgos.check_reviewer_code(code)
                 if canonical:

@@ -112,22 +112,20 @@ def token():
     return None
 
 
-TEAM_DECZERO_CODE = "DECZERO-2026"
 TEAM_DECZERO_NAME = "Team DecZero — Core Verification & Review"
 
 
 def reviewers():
-    """Dictionary code -> name, including the Team DecZero special access code."""
-    base = {
-        TEAM_DECZERO_CODE: TEAM_DECZERO_NAME,
-        "DECZERO-TEAM-2026": TEAM_DECZERO_NAME,
-    }
+    """
+    Dictionary code -> name. Codes are never written in this public file: the team
+    code comes from the DECZERO_CODE secret and personal codes from [REVIEWERS].
+    """
     if _memory_mode():
-        base["test-code"] = "Test Reviewer, astronomer"
-        return base
-    custom_team = _secret("DECZERO_CODE")
-    if custom_team:
-        base[str(custom_team).strip()] = TEAM_DECZERO_NAME
+        return {"test-team": TEAM_DECZERO_NAME, "test-code": "Test Reviewer, astronomer"}
+    base = {}
+    custom_team = str(_secret("DECZERO_CODE") or "").strip()
+    if len(custom_team) >= 8:
+        base[custom_team] = TEAM_DECZERO_NAME
     table = _secret("REVIEWERS", {})
     for code, name in dict(table).items():
         base[str(code).strip()] = str(name)
@@ -139,13 +137,7 @@ def check_reviewer_code(raw_code):
     cleaned = str(raw_code or "").strip()
     if not cleaned:
         return None
-    rev = reviewers()
-    if cleaned in rev:
-        return cleaned
-    for k in rev:
-        if k.upper() == cleaned.upper():
-            return k
-    return None
+    return cleaned if cleaned in reviewers() else None
 
 
 def is_deczero_team(user=None, code=None):

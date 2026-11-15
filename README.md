@@ -139,6 +139,7 @@ by a team member before being committed.
 | :--- | :--- | :--- |
 | Claude (Anthropic) | Drafting the repository skeleton, the viewer page, the stored-image reader, the findings board, the visual theme and help texts, the dependency-check page and the diagnostics page | `app.py`, `cache_local.py`, `tema.py`, `hallazgos.py`, `pages/3_Findings.py`, `.streamlit/config.toml`, `pages/1_Diagnostics.py`, `pages/2_System_check.py`, `fresco.py`, `probar_datos.py`, `hacer_ayuda.py`, `README.md`, `requirements.txt` |
 | Claude (Anthropic) | Code review, bug fixes (retries, query cache, flag mask, alignment failures) and synthetic tests | `datos.py`, `proceso.py`, `test_proceso.py`, `sembrar_busquedas.py`, `objetivos.py`, `regenerar_cache.py`, `vista.py`, `hacer_gifs.py`, `assets/icon.png` |
+| Gemini (Google) | Drafting the reputation stars, the community contributions board, the 24-hour report limit, the reviewer accreditation flow and the split of the findings pages | `hallazgos.py`, `tema.py`, `pages/3_Findings.py`, `pages/4_Review.py`, `app.py` |
 
 Each SI-assisted source file also says so in its header comment.
 
