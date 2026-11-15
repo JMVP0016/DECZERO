@@ -279,7 +279,7 @@ def report_form(ra, dec, band, view, frame):
             return
         st.write(
             "Your report is published on the public findings board with the current "
-            "time, so there is a record that you saw it first. A reviewer may then "
+            "time, so there is a public record of when you reported it. A reviewer may then "
             "check it. Use a nickname; do not write personal data."
         )
         sent = st.session_state.get("reports_sent", 0)

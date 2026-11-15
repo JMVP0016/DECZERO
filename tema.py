@@ -35,7 +35,7 @@ h1, h2, h3, .dz-title { font-family: 'Montserrat', sans-serif; letter-spacing: -
   margin-bottom: 1.4rem;
   background:
     radial-gradient(120% 90% at 50% -10%, #16335c 0%, #0d1d38 38%, #070c16 78%);
-  border: 1px solid rgba(72,224,203,0.14);
+  border: 1px solid rgba(94,234,212,0.14);
 }
 /* stars: three layers of tiny dots that twinkle at different speeds */
 .dz-stars, .dz-stars::before, .dz-stars::after {
@@ -71,21 +71,21 @@ h1, h2, h3, .dz-title { font-family: 'Montserrat', sans-serif; letter-spacing: -
   background: radial-gradient(circle at 50% 0%, #10294d 0%, #091528 22%, #060b14 55%);
   box-shadow:
     0 0 0 1px rgba(140,225,255,0.55),
-    0 -6px 26px 2px rgba(72,224,203,0.45),
+    0 -6px 26px 2px rgba(94,234,212,0.45),
     0 -28px 90px 10px rgba(47,128,237,0.45),
     0 -70px 180px 30px rgba(47,128,237,0.22);
   animation: dz-glow 8s ease-in-out infinite alternate;
 }
 .dz-hero-inner { position: relative; z-index: 2; animation: dz-rise 0.9s ease-out both; }
-.dz-kicker { color: #48E0CB; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; }
+.dz-kicker { color: #5EEAD4; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; }
 .dz-brand { display: flex; align-items: center; gap: 1rem; margin: 0.35rem 0 0.45rem 0; }
 .dz-brand svg { width: clamp(56px, 7vw, 84px); height: auto; flex-shrink: 0; }
-.dz-title { font-size: clamp(2.2rem, 6vw, 4.1rem); font-weight: 800; line-height: 0.95; margin: 0; color: #F5F6F8; letter-spacing: 0.01em; }
-.dz-tagline { font-size: clamp(1.05rem, 2.2vw, 1.5rem); color: #F5F6F8; margin: 0 0 0.3rem 0; font-family: 'Montserrat', sans-serif; font-weight: 600; }
+.dz-title { font-size: clamp(2.2rem, 6vw, 4.1rem); font-weight: 800; line-height: 0.95; margin: 0; color: #F5F7FA; letter-spacing: 0.01em; }
+.dz-tagline { font-size: clamp(1.05rem, 2.2vw, 1.5rem); color: #F5F7FA; margin: 0 0 0.3rem 0; font-family: 'Montserrat', sans-serif; font-weight: 600; }
 .dz-sub { font-size: 1rem; color: #AEB8CC; margin: 0; max-width: 46rem; }
 .dz-facts { position: relative; z-index: 2; display: flex; flex-wrap: wrap; justify-content: center; gap: 0.7rem 2.6rem; margin-top: clamp(1.5rem, 4.5vw, 3.1rem); }
 .dz-fact { text-align: center; }
-.dz-fact b { display: block; font-family: 'Montserrat', sans-serif; font-size: clamp(1rem, 2vw, 1.35rem); color: #F5F6F8; }
+.dz-fact b { display: block; font-family: 'Montserrat', sans-serif; font-size: clamp(1rem, 2vw, 1.35rem); color: #F5F7FA; }
 .dz-fact span { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: #8FD9CE; }
 
 @keyframes dz-twinkle { from { opacity: 0.35; } to { opacity: 0.9; } }
@@ -96,45 +96,45 @@ h1, h2, h3, .dz-title { font-family: 'Montserrat', sans-serif; letter-spacing: -
 }
 
 /* small note inside the hero: the scene was drawn with SI assistance */
-.dz-si { position: absolute; z-index: 2; right: 0.9rem; bottom: 0.35rem; font-size: 0.62rem; color: #9AA7BD; margin: 0; }
+.dz-si { position: absolute; z-index: 2; right: 0.9rem; bottom: 0.35rem; font-size: 0.7rem; color: #9AA7BD; margin: 0; }
 
 /* review states: amber ring while waiting, turquoise dot once there is a verdict */
 .dz-state { display: inline-flex; align-items: center; gap: 0.45rem; font-weight: 600; font-size: 0.9rem; }
 .dz-state i { width: 0.7rem; height: 0.7rem; border-radius: 50%; display: inline-block; box-sizing: border-box; }
 .dz-state.waiting { color: #FBBF24; } .dz-state.waiting i { border: 2px solid #FBBF24; }
-.dz-state.done { color: #48E0CB; } .dz-state.done i { background: #48E0CB; }
+.dz-state.done { color: #5EEAD4; } .dz-state.done i { background: #5EEAD4; }
 [data-testid="stMetricValue"], [data-testid="stCaptionContainer"] { font-variant-numeric: tabular-nums; }
 
 /* numbered section labels, as in the brand sheet */
 .dz-section { display: flex; align-items: baseline; gap: 0.7rem; margin: 1.6rem 0 0.6rem 0; }
-.dz-section i { font-style: normal; color: #48E0CB; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 0.85rem; letter-spacing: 0.1em; }
-.dz-section b { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.05rem; letter-spacing: 0.1em; text-transform: uppercase; color: #F5F6F8; }
+.dz-section i { font-style: normal; color: #5EEAD4; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 0.85rem; letter-spacing: 0.1em; }
+.dz-section b { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.05rem; letter-spacing: 0.1em; text-transform: uppercase; color: #F5F7FA; }
 .dz-section::after { content: ""; flex: 1; height: 1px; background: rgba(232,236,244,0.14); }
 
 /* help cards */
-.dz-card { background: #131D2E; border: 1px solid rgba(232,236,244,0.10); border-radius: 12px; padding: 0.9rem 1rem; height: 100%; }
-.dz-card h4 { font-family: 'Montserrat', sans-serif; font-size: 1rem; margin: 0 0 0.35rem 0; color: #48E0CB; }
+.dz-card { background: #172234; border: 1px solid rgba(232,236,244,0.10); border-radius: 12px; padding: 0.9rem 1rem; height: 100%; }
+.dz-card h4 { font-family: 'Montserrat', sans-serif; font-size: 1rem; margin: 0 0 0.35rem 0; color: #5EEAD4; }
 .dz-card p { font-size: 0.92rem; line-height: 1.45; margin: 0; color: #C9D1E0; }
 
 /* sky images: framed like instrument panels */
 [data-testid="stImage"] img {
-  border-radius: 12px; border: 1px solid rgba(72,224,203,0.35);
-  box-shadow: 0 0 0 4px rgba(72,224,203,0.06), 0 12px 30px rgba(0,0,0,0.45);
+  border-radius: 12px; border: 1px solid rgba(94,234,212,0.35);
+  box-shadow: 0 0 0 4px rgba(94,234,212,0.06), 0 12px 30px rgba(0,0,0,0.45);
 }
 [data-testid="stImageCaption"], [data-testid="stCaptionContainer"] { letter-spacing: 0.02em; }
-[data-testid="stMetricLabel"] p { color: #48E0CB; font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; }
+[data-testid="stMetricLabel"] p { color: #5EEAD4; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; }
 [data-testid="stMetricValue"] { font-family: 'Montserrat', sans-serif; font-weight: 800; }
 
 /* top menu */
 .dz-nav-gap { height: 0.2rem; }
 [data-testid="stPageLink"] a { border-radius: 999px; border: 1px solid rgba(232,236,244,0.16); padding: 0.3rem 1rem; width: fit-content; max-width: none; white-space: nowrap; }
 [data-testid="stPageLink"] a * { white-space: nowrap; overflow: visible; text-overflow: clip; }
-[data-testid="stPageLink"] a:hover { border-color: #48E0CB; }
+[data-testid="stPageLink"] a:hover { border-color: #5EEAD4; }
 [data-testid="stPageLink"] p { font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 0.85rem; letter-spacing: 0.08em; text-transform: uppercase; }
 
 /* loading scene */
 .dz-loader { display: flex; flex-direction: column; align-items: center; padding: 1.4rem 1rem 1.6rem 1rem;
-  border-radius: 18px; border: 1px solid rgba(72,224,203,0.18);
+  border-radius: 18px; border: 1px solid rgba(94,234,212,0.18);
   background: radial-gradient(90% 120% at 50% 0%, #13294a 0%, #0b1526 60%, #070c16 100%); }
 .dz-loader svg { width: min(260px, 60vw); height: auto; }
 .dz-loader .dz-orbit { transform-origin: 100px 100px; animation: dz-spin 9s linear infinite; }
@@ -144,7 +144,7 @@ h1, h2, h3, .dz-title { font-family: 'Montserrat', sans-serif; letter-spacing: -
 .dz-loader .dz-band:nth-child(4) { animation-delay: 0.6s; } .dz-loader .dz-band:nth-child(5) { animation-delay: 0.8s; }
 .dz-loader .dz-band:nth-child(6) { animation-delay: 1.0s; }
 .dz-loader .dz-dot { animation: dz-twinkle 2.8s ease-in-out infinite alternate; }
-.dz-loader-text { font-family: 'Montserrat', sans-serif; font-weight: 600; color: #F5F6F8; margin: 0.4rem 0 0.15rem 0; text-align: center; }
+.dz-loader-text { font-family: 'Montserrat', sans-serif; font-weight: 600; color: #F5F7FA; margin: 0.4rem 0 0.15rem 0; text-align: center; }
 .dz-loader-sub { color: #8FD9CE; font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; margin: 0; text-align: center; }
 .dz-loader-note { color: #9AA7BD; font-size: 0.75rem; margin: 0.6rem 0 0 0; }
 @keyframes dz-spin { to { transform: rotate(360deg); } }
@@ -156,8 +156,8 @@ h1, h2, h3, .dz-title { font-family: 'Montserrat', sans-serif; letter-spacing: -
 }
 .stButton > button, .stDownloadButton > button, [data-testid="stFormSubmitButton"] > button { border-radius: 10px; font-weight: 600; }
 /* dark text on the turquoise button, so it stays readable */
-button[kind="primary"], button[kind="primaryFormSubmit"] { color: #0C1421 !important; }
-button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0C1421 !important; }
+button[kind="primary"], button[kind="primaryFormSubmit"] { color: #0B1220 !important; }
+button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !important; }
 
 .dz-footer { color: #8792A8; font-size: 0.8rem; border-top: 1px solid rgba(232,236,244,0.12); padding-top: 0.8rem; margin-top: 1.6rem; }
 .dz-footer a { color: #AEB8CC; }
@@ -168,10 +168,10 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0C1421 !i
 # The Hawapacha mark: a sky circle crossed by the equator line, with two objects.
 LOGO_SVG = """
 <svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="HAWAPACHA logo">
-  <circle cx="60" cy="50" r="40" fill="none" stroke="#F5F6F8" stroke-width="6"/>
-  <circle cx="44" cy="32" r="6" fill="#48E0CB"/>
-  <circle cx="76" cy="68" r="6" fill="#48E0CB"/>
-  <rect x="8" y="47" width="104" height="6" rx="2" fill="#48E0CB"/>
+  <circle cx="60" cy="50" r="40" fill="none" stroke="#F5F7FA" stroke-width="6"/>
+  <circle cx="44" cy="32" r="6" fill="#5EEAD4"/>
+  <circle cx="76" cy="68" r="6" fill="#5EEAD4"/>
+  <rect x="8" y="47" width="104" height="6" rx="2" fill="#5EEAD4"/>
 </svg>
 """
 
@@ -182,32 +182,32 @@ LOGO_SVG = """
 LOADER_SVG = """
 <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img"
      aria-label="Drawing of the SPHEREx space telescope scanning the sky">
-  <circle class="dz-dot" cx="24" cy="38" r="1.2" fill="#F5F6F8"/>
-  <circle class="dz-dot" cx="172" cy="52" r="1.4" fill="#F5F6F8" style="animation-delay:.7s"/>
-  <circle class="dz-dot" cx="150" cy="168" r="1.1" fill="#F5F6F8" style="animation-delay:1.3s"/>
-  <circle class="dz-dot" cx="36" cy="150" r="1.3" fill="#F5F6F8" style="animation-delay:.3s"/>
+  <circle class="dz-dot" cx="24" cy="38" r="1.2" fill="#F5F7FA"/>
+  <circle class="dz-dot" cx="172" cy="52" r="1.4" fill="#F5F7FA" style="animation-delay:.7s"/>
+  <circle class="dz-dot" cx="150" cy="168" r="1.1" fill="#F5F7FA" style="animation-delay:1.3s"/>
+  <circle class="dz-dot" cx="36" cy="150" r="1.3" fill="#F5F7FA" style="animation-delay:.3s"/>
   <g class="dz-orbit">
-    <ellipse cx="100" cy="100" rx="88" ry="88" fill="none" stroke="#48E0CB" stroke-opacity="0.35"
+    <ellipse cx="100" cy="100" rx="88" ry="88" fill="none" stroke="#5EEAD4" stroke-opacity="0.35"
              stroke-width="1.2" stroke-dasharray="3 7"/>
-    <circle cx="188" cy="100" r="3.2" fill="#48E0CB"/>
+    <circle cx="188" cy="100" r="3.2" fill="#5EEAD4"/>
   </g>
   <g class="dz-craft">
     <g>
-      <line class="dz-band" x1="76" y1="56" x2="60" y2="14" stroke="#48E0CB" stroke-width="2.2" stroke-linecap="round"/>
-      <line class="dz-band" x1="86" y1="56" x2="77" y2="12" stroke="#48E0CB" stroke-width="2.2" stroke-linecap="round"/>
-      <line class="dz-band" x1="95" y1="56" x2="92" y2="10" stroke="#48E0CB" stroke-width="2.2" stroke-linecap="round"/>
-      <line class="dz-band" x1="105" y1="56" x2="108" y2="10" stroke="#48E0CB" stroke-width="2.2" stroke-linecap="round"/>
-      <line class="dz-band" x1="114" y1="56" x2="123" y2="12" stroke="#48E0CB" stroke-width="2.2" stroke-linecap="round"/>
-      <line class="dz-band" x1="124" y1="56" x2="140" y2="14" stroke="#48E0CB" stroke-width="2.2" stroke-linecap="round"/>
+      <line class="dz-band" x1="76" y1="56" x2="60" y2="14" stroke="#5EEAD4" stroke-width="2.2" stroke-linecap="round"/>
+      <line class="dz-band" x1="86" y1="56" x2="77" y2="12" stroke="#5EEAD4" stroke-width="2.2" stroke-linecap="round"/>
+      <line class="dz-band" x1="95" y1="56" x2="92" y2="10" stroke="#5EEAD4" stroke-width="2.2" stroke-linecap="round"/>
+      <line class="dz-band" x1="105" y1="56" x2="108" y2="10" stroke="#5EEAD4" stroke-width="2.2" stroke-linecap="round"/>
+      <line class="dz-band" x1="114" y1="56" x2="123" y2="12" stroke="#5EEAD4" stroke-width="2.2" stroke-linecap="round"/>
+      <line class="dz-band" x1="124" y1="56" x2="140" y2="14" stroke="#5EEAD4" stroke-width="2.2" stroke-linecap="round"/>
     </g>
-    <polygon points="52,60 148,60 120,128 80,128" fill="#0C1421" stroke="#F5F6F8" stroke-width="3" stroke-linejoin="round"/>
-    <polygon points="64,68 136,68 116,128 84,128" fill="#101B2C" stroke="#F5F6F8" stroke-opacity="0.8" stroke-width="2.4" stroke-linejoin="round"/>
-    <polygon points="76,76 124,76 111,128 89,128" fill="#16233A" stroke="#F5F6F8" stroke-opacity="0.65" stroke-width="2" stroke-linejoin="round"/>
-    <ellipse cx="100" cy="78" rx="15" ry="3.4" fill="#48E0CB" fill-opacity="0.55"/>
-    <rect x="84" y="128" width="32" height="22" rx="3" fill="#131D2E" stroke="#F5F6F8" stroke-width="2.4"/>
-    <rect x="118" y="132" width="40" height="9" rx="2" fill="#48E0CB"/>
-    <line x1="131" y1="132" x2="131" y2="141" stroke="#0C1421" stroke-width="1.4"/>
-    <line x1="144" y1="132" x2="144" y2="141" stroke="#0C1421" stroke-width="1.4"/>
+    <polygon points="52,60 148,60 120,128 80,128" fill="#0B1220" stroke="#F5F7FA" stroke-width="3" stroke-linejoin="round"/>
+    <polygon points="64,68 136,68 116,128 84,128" fill="#101B2C" stroke="#F5F7FA" stroke-opacity="0.8" stroke-width="2.4" stroke-linejoin="round"/>
+    <polygon points="76,76 124,76 111,128 89,128" fill="#16233A" stroke="#F5F7FA" stroke-opacity="0.65" stroke-width="2" stroke-linejoin="round"/>
+    <ellipse cx="100" cy="78" rx="15" ry="3.4" fill="#5EEAD4" fill-opacity="0.55"/>
+    <rect x="84" y="128" width="32" height="22" rx="3" fill="#172234" stroke="#F5F7FA" stroke-width="2.4"/>
+    <rect x="118" y="132" width="40" height="9" rx="2" fill="#5EEAD4"/>
+    <line x1="131" y1="132" x2="131" y2="141" stroke="#0B1220" stroke-width="1.4"/>
+    <line x1="144" y1="132" x2="144" y2="141" stroke="#0B1220" stroke-width="1.4"/>
   </g>
 </svg>
 """
@@ -356,12 +356,12 @@ const planet = new THREE.Mesh(
         float n = fbm(vPos * 0.55);
         vec3 deep = vec3(0.027, 0.055, 0.105), mid = vec3(0.055, 0.150, 0.300);
         vec3 col = mix(deep, mid, smoothstep(0.35, 0.75, n));
-        col += vec3(0.28, 0.88, 0.80) * 0.10 * smoothstep(0.62, 0.9, n);   // faint teal veins
+        col += vec3(0.37, 0.92, 0.83) * 0.10 * smoothstep(0.62, 0.9, n);   // faint teal veins
         vec3 sun = normalize(vec3(0.0, 0.55, -1.0));                        // light from behind the limb
         float lit = clamp(dot(vNormalW, sun) * 1.6 + 0.25, 0.0, 1.0);
         col *= 0.35 + 0.9 * lit;
         float rim = pow(1.0 - clamp(dot(vNormalW, vViewDir), 0.0, 1.0), 7.0);
-        col += vec3(0.28, 0.88, 0.80) * rim * 0.55 + vec3(0.18, 0.50, 0.93) * rim * 0.35;
+        col += vec3(0.37, 0.92, 0.83) * rim * 0.55 + vec3(0.18, 0.50, 0.93) * rim * 0.35;
         gl_FragColor = vec4(col, 1.0);
       }`
   }));
@@ -378,7 +378,7 @@ const halo = new THREE.Mesh(
       gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
     fragmentShader: `varying vec3 vN; void main() {
       float i = pow(clamp(0.62 - dot(vN, vec3(0.0, 0.0, 1.0)), 0.0, 1.0), 4.5);
-      gl_FragColor = vec4(mix(vec3(0.18, 0.50, 0.93), vec3(0.28, 0.88, 0.80), 0.5) * i * 2.4, i); }`
+      gl_FragColor = vec4(mix(vec3(0.18, 0.50, 0.93), vec3(0.37, 0.92, 0.83), 0.5) * i * 2.4, i); }`
   }));
 halo.position.copy(planet.position);
 scene.add(halo);
@@ -386,12 +386,12 @@ scene.add(halo);
 // ---- SPHEREx: three nested cone shields, body and solar panel, in line-art style
 const craft = new THREE.Group();
 const dark = new THREE.MeshStandardMaterial({ color: 0x1c2f4f, emissive: 0x0b1626, metalness: 0.3, roughness: 0.5, side: THREE.DoubleSide });
-const ringMat = new THREE.MeshBasicMaterial({ color: 0xf5f6f8 });
+const ringMat = new THREE.MeshBasicMaterial({ color: 0xf5f7fa });
 function ring(radius, y) {
   const r = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.022, 8, 64), ringMat);
   r.rotation.x = Math.PI / 2; r.position.y = y; craft.add(r);
 }
-const white = new THREE.LineBasicMaterial({ color: 0xf5f6f8 });
+const white = new THREE.LineBasicMaterial({ color: 0xf5f7fa });
 function part(geometry, material, x, y, z) {
   const mesh = new THREE.Mesh(geometry, material); mesh.position.set(x, y, z); craft.add(mesh);
   const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geometry, 25), white);
@@ -402,17 +402,17 @@ function part(geometry, material, x, y, z) {
   ring(top, h);                                       // bright rim of each shield
 });
 const mirror = new THREE.Mesh(new THREE.CircleGeometry(0.34, 40),
-  new THREE.MeshBasicMaterial({ color: 0x48e0cb, transparent: true, opacity: 0.85, side: THREE.DoubleSide }));
+  new THREE.MeshBasicMaterial({ color: 0x5eead4, transparent: true, opacity: 0.85, side: THREE.DoubleSide }));
 mirror.rotation.x = -Math.PI / 2; mirror.position.y = 0.42; craft.add(mirror);
 part(new THREE.BoxGeometry(0.62, 0.46, 0.62), dark, 0, -0.23, 0);
 part(new THREE.BoxGeometry(1.0, 0.05, 0.56),
-  new THREE.MeshStandardMaterial({ color: 0x48e0cb, emissive: 0x1f7a6e, metalness: 0.2, roughness: 0.4 }), 0.82, -0.2, 0);
+  new THREE.MeshStandardMaterial({ color: 0x5eead4, emissive: 0x1f7a6e, metalness: 0.2, roughness: 0.4 }), 0.82, -0.2, 0);
 craft.rotation.set(0.35, 0.4, -0.55);
 scene.add(craft);
 
 scene.add(new THREE.AmbientLight(0x8fa8d0, 0.9));
 const key = new THREE.DirectionalLight(0xffffff, 1.6); key.position.set(-4, 6, 8); scene.add(key);
-const teal = new THREE.PointLight(0x48e0cb, 30, 40); teal.position.set(6, -1, 4); scene.add(teal);
+const teal = new THREE.PointLight(0x5eead4, 30, 40); teal.position.set(6, -1, 4); scene.add(teal);
 
 // ---- layout, pointer and animation
 let wide = true;

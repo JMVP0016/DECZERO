@@ -11,3 +11,5 @@ imageio
 pyyaml
 fsspec
 s3fs
+scipy
+requests

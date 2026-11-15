@@ -8,6 +8,7 @@ import re
 
 import astropy.units as u
 import numpy as np
+from scipy import ndimage
 import streamlit as st
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
@@ -18,6 +19,7 @@ import datos
 import hallazgos
 import proceso
 import tema
+from objetivos import TARGETS
 
 MAX_IMAGES = 24      # live-mode cap agreed after measurement M0
 FOV_ARCMIN = 10.0    # side of each cutout
@@ -26,7 +28,7 @@ DISPLAY_PIXELS = 480
 BANDS = ["D1", "D2", "D3", "D4", "D5", "D6"]
 
 MODE_STACKED = "Aligned (best for spotting motion)"
-MODE_SINGLE = "Raw single images"
+MODE_SINGLE = "Single images (not aligned)"
 MIN_IMAGES_PER_EPOCH = 3            # an aligned frame made of fewer images is too noisy to trust
 SPEEDS = {"Slow": 900, "Medium": 450, "Fast": 200}   # milliseconds per frame
 RING_COLOUR = (251, 191, 36)        # amber #FBBF24: the position that was asked for
@@ -34,15 +36,6 @@ NO_DATA_COLOUR = (52, 32, 78)       # purple: no data here (not the same as dark
 PIXEL_ARCSEC = 6.15                 # SPHEREx pixel
 GRID_ARCSEC = 3.0                   # pixel of the aligned grid
 
-# The five challenge targets. Positions are approximate, moved to about 2026
-# with catalogue proper motions; they will be replaced by objetivos.yaml (David).
-TARGETS = [
-    {"name": "Barnard's Star", "folder": "barnard", "ra": 269.4463, "dec": 4.7679, "band": "D2"},
-    {"name": "WISE 0855", "folder": "wise_0855", "ra": 133.7590, "dec": -7.2421, "band": "D6"},
-    {"name": "Epsilon Indi B", "folder": "epsilon_indi_b", "ra": 331.0960, "dec": -56.8013, "band": "D2"},
-    {"name": "RW Aurigae", "folder": "rw_aurigae", "ra": 76.9564, "dec": 30.4014, "band": "D2"},
-    {"name": "R Draconis", "folder": "r_draconis", "ra": 248.1675, "dec": 66.7550, "band": "D2"},
-]
 
 st.set_page_config(page_title="HAWAPACHA · SPHEREx sky viewer", page_icon=tema.ICON, layout="wide")
 tema.aplicar_tema()
@@ -50,7 +43,8 @@ tema.aplicar_tema()
 
 def parse_coordinate(text):
     """Accept '150.0 +2.2' (degrees) or '08h55m10.8s -7d14m42.5s'. Return (ra, dec) in degrees."""
-    text = text.strip()
+    # a typographic minus or dash pasted from a document must read as a minus sign
+    text = text.strip().replace("\u2212", "-").replace("\u2013", "-").replace("\u2014", "-")
     if not text:
         raise ValueError("empty")
     numbers = re.fullmatch(r"([+-]?\d+(?:\.\d+)?)[\s,]+([+-]?\d+(?:\.\d+)?)", text)
@@ -98,7 +92,16 @@ def to_picture(image, low, high, mark=None, label="", scale_arcsec=None, compass
     scaled = np.arcsinh(10.0 * scaled) / np.arcsinh(10.0)      # brings out faint sources
     grey = (255 * np.nan_to_num(scaled, nan=0.0)).astype(np.uint8)
     rgb = np.stack([grey, grey, grey], axis=-1)
-    rgb[~np.isfinite(square)] = NO_DATA_COLOUR
+    missing = ~np.isfinite(square)
+    rgb[missing] = NO_DATA_COLOUR
+    # A hole surrounded by very bright pixels is the overloaded core of a bright
+    # star, not missing sky: draw it white, as the star would look, not purple.
+    regions, count = ndimage.label(missing)
+    for number in range(1, count + 1):
+        region = regions == number
+        rim = ndimage.binary_dilation(region) & ~missing
+        if rim.any() and np.median(square[rim]) >= low + 0.3 * (high - low):
+            rgb[region] = (255, 255, 255)
     rgb = np.flipud(rgb)                                        # FITS row 0 is the bottom row
     picture = Image.fromarray(rgb, "RGB").resize((DISPLAY_PIXELS, DISPLAY_PIXELS), Image.NEAREST)
 
@@ -108,7 +111,9 @@ def to_picture(image, low, high, mark=None, label="", scale_arcsec=None, compass
         x = (mark[0] + pad_x + 0.5) * zoom
         y = (side - (mark[1] + pad_y) - 0.5) * zoom
         if 0 <= x <= DISPLAY_PIXELS and 0 <= y <= DISPLAY_PIXELS:
-            draw.ellipse([x - 17, y - 17, x + 17, y + 17], outline=RING_COLOUR, width=2)
+            # dark outline under the amber ring, so it also shows on a bright halo
+            draw.ellipse([x - 23, y - 23, x + 23, y + 23], outline=(0, 0, 0), width=4)
+            draw.ellipse([x - 22, y - 22, x + 22, y + 22], outline=RING_COLOUR, width=2)
     if label:
         draw.rectangle([0, 0, DISPLAY_PIXELS, 18], fill=(0, 0, 0))
         draw.text((6, 4), label, fill=(255, 255, 255))
@@ -147,7 +152,7 @@ def single_frames(cutouts, ra, dec, ring):
             "details": (
                 f"**Detector:** {cutout['detector']} · "
                 f"**Wavelength at this position:** {cutout['longitud_onda']:.2f} µm · "
-                f"**Flagged pixels:** {cutout['porcentaje_marcado']:.1f} % · "
+                f"**Flagged pixels in the whole image:** {cutout['porcentaje_marcado']:.1f} % · "
                 f"**Data version:** {cutout['version']}"
             ),
         })
@@ -193,7 +198,7 @@ def stacked_frames(cutouts, ra, dec, ring):
         mark = (float(x), float(y))
     frames = []
     for stack, dates, waves, count in stacks:
-        label = f"{mjd_to_text(min(dates))} to {mjd_to_text(max(dates))}"
+        label = f"{mjd_to_text(min(dates))} to {mjd_to_text(max(dates))} · {count} images"
         frames.append({
             "picture": to_picture(stack, low, high, mark=mark, label=label,
                                   scale_arcsec=GRID_ARCSEC, compass=True),
@@ -208,6 +213,7 @@ def stacked_frames(cutouts, ra, dec, ring):
         "field_arcmin": GRID_PIXELS * GRID_ARCSEC / 60.0,
         "not_aligned": len(cutouts) - len(kept),
         "thin_epochs": thin,
+        "noisy": min(count for _, _, _, count in stacks) < MIN_IMAGES_PER_EPOCH,
     }
 
 
@@ -285,8 +291,8 @@ def load(ra, dec, band):
         cutouts = datos.obtener(ra, dec, fov=FOV_ARCMIN, banda=band, max_n=MAX_IMAGES)
     if not cutouts:
         st.session_state["error"] = (
-            "The images exist, but the NASA archive (IRSA) rejected every download. "
-            "It is probably overloaded; please try again in a few minutes."
+            "The images exist, but none could be downloaded from the public SPHEREx "
+            "copies (AWS and IRSA) right now. Please try again in a few minutes."
         )
         return
     st.session_state["error"] = None
@@ -370,13 +376,14 @@ if result:
         )
 
     st.caption(
-        "Look for a dot that leaves the amber ring or changes brightness from one date "
-        "to the next. A dot that shows up in a single frame is usually a cosmic ray or a bad pixel."
+        "Look for a dot that shifts inside the amber ring or changes brightness from one date "
+        "to the next. A dot that shows up in a single frame is usually a cosmic ray or a bad pixel. "
+        "Amber ring: centre of the view. Purple: no data."
     )
     view_column, ring_column = st.columns([3, 1])
     mode = view_column.radio("View", [MODE_STACKED, MODE_SINGLE], horizontal=True)
     ring = ring_column.checkbox("Show the ring", value=True,
-                                help="The amber ring marks the position that was asked for.")
+                                help="The amber ring marks the centre of the view: the position asked for, or the team's position for one of the five targets.")
     frames, info = build_frames(result, mode, ring)
     if info.get("not_aligned"):
         st.warning(f"{info['not_aligned']} images could not be aligned and were left out.")
@@ -387,25 +394,40 @@ if result:
             f"They are in “{MODE_SINGLE}”."
         )
 
+    # Controls first, in one row, so the two pictures below start at the same height.
+    blink, speed = False, "Medium"
+    if info.get("noisy") and len(frames) > 1:
+        st.caption("Some observing periods here have very few images, so their frames are noisy.")
     if len(frames) > 1:
-        index = st.slider("Frame", 1, len(frames), 1) - 1
+        frame_column, speed_column, blink_column = st.columns([2, 1.2, 1.2], vertical_alignment="bottom")
+        index = frame_column.slider("Frame (still picture)", 1, len(frames), 1) - 1
+        speed = speed_column.select_slider("Animation speed", list(SPEEDS), value="Medium")
+        aligned_view = mode == MODE_STACKED
+        blink = blink_column.checkbox(
+            "First and last date only", value=False, disabled=not aligned_view,
+            help="Blink between the two dates that are furthest apart. Only in the aligned view: "
+                 "single images are rotated differently, so blinking them would be misleading.",
+        ) and aligned_view
     else:
         index = 0
+        st.caption("Only one observing period is available here, so there is nothing to compare yet.")
     frame = frames[index]
 
     picture_column, movie_column = st.columns(2)
-    picture_column.image(frame["picture"], caption=f"Frame {index + 1} of {len(frames)}")
-    picture_column.metric("Date", frame["label"])
+    picture_column.image(frame["picture"], caption=f"Frame {index + 1} of {len(frames)} · {frame['label']}")
     with picture_column.expander("Technical details of this frame"):
         st.write(frame["details"])
 
     if len(frames) > 1:
-        speed_column, blink_column = movie_column.columns(2)
-        speed = speed_column.select_slider("Animation speed", list(SPEEDS), value="Medium")
-        blink = blink_column.checkbox("First and last date only", value=False,
-                                      help="Blink between the two dates that are furthest apart.")
-        shown = [frames[0], frames[-1]] if blink else frames
-        gif = animation(shown, SPEEDS[speed])
+        # the GIF is kept too: encoding 40 frames on every slider move made it lag
+        gif_key = (st.session_state["frames"]["key"], speed, blink)
+        kept_gif = st.session_state.get("gif")
+        if kept_gif and kept_gif["key"] == gif_key:
+            gif = kept_gif["bytes"]
+        else:
+            shown = [frames[0], frames[-1]] if blink else frames
+            gif = animation(shown, SPEEDS[speed])
+            st.session_state["gif"] = {"key": gif_key, "bytes": gif}
         movie_column.image(
             gif,
             caption="First and last date, alternating" if blink else "The whole sequence, in time order",
@@ -415,9 +437,10 @@ if result:
         )
 
     legend = (
-        "**Amber ring:** the position you asked for. "
-        "**Purple:** no data there. "
-        "**Black hole inside a very bright star:** the star overloaded the detector; it is not real."
+        "**Amber ring:** the centre of this view"
+        + (" (the team's position for this target). " if result.get("stored") else " (the position you asked for). ") +
+        "**Purple:** no data there. The core of a very bright star is drawn plain white "
+        "where the star overloaded the detector, so its exact centre cannot be measured."
     )
     if mode == MODE_STACKED:
         st.info(

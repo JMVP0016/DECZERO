@@ -1,10 +1,11 @@
-# Hawapacha (team DecZero) - visual theme: equatorial-sky navy with one turquoise accent
+# HAWAPACHA (team DecZero) - palette of the team's brand document: night blue #0B1220,
+# surfaces #172234, light text #F5F7FA, turquoise #5EEAD4 (main action), amber #FBBF24 (review)
 [theme]
 base = "dark"
-primaryColor = "#48E0CB"
-backgroundColor = "#0C1421"
-secondaryBackgroundColor = "#131D2E"
-textColor = "#F5F6F8"
+primaryColor = "#5EEAD4"
+backgroundColor = "#0B1220"
+secondaryBackgroundColor = "#172234"
+textColor = "#F5F7FA"
 
 [client]
 # The app draws its own menu (tema.navegacion), with only the pages meant for visitors.

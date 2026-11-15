@@ -15,8 +15,8 @@ tema.navegacion()
 st.title("Findings board")
 st.write(
     "Things that visitors noticed in the SPHEREx sequences. Every report is public "
-    "from the moment it is sent, with its date and time, so the person who saw it "
-    "first keeps the credit. Reviewers must sign every step they take."
+    "from the moment it is sent, with a public date and time that shows when it was "
+    "reported. Reviewers must sign every step they take."
 )
 st.caption(
     "This is a prototype. A verdict here is an opinion from a reviewer of our team's "
@@ -36,7 +36,7 @@ with st.expander("Reviewer access"):
             st.success(f"Signed in as {reviewer}")
         else:
             st.error("Unknown code.")
-    st.caption("Codes are given by the team to astronomers who agree to review.")
+    st.caption("Codes are given by the team to the reviewers it chooses.")
 
 # ---------------------------------------------------------------- load and filter
 
