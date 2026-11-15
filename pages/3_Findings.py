@@ -39,7 +39,7 @@ tema.aplicar_tema()
 tema.navegacion()
 tema.portada()
 
-PUBLIC_SPACES = {"board": "All reports", "top": "Confirmed candidates"}
+PUBLIC_SPACES = {"top": "Top findings", "board": "All reports"}
 
 
 def community_board(items):
@@ -167,11 +167,11 @@ if space == "top":
     )
     reviewed = sum(r["status"] in hallazgos.VERDICTS for r in reports)
     columns = st.columns(3)
-    columns[0].metric("Candidates", len(winners))
+    columns[0].metric("Top findings", len(winners))
     columns[1].metric("Reports reviewed", reviewed)
     columns[2].metric("Observers with a candidate", len({r["alias"] for r in winners}))
     if not winners:
-        st.info("No candidates yet. When a reviewer marks a report as a candidate, it appears here.")
+        st.info("No top findings yet. When a reviewer marks a report as a candidate, it appears here.")
     else:
         with st.container(key="board"):
             for report in winners:
