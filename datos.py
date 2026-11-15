@@ -182,8 +182,11 @@ def buscar(ra: float, dec: float, banda: str = None, usar_semillas: bool = True)
     if os.path.exists(ruta_busqueda):
         edad_horas = (time.time() - os.path.getmtime(ruta_busqueda)) / 3600.0
         if edad_horas < HORAS_CACHE_BUSQUEDA:
-            with open(ruta_busqueda, "rb") as f:
-                return pickle.load(f)
+            try:
+                with open(ruta_busqueda, "rb") as f:
+                    return pickle.load(f)
+            except Exception:
+                pass   # archivo dañado: se vuelve a buscar
 
     # Búsqueda por SIA (segundos, con tiempo límite). Antes se usaba la consulta
     # TAP, que tarda minutos y se queda colgada cuando IRSA está inestable.
@@ -194,8 +197,11 @@ def buscar(ra: float, dec: float, banda: str = None, usar_semillas: bool = True)
         return exposiciones  # sin datos en esa zona: no se guarda, puede haberlos mañana
 
     # Se guarda en disco para no repetir la búsqueda.
-    with open(ruta_busqueda, "wb") as f:
-        pickle.dump(exposiciones, f, protocol=pickle.HIGHEST_PROTOCOL)
+    try:
+        with open(ruta_busqueda, "wb") as f:
+            pickle.dump(exposiciones, f, protocol=pickle.HIGHEST_PROTOCOL)
+    except OSError:
+        pass   # sin permiso de escritura: la app sigue, solo no guarda
 
     return exposiciones
 
@@ -401,8 +407,11 @@ def obtener(ra: float, dec: float, fov: float = 12.0, banda: str = "D2", max_n: 
     ruta_pkl = os.path.join(DIR_CACHE_LOCAL, f"recortes_{clave}.pkl")
 
     if os.path.exists(ruta_pkl):
-        with open(ruta_pkl, "rb") as f:
-            return pickle.load(f)
+        try:
+            with open(ruta_pkl, "rb") as f:
+                return pickle.load(f)
+        except Exception:
+            pass   # archivo dañado: se vuelve a descargar
 
     exposiciones = buscar(ra, dec, banda=banda)
     seleccion = _repartir_entre_epocas(exposiciones, max_n=max_n)
@@ -443,7 +452,10 @@ def obtener(ra: float, dec: float, fov: float = 12.0, banda: str = "D2", max_n: 
     # Solo se guarda si llegaron todos: una descarga incompleta guardada
     # se devolvería incompleta para siempre.
     if resultados and not pendientes:
-        with open(ruta_pkl, "wb") as f:
-            pickle.dump(resultados, f, protocol=pickle.HIGHEST_PROTOCOL)
+        try:
+            with open(ruta_pkl, "wb") as f:
+                pickle.dump(resultados, f, protocol=pickle.HIGHEST_PROTOCOL)
+        except OSError:
+            pass   # sin permiso de escritura: la app sigue, solo no guarda
 
     return resultados

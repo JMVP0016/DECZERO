@@ -40,7 +40,9 @@ def parse_coordinate(text):
     text = text.strip().replace("\u2212", "-").replace("\u2013", "-").replace("\u2014", "-")
     if not text:
         raise ValueError("empty")
-    numbers = re.fullmatch(r"([+-]?\d+(?:\.\d+)?)[\s,]+([+-]?\d+(?:\.\d+)?)", text)
+    # two plain numbers are degrees, also when written as ".5" or "10."
+    number = r"[+-]?(?:\d+\.?\d*|\.\d+)"
+    numbers = re.fullmatch(rf"({number})[\s,]+({number})", text)
     if numbers:
         ra, dec = float(numbers.group(1)), float(numbers.group(2))
     else:

@@ -173,7 +173,8 @@ def _fetch():
         return list(_memory()["issues"].values())
     response = requests.get(
         f"{API}/issues",
-        params={"state": "all", "per_page": 100, "sort": "created", "direction": "desc"},
+        params={"state": "open", "per_page": 100,   # closing an issue on GitHub hides it here
+                "sort": "created", "direction": "desc"},
         headers=_headers(), timeout=20,
     )
     _check(response)

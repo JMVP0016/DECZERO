@@ -342,6 +342,7 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 .stApp p.dz-plabel { font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 0.72rem !important; letter-spacing: 0.14em;
   text-transform: uppercase; color: #5EEAD4; margin: 0 0 0.2rem 0; }
 .dz-card em { font-size: 2.1rem; }
+@media (min-width: 641px) { .dz-card { min-height: 14.2rem; } }
 .dz-state { float: right; }
 @media (max-width: 640px) {
   .st-key-targets [data-testid="stImage"] img { aspect-ratio: 16 / 9; }
