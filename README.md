@@ -6,8 +6,9 @@ NASA Space Apps Challenge 2026 · Challenge: **Planet X and SPHEREx** · Team De
 joins astronomical exploration with the team's Ecuadorian identity and its place on
 the equator line. (Linguistic reference: Kichwa glossary, FLACSO, 2018, p. 79.)*
 
-A public web page, with no sign-up, where anyone types sky coordinates (RA/Dec)
-and sees the real SPHEREx images of that area in time order.
+A public web page where anyone types sky coordinates (RA/Dec) and sees the real
+SPHEREx images of that area in time order. Viewing needs no account; an optional
+Google sign-in is used only to report findings.
 
 Live app: https://deczero-bggaafdwwenl9wrdvzjlwn.streamlit.app/
 
@@ -28,7 +29,8 @@ hackathon.
 - A difference image (last observing period minus the first) and a choice of field
   of view (4, 6 or 10 arcmin).
 - A help window with real examples of what counts as a change and what can fool you.
-- Visitors can report what they noticed; reports go to a public findings board
+- Visitors can report what they noticed, and optionally mark the spot in the frame
+  (the report then carries its sky position); reports go to a public findings board
   where a reviewer signs a verdict.
 
 ## Validation (15 Nov 2026)
@@ -81,7 +83,7 @@ Tests (synthetic data): `pip install pytest` and then `python -m pytest`.
 | `cache/` | Light cutouts of the five targets (made with `regenerar_cache.py`) and saved searches | David |
 | `cache_local.py` | Reads the stored cutouts | Jonnathan |
 | `tema.py` | Look of the page: styles, hero, cards, loading scene | Jonnathan |
-| `hallazgos.py`, `pages/3_Findings.py` | Report window and public findings board | Jonnathan |
+| `hallazgos.py`, `pages/3_Findings.py`, `pages/4_Review.py` | Report window, public findings board, my reports and review desk | Jonnathan |
 | `fresco.py` | Reloads the project modules after an upload | Jonnathan |
 | `probar_datos.py` | Quick check of the data path | Jonnathan |
 | `test_proceso.py` | Tests with synthetic data | Darwin, Jonnathan |
@@ -90,20 +92,33 @@ Tests (synthetic data): `pip install pytest` and then `python -m pytest`.
 
 Visitors can report something they noticed in a sequence. Each report is stored as
 a public issue of this repository, so its creation time is a public timestamp of the
-report. The Findings page has three spaces, with no accounts and no personal data:
+report. The app has three tabs:
 
-- **Public board**: every report and its status, for anyone.
-- **My reports**: a visitor follows their own reports with the claim code received
-  when publishing. The code travels in the page address, so a saved link is the way back.
-- **Review desk**: a reviewer signs in with a personal code given by the team, sees
-  the queue (oldest first) and signs verdicts. Opening a report and giving a verdict
-  are both recorded with the reviewer's name. The sign-in lasts while the browser tab is open.
+- **Viewer**: the sequences. Under the pictures, "Report a finding" opens the form.
+  The observer can switch on "Mark the spot" and move a circle over the frame; the
+  report then stores the sky position of that point.
+- **Findings board**: public. Top contributors, the reports a reviewer marked as
+  candidates ("Top findings") and all reports with their status.
+- **My reports / Review**: an observer follows their own reports; a reviewer sees
+  the queue (oldest first), opens a report and signs a verdict with their name.
+
+Accounts are optional. With Google sign-in configured, each account chooses one
+unique nickname, can publish one report every 24 hours and earns a five-sided star
+as reviewers validate its reports. The app stores no e-mail and no name, only the
+nickname and an anonymous account identifier (see `PRIVACY.md`). Without sign-in
+configured, reports use a free nickname and a claim code.
+
+Reviewers are the accounts listed by the team, astronomers whose accreditation
+request (ORCID iD and a publication) the team approved, or holders of an access code.
+No code is written in this repository. The first names shown on the board before
+anyone has reported are the team's initial roster, with zero reports.
 
 A verdict is a reviewer's opinion, not a confirmed discovery. Closing an issue on
 GitHub removes that report from the board.
 
-Setup (Streamlit secrets): `GITHUB_TOKEN` with Issues read/write on this repository,
-and a `[REVIEWERS]` table with one `"code" = "Name, role"` line per reviewer.
+Setup (Streamlit secrets): `GITHUB_TOKEN` with Issues read/write on this repository;
+optionally `[auth]` (Google sign-in), `[REVIEWER_EMAILS]`, `[REVIEWERS]` (one
+`"code" = "Name, role"` line per reviewer) and `DECZERO_CODE` (team access code).
 
 ## NASA data
 
