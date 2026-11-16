@@ -486,11 +486,15 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 .dz-corner-cd { display: inline-flex; align-items: center; gap: 0.36rem; background: #0B1220; border: 1px solid rgba(94,234,212,0.30);
   border-radius: 999px; padding: 0.12rem 0.62rem; font-family: 'Montserrat', sans-serif; font-size: 0.64rem; font-weight: 700;
   letter-spacing: 0.04em; color: #F5F7FA; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.st-key-corner_signin { display: flex; justify-content: flex-end; }
+.st-key-corner_signin { display: flex; flex-direction: column; align-items: flex-end; width: 100%; }
+.st-key-corner_signin [data-testid="stElementContainer"], .st-key-corner_signin [data-testid="stPageLink"] { width: auto !important; }
 .st-key-corner_signin [data-testid="stPageLink"] a { border: 1px solid rgba(94,234,212,0.55) !important; background: rgba(94,234,212,0.08) !important; }
 .st-key-corner_signin [data-testid="stPageLink"] p { color: #5EEAD4 !important; }
-@media (max-width: 640px) { .st-key-corner_signin { justify-content: flex-start; } }
-@media (min-width: 641px) { .st-key-corner_signin { margin-top: 0.5rem; } }
+@media (max-width: 640px) { .st-key-corner_signin { align-items: flex-end; margin-top: 0.5rem; } }
+@media (min-width: 641px) { .st-key-corner_signin { margin-top: 0.75rem; } }
+@media (max-width: 640px) {
+  [data-testid="stHorizontalBlock"]:has([data-testid="stPageLink"]) > [data-testid="stColumn"]:last-child:has(.st-key-corner_signin) { flex: 1 1 0 !important; width: auto !important; margin-top: 0 !important; }
+}
 .stApp a.dz-corner-guest, .stApp span.dz-corner-guest { display: inline-block; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: #5EEAD4 !important; text-decoration: none !important; border: 1px solid rgba(94,234,212,0.55); border-radius: 999px; padding: 0.5rem 1.1rem; background: rgba(94,234,212,0.08); }
 .stApp a.dz-corner-guest:hover { background: rgba(94,234,212,0.18); border-color: #5EEAD4; }
 .dz-corner-cd i { width: 0.4rem; height: 0.4rem; border-radius: 50%; background: #5EEAD4; display: inline-block; box-shadow: 0 0 5px #5EEAD4; flex-shrink: 0; }
