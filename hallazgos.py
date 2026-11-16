@@ -463,6 +463,12 @@ def back_after_sign_in():
             st.session_state["review_space"] = where
             st.session_state["role"] = "expert" if where == "desk" else "amateur"
             st.switch_page("pages/4_Review.py")
+        try:
+            new_account = nickname_of(current_user()) is None
+        except Exception:
+            new_account = False
+        if new_account:                      # the nickname is chosen on the reports page
+            st.switch_page("pages/4_Review.py")
         st.session_state["public_space"] = where
         st.switch_page("pages/3_Findings.py")
     if parts[0] == "viewer" and len(parts) == 4:

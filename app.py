@@ -142,7 +142,8 @@ came_back = hallazgos.back_after_sign_in()
 if came_back:
     st.query_params.update({"ra": f"{came_back[1]:.5f}", "dec": f"{came_back[2]:.5f}", "band": came_back[3]})
 
-tema.navegacion()
+_shown = st.session_state.get("result")
+tema.navegacion(volver=f"viewer:{_shown['ra']:.5f}:{_shown['dec']:.5f}:{_shown['band']}" if _shown else "findings:choose")
 tema.portada(compacta=bool(st.session_state.get("result")))
 if not st.session_state.get("result"):
     tema.pasos()

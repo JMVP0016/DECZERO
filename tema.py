@@ -490,6 +490,11 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 .st-key-corner_signin [data-testid="stElementContainer"], .st-key-corner_signin [data-testid="stPageLink"] { width: auto !important; }
 .st-key-corner_signin [data-testid="stPageLink"] a { border: 1px solid rgba(94,234,212,0.55) !important; background: rgba(94,234,212,0.08) !important; }
 .st-key-corner_signin [data-testid="stPageLink"] p { color: #5EEAD4 !important; }
+.st-key-corner_signin [data-testid="stElementContainer"], .st-key-corner_signin [data-testid="stButton"] { width: auto !important; }
+.st-key-corner_signin button { border: 1px solid rgba(94,234,212,0.55) !important; background: rgba(94,234,212,0.08) !important; border-radius: 999px !important; padding: 0.35rem 1.05rem !important; min-height: 0 !important; }
+.st-key-corner_signin button:hover { background: rgba(94,234,212,0.18) !important; border-color: #5EEAD4 !important; }
+.st-key-corner_signin button p { color: #5EEAD4 !important; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.78rem !important; letter-spacing: 0.1em; text-transform: uppercase; }
+@media (max-width: 640px) { .st-key-corner_signin button { padding: 0.24rem 0.5rem !important; } .st-key-corner_signin button p { font-size: 0.62rem !important; } }
 @media (max-width: 640px) { .st-key-corner_signin { align-items: flex-end; margin-top: 0.5rem; } }
 @media (min-width: 641px) { .st-key-corner_signin { margin-top: 0.75rem; } }
 @media (max-width: 640px) {
@@ -851,7 +856,7 @@ def _es_modo_experto():
     return False
 
 
-def navegacion():
+def navegacion(volver=""):
     """Top menu with the three main tabs for visitors, plus the corner star & nomination badge."""
     try:
         import hallazgos
@@ -892,8 +897,11 @@ def navegacion():
         # a page link, not a plain <a>: on Streamlit Cloud the app runs inside a frame
         # and a plain link to /Review is refused there (error 403)
         try:
+            import hallazgos
+            hallazgos._cookie_script(volver)     # where to come back to after Google
             with esquina.container(key="corner_signin"):
-                st.page_link("pages/4_Review.py", label="Sign in")
+                if st.button("Sign in", key="corner_signin_btn", help="Sign in with Google"):
+                    hallazgos.sign_in()          # starts the Google sign-in right away
         except Exception:
             pass
     else:

@@ -36,7 +36,7 @@ if legacy_space in ("mine", "desk") or "claim" in params:
     st.switch_page("pages/4_Review.py")
 
 tema.aplicar_tema()
-tema.navegacion()
+tema.navegacion(volver="findings:board")
 tema.portada(movil_compacta=True)
 
 PUBLIC_SPACES = {"top": "Top findings", "board": "All reports"}

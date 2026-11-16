@@ -44,7 +44,7 @@ elif st.session_state.get("review_space") not in SPACES:
     st.session_state["review_space"] = "desk" if tema._es_modo_experto() else "mine"
 
 tema.aplicar_tema()
-tema.navegacion()
+tema.navegacion(volver="findings:choose")
 tema.portada(movil_compacta=True)
 
 
