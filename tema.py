@@ -486,6 +486,11 @@ button[kind="primary"] p, button[kind="primaryFormSubmit"] p { color: #0B1220 !i
 .dz-corner-cd { display: inline-flex; align-items: center; gap: 0.36rem; background: #0B1220; border: 1px solid rgba(94,234,212,0.30);
   border-radius: 999px; padding: 0.12rem 0.62rem; font-family: 'Montserrat', sans-serif; font-size: 0.64rem; font-weight: 700;
   letter-spacing: 0.04em; color: #F5F7FA; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.st-key-corner_signin { display: flex; justify-content: flex-end; }
+.st-key-corner_signin [data-testid="stPageLink"] a { border: 1px solid rgba(94,234,212,0.55) !important; background: rgba(94,234,212,0.08) !important; }
+.st-key-corner_signin [data-testid="stPageLink"] p { color: #5EEAD4 !important; }
+@media (max-width: 640px) { .st-key-corner_signin { justify-content: flex-start; } }
+@media (min-width: 641px) { .st-key-corner_signin { margin-top: 0.5rem; } }
 .stApp a.dz-corner-guest, .stApp span.dz-corner-guest { display: inline-block; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: #5EEAD4 !important; text-decoration: none !important; border: 1px solid rgba(94,234,212,0.55); border-radius: 999px; padding: 0.5rem 1.1rem; background: rgba(94,234,212,0.08); }
 .stApp a.dz-corner-guest:hover { background: rgba(94,234,212,0.18); border-color: #5EEAD4; }
 .dz-corner-cd i { width: 0.4rem; height: 0.4rem; border-radius: 50%; background: #5EEAD4; display: inline-block; box-shadow: 0 0 5px #5EEAD4; flex-shrink: 0; }
@@ -716,6 +721,9 @@ def tarjetas(objetivos, compactas=False):
     return elegido
 
 
+SIGN_IN_MARK = "__sign_in__"
+
+
 def _insignia_esquina_html():
     """Top-right corner badge showing the user's nickname, 5-sided star, nomination, and 24h countdown below."""
     import html as _html
@@ -798,12 +806,7 @@ def _insignia_esquina_html():
                 '</div>'
             )
         if hallazgos.accounts_enabled():
-            return (
-                '<div class="dz-corner-wrap">'
-                '<a class="dz-corner-guest" href="/Review" target="_self" '
-                'title="Sign in to report findings and follow them">Sign in</a>'
-                '</div>'
-            )
+            return SIGN_IN_MARK      # drawn by navegacion() as a real page link
     except Exception:
         pass
     return (
@@ -880,7 +883,17 @@ def navegacion():
         t1.markdown("[Viewer](/)")
         t2.markdown("[Findings board](/Findings)")
         t3.markdown(f"[{tab3_label}](/Review)")
-    esquina.markdown(_insignia_esquina_html(), unsafe_allow_html=True)
+    corner = _insignia_esquina_html()
+    if corner == SIGN_IN_MARK:
+        # a page link, not a plain <a>: on Streamlit Cloud the app runs inside a frame
+        # and a plain link to /Review is refused there (error 403)
+        try:
+            with esquina.container(key="corner_signin"):
+                st.page_link("pages/4_Review.py", label="Sign in")
+        except Exception:
+            pass
+    else:
+        esquina.markdown(corner, unsafe_allow_html=True)
     try:
         import hallazgos
         signed_user = hallazgos.current_user()
