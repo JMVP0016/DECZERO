@@ -261,7 +261,10 @@ if space == "mine" and hallazgos.accounts_enabled():
         tema.pasos(hallazgos.AMATEUR_FLOW)
     else:
         tema.pasos(hallazgos.AMATEUR_FLOW)
-        st.info("Sign in with Google above to follow the reports you have sent, see your 5-sided Observer Star and publish new reports.")
+        if hallazgos.current_user():
+            st.info("Choose your nickname above to follow your reports, see your 5-sided Observer Star and publish new reports.")
+        else:
+            st.info("Sign in with Google above to follow the reports you have sent, see your 5-sided Observer Star and publish new reports.")
 
 elif space == "mine":
     st.write(
